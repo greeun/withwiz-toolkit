@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -27,6 +27,7 @@
     "./cache/cache-factory": "./dist/cache/cache-factory.js",
     "./cache/cache-invalidation": "./dist/cache/cache-invalidation.js",
     "./cache/cache-defaults": "./dist/cache/cache-defaults.js",
+    "./cache/cache-env": "./dist/cache/cache-env.js",
     "./components/ui/*": "./dist/components/ui/*.js",
     "./constants": "./dist/constants/index.js",
     "./constants/error-codes": "./dist/constants/error-codes.js",
@@ -38,6 +39,9 @@
     "./error/error-handler": "./dist/error/error-handler.js",
     "./error/error-display": "./dist/error/error-display.js",
     "./geolocation": "./dist/geolocation/index.js",
+    "./geolocation/batch-processor": "./dist/geolocation/batch-processor.js",
+    "./geolocation/providers": "./dist/geolocation/providers/index.js",
+    "./auth/types": "./dist/auth/types/index.js",
     "./hooks/useDataTable": "./dist/hooks/useDataTable.js",
     "./hooks/useDebounce": "./dist/hooks/useDebounce.js",
     "./hooks/useExitIntent": "./dist/hooks/useExitIntent.js",
@@ -51,6 +55,7 @@
     "./middleware/cors": "./dist/middleware/cors.js",
     "./middleware/security": "./dist/middleware/security.js",
     "./storage": "./dist/storage/r2-storage.js",
+    "./storage/r2-storage": "./dist/storage/r2-storage.js",
     "./system": "./dist/system/index.js",
     "./system/health-check": "./dist/system/health-check.js",
     "./types/i18n": "./dist/types/i18n.js",
@@ -105,7 +110,7 @@
     "zod": "^3.25.67"
   },
   "peerDependencies": {
-    "next": ">=14.0.0",
+    "next": "15",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
@@ -118,6 +123,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "date-fns": "^4.1.0",
+    "next": "15",
     "tsup": "^8.0.0",
     "typescript": "^5"
   }
