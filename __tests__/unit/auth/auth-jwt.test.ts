@@ -1,6 +1,4 @@
 /**
- * @jest-environment node
- *
  * Unit Tests: @withwiz/auth JWT module tests
  * Based on: TEST_SCENARIOS.md - auth module
  */

@@ -6,5 +6,7 @@ dist/
 *.log
 .DS_Store
 coverage/
+__tests__/coverage/
 .turbo/
 .bkit*
+.serena/

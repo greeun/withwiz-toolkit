@@ -1,17 +1,24 @@
 /**
  * @withwiz 테스트 셋업
  *
- * Jest 테스트 실행 전 공통 설정을 정의합니다.
+ * Vitest 테스트 실행 전 공통 설정을 정의합니다.
  */
 
-// jsdom 환경에서 TextEncoder/TextDecoder가 필요한 라이브러리(jose 등) 지원
+import { beforeAll, afterAll } from "vitest";
+
+// TextEncoder/TextDecoder가 필요한 라이브러리(jose 등) 지원
 import { TextEncoder, TextDecoder } from "util";
-import { webcrypto } from "node:crypto";
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as typeof global.TextDecoder;
-if (!global.crypto) {
-  global.crypto = webcrypto as unknown as typeof global.crypto;
+
+// TextEncoder/TextDecoder 설정 (필요한 경우)
+if (!globalThis.TextEncoder) {
+  (globalThis as any).TextEncoder = TextEncoder;
 }
+if (!globalThis.TextDecoder) {
+  (globalThis as any).TextDecoder = TextDecoder;
+}
+
+// Node.js v18+에서는 globalThis.crypto가 이미 설정되어 있음
+// Vitest는 node 환경에서 자동으로 crypto를 제공함
 
 // 테스트 타임아웃 설정 (기본 5초)
 // timeout configured in vitest.config.ts;
