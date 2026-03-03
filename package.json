@@ -91,11 +91,11 @@
     "build": "tsup && tsc --emitDeclarationOnly --skipLibCheck",
     "build:js": "tsup",
     "build:types": "tsc --emitDeclarationOnly --skipLibCheck",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --project shared --coverage",
-    "test:unit": "vitest run",
-    "test:integration": "vitest run __tests__/integration"
+    "test": "vitest run -c __tests__/vitest.config.ts",
+    "test:watch": "vitest -c __tests__/vitest.config.ts",
+    "test:coverage": "vitest run -c __tests__/vitest.config.ts --project shared --coverage",
+    "test:unit": "vitest run -c __tests__/vitest.config.ts",
+    "test:integration": "vitest run -c __tests__/vitest.config.ts __tests__/integration"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.988.0",
