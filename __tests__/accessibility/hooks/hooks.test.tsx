@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Hooks 모듈 테스트
  *

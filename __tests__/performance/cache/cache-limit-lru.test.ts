@@ -22,14 +22,6 @@
  * - TC-UNIT-MEMLRU-010: TTL eviction 정책
  */
 
-import * as dotenv from "dotenv";
-import * as path from "path";
-
-// .env.test 로드
-dotenv.config({
-  path: path.resolve(__dirname, "../../../../../.env.test"),
-});
-
 import { InMemoryCacheManager } from "@withwiz/cache/inmemory-cache-manager";
 
 vi.mock("@withwiz/logger/logger", () => ({
