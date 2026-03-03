@@ -8,6 +8,7 @@
 
 import { InMemoryCacheManager } from "@withwiz/cache/inmemory-cache-manager";
 import { NoopCacheManager } from "@withwiz/cache/noop-cache-manager";
+import { HybridCacheManager } from "@withwiz/cache/hybrid-cache-manager";
 
 // Mock Logger to avoid issues in test environment (e.g., setImmediate missing in jsdom/fakeTimers)
 vi.mock("@withwiz/logger/logger", () => ({
@@ -497,3 +498,160 @@ describe("Cache Managers", () => {
     });
   });
 });
+
+  describe("HybridCacheManager", () => {
+    let hybridCache: any;
+
+    beforeEach(() => {
+      // Clear instances before each test
+      if (HybridCacheManager.clearInstances) {
+        HybridCacheManager.clearInstances();
+      }
+    });
+
+    afterEach(() => {
+      if (hybridCache && typeof hybridCache.destroy === "function") {
+        hybridCache.destroy();
+      }
+    });
+
+    describe("Basic Operations with Memory Backend", () => {
+      it("should store and retrieve value when Redis is disabled", async () => {
+        hybridCache = new HybridCacheManager("hybrid-test", {
+          backend: "hybrid",
+          redisManager: null, // Redis disabled
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        const key = "hybrid:test";
+        const value = { data: "test" };
+
+        await hybridCache.set(key, value);
+        const result = await hybridCache.get(key);
+
+        expect(result).toEqual(value);
+      });
+
+      it("should return null for non-existent key", async () => {
+        hybridCache = new HybridCacheManager("hybrid-test-2", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        const result = await hybridCache.get("nonexistent:key");
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("Fallback Behavior", () => {
+      it("should fallback to InMemory when Redis is disabled", async () => {
+        hybridCache = new HybridCacheManager("hybrid-fallback", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        const key = "fallback:test";
+        const value = { id: 1 };
+
+        await hybridCache.set(key, value);
+
+        const status = hybridCache.getConnectionStatus();
+        expect(status.redisConnected).toBe(false);
+        expect(status.memoryActive).toBe(true);
+
+        const result = await hybridCache.get(key);
+        expect(result).toEqual(value);
+      });
+
+      it("should handle TTL in memory backend", async () => {
+        hybridCache = new HybridCacheManager("hybrid-ttl", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        await hybridCache.set("ttl:test", "value", 1); // 1 second TTL
+
+        expect(await hybridCache.get("ttl:test")).toBe("value");
+
+        // Advance time by 1.1 seconds
+        vi.advanceTimersByTime(1100);
+
+        expect(await hybridCache.get("ttl:test")).toBeNull();
+      });
+    });
+
+    describe("Delete Operations", () => {
+      it("should delete key from memory backend", async () => {
+        hybridCache = new HybridCacheManager("hybrid-delete", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        await hybridCache.set("delete:test", "value");
+        expect(await hybridCache.get("delete:test")).toBe("value");
+
+        await hybridCache.delete("delete:test");
+        expect(await hybridCache.get("delete:test")).toBeNull();
+      });
+
+      it("should handle pattern-based deletion", async () => {
+        hybridCache = new HybridCacheManager("hybrid-pattern", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        await hybridCache.set("user:1", { id: 1 });
+        await hybridCache.set("user:2", { id: 2 });
+        await hybridCache.set("link:1", { id: 1 });
+
+        await hybridCache.deletePattern("user:*");
+
+        expect(await hybridCache.get("user:1")).toBeNull();
+        expect(await hybridCache.get("user:2")).toBeNull();
+        expect(await hybridCache.get("link:1")).not.toBeNull();
+      });
+    });
+
+    describe("Exists Operation", () => {
+      it("should check key existence in memory backend", async () => {
+        hybridCache = new HybridCacheManager("hybrid-exists", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        await hybridCache.set("exists:test", "value");
+
+        expect(await hybridCache.exists("exists:test")).toBe(true);
+        expect(await hybridCache.exists("nonexistent")).toBe(false);
+      });
+    });
+
+    describe("Connection Status", () => {
+      it("should report correct connection status when Redis is disabled", async () => {
+        hybridCache = new HybridCacheManager("hybrid-status", {
+          backend: "hybrid",
+          redisManager: null,
+          writeToMemory: true,
+          fallbackOnRedisError: true,
+        });
+
+        const status = hybridCache.getConnectionStatus();
+        expect(status.redisConnected).toBe(false);
+        expect(status.memoryActive).toBe(true);
+        expect(status.currentBackend).toBe("memory");
+      });
+    });
+  });
