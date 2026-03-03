@@ -7,15 +7,12 @@
 import { beforeAll, afterAll } from "vitest";
 
 // TextEncoder/TextDecoder가 필요한 라이브러리(jose 등) 지원
+// jsdom 환경의 TextEncoder는 jose 라이브러리와 호환되지 않으므로
+// 항상 Node.js의 TextEncoder로 오버라이드
 import { TextEncoder, TextDecoder } from "util";
 
-// TextEncoder/TextDecoder 설정 (필요한 경우)
-if (!globalThis.TextEncoder) {
-  (globalThis as any).TextEncoder = TextEncoder;
-}
-if (!globalThis.TextDecoder) {
-  (globalThis as any).TextDecoder = TextDecoder;
-}
+(globalThis as any).TextEncoder = TextEncoder;
+(globalThis as any).TextDecoder = TextDecoder;
 
 // Node.js v18+에서는 globalThis.crypto가 이미 설정되어 있음
 // Vitest는 node 환경에서 자동으로 crypto를 제공함
