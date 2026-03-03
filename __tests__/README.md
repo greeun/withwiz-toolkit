@@ -41,96 +41,85 @@
 
 ## 빠른 시작
 
-### npm 스크립트로 실행 (권장)
+### npm 스크립트로 실행
 
 프로젝트 루트에서 실행:
 
 ```bash
-# 🎯 전체 테스트 실행 (Unit + Integration) - 가장 간편함
-npm run test:withwiz
-
-# 📦 Unit 테스트만 실행 (265개 테스트)
-npm run test:withwiz:unit
-
-# 🔗 Integration 테스트만 실행 (6개 테스트)
-npm run test:withwiz:integration
-
-# 🎯 전체 테스트 실행 (위와 동일)
-npm run test:withwiz:all
-
-# 👀 Watch 모드 (파일 변경 시 자동 재실행)
-npm run test:withwiz:watch
-
-# 📊 Coverage 포함 실행
-npm run test:withwiz:coverage
-
-# 📝 Verbose 모드 (상세 출력)
-npm run test:withwiz:verbose
-```
-
-`packages/@withwiz/toolkit` 디렉토리 내에서 실행:
-
-```bash
-# 📦 패키지 내부에서 테스트 실행
+# 🎯 전체 테스트 실행 (unit + integration + category tests)
 npm test
 
-# 👀 Watch 모드
+# 👀 Watch 모드 (파일 변경 시 자동 재실행)
 npm run test:watch
 
-# 📊 Coverage 리포트
+# 📊 Coverage 리포트 (v8 coverage)
 npm run test:coverage
+
+# 📦 Unit 테스트만 (약 265개)
+npm test -- __tests__/unit/
+
+# 🔗 특정 카테고리 테스트만
+npm test -- __tests__/security/
+npm test -- __tests__/performance/
+npm test -- __tests__/accessibility/
 ```
 
-### Jest 직접 실행
+### Vitest 직접 실행
 
 ```bash
-cd packages/@withwiz/toolkit
-npx jest
-```
+# 프로젝트 루트에서
+npm test
 
-### Watch 모드
+# Watch 모드
+npm run test:watch
 
-```bash
-cd packages/@withwiz/toolkit
-npx jest --watch
-```
-
-### 커버리지 리포트
-
-```bash
-cd packages/@withwiz/toolkit
-npx jest --coverage
+# 커버리지 리포트
+npm run test:coverage
 ```
 
 ### 특정 파일만 테스트
 
 ```bash
-cd packages/@withwiz/toolkit
-npx jest __tests__/unit/ip-utils.test.ts
+npm test -- security/auth/auth-jwt.test.ts
+npm test -- performance/cache/cache-advanced.test.ts
 ```
 
 ## 테스트 구조
 
-### 단위 테스트 (Unit Tests)
+### 타입별 조직 (Test Type)
 
-개별 함수/클래스의 동작을 검증합니다.
+**Unit Tests**: 개별 함수/클래스의 동작을 검증
+**Integration Tests**: 여러 모듈 간 상호작용을 검증
 
-```
-__tests__/unit/
-├── ip-utils.test.ts              # IPv4/IPv6 검증, Private IP 판별
-├── sanitizer.test.ts             # XSS 방어, HTML 태그 제거
-├── short-code-generator.test.ts  # 코드 생성, 고유성 검증
-├── password.test.ts              # 비밀번호 검증, 해싱, 강도 계산
-└── ...
-```
+### 카테고리별 조직 (Test Category)
 
-### 통합 테스트 (Integration Tests)
+**Security**: 인증, 검증, 보안 테스트
+**Performance**: 캐시, 성능 최적화 테스트
+**Accessibility**: 접근성, UI 컴포넌트 테스트
+**Unit**: 나머지 일반 단위 테스트
 
-여러 모듈 간 상호작용을 검증합니다.
+### 폴더 구조
 
 ```
-__tests__/integration/
-└── cache.integration.test.ts     # Redis + InMemory 통합
+__tests__/
+├── unit/                      # Unit tests (모듈별)
+│   ├── error/
+│   ├── geolocation/
+│   ├── logger/
+│   ├── middleware/
+│   ├── system/
+│   └── utils/
+├── integration/               # Integration tests
+│   └── cache.integration.test.ts
+├── security/                  # Security category tests
+│   ├── auth/
+│   ├── utils/
+│   └── validators/
+├── performance/               # Performance category tests
+│   └── cache/
+└── accessibility/             # Accessibility category tests
+    ├── components/
+    └── hooks/
 ```
 
 ## 핵심 테스트 시나리오
