@@ -1,6 +1,4 @@
 /**
- * @jest-environment node
- *
  * Unit Tests: optionalAuthMiddleware
  * Based on: docs/testing/03-api/25-url-entry-optional-auth.md
  *
