@@ -157,10 +157,27 @@ describe("Geolocation Module", () => {
         expect(result).toBeNull();
       });
 
-      it("should timeout after configured duration", async () => {
-        // Skip this test as timeout with AbortController is hard to test with fake timers
-        // Timeout functionality is tested manually or in integration tests
-      }); // Removed timeout value to keep it standard
+      it("should configure abort signal for timeout", async () => {
+        // Verify that the provider sets up AbortSignal for timeout
+        const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ country: 'United States' }),
+        } as Response);
+
+        await provider.fetchGeoData("8.8.8.8");
+
+        // Check that fetch was called with AbortSignal
+        expect(fetchSpy).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            signal: expect.any(AbortSignal),
+          }),
+        );
+
+        // Verify the AbortSignal is configured (it should have a timeout)
+        const callArgs = fetchSpy.mock.calls[0];
+        expect(callArgs[1].signal).toBeDefined();
+      });
 
       it("should include User-Agent header", async () => {
         global.fetch = vi.fn(() =>

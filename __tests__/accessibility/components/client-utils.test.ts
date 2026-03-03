@@ -78,28 +78,15 @@ describe("Client Utils", () => {
       expect(mockClipboard.writeText).toHaveBeenCalledWith(unicodeText);
     });
 
-    it("should handle Clipboard API failure with fallback", async () => {
-      // Make Clipboard API fail
+    it("should handle Clipboard API failure and return false", async () => {
+      // Make Clipboard API fail (reject throws caught as error)
       mockClipboard.writeText.mockRejectedValueOnce(new Error("Clipboard error"));
 
-      // Mock document.execCommand as fallback
-      const execCommandMock = vi.fn().mockReturnValue(true);
-      Object.defineProperty(document, "execCommand", {
-        value: execCommandMock,
-        writable: true,
-        configurable: true,
-      });
+      const result = await copyToClipboard("fallback test");
 
-      // Note: The actual fallback implementation may vary
-      // This test ensures the function handles Clipboard API failures gracefully
-      try {
-        await copyToClipboard("fallback test");
-        // If it succeeds via fallback, that's fine
-        // If it rejects, that's also acceptable depending on implementation
-      } catch (error) {
-        // Fallback errors are acceptable
-        expect(error).toBeDefined();
-      }
+      // When Clipboard API fails and throws, catch block returns false
+      expect(typeof result).toBe("boolean");
+      expect(result).toBe(false);
     });
 
     it("should work in secure context", async () => {
@@ -121,14 +108,20 @@ describe("Client Utils", () => {
         configurable: true,
       });
 
-      // The function should either use fallback or reject gracefully
-      try {
-        await copyToClipboard("insecure text");
-        // If it works via fallback, that's fine
-      } catch (error) {
-        // Insecure context errors are acceptable
-        expect(error).toBeDefined();
-      }
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      Object.defineProperty(document, "execCommand", {
+        value: execCommandMock,
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await copyToClipboard("insecure text");
+
+      // isSecureContext=false skips Clipboard API, uses execCommand fallback
+      expect(typeof result).toBe("boolean");
+      expect(result).toBe(true);
+      // execCommand was called for fallback path
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
     });
 
     it("should handle URL copying", async () => {
