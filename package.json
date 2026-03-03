@@ -94,8 +94,11 @@
     "test": "vitest run -c __tests__/vitest.config.ts",
     "test:watch": "vitest -c __tests__/vitest.config.ts",
     "test:coverage": "vitest run -c __tests__/vitest.config.ts --project shared --coverage",
-    "test:unit": "vitest run -c __tests__/vitest.config.ts",
-    "test:integration": "vitest run -c __tests__/vitest.config.ts __tests__/integration"
+    "test:unit": "vitest run -c __tests__/vitest.config.ts __tests__/unit",
+    "test:integration": "vitest run -c __tests__/vitest.config.ts __tests__/integration",
+    "test:security": "vitest run -c __tests__/vitest.config.ts __tests__/security",
+    "test:performance": "vitest run -c __tests__/vitest.config.ts __tests__/performance",
+    "test:accessibility": "vitest run -c __tests__/vitest.config.ts __tests__/accessibility"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.988.0",
