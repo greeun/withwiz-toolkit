@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -58,6 +58,7 @@
     "./storage": "./dist/storage/r2-storage.js",
     "./storage/r2-storage": "./dist/storage/r2-storage.js",
     "./system": "./dist/system/index.js",
+    "./system/types": "./dist/system/types.js",
     "./system/health-check": "./dist/system/health-check.js",
     "./types/i18n": "./dist/types/i18n.js",
     "./types/api": "./dist/types/api.js",
