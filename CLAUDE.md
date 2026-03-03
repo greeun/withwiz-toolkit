@@ -224,6 +224,15 @@ TypeScript strict mode is enforced. Run tsc to catch type errors:
 npm run build:types
 ```
 
+## Communication Guidelines
+
+### Language
+- **모든 답변은 한글(Korean)로 작성**: Claude Code는 이 프로젝트의 모든 응답을 한국어로 제공합니다.
+- 기술 용어나 고유명사는 원문 유지 (예: JWT, Redis, TypeScript, npm)
+- 파일 경로와 코드는 변경하지 않음
+
+---
+
 ## Conventions & Patterns
 
 ### TypeScript
