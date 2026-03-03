@@ -35,7 +35,7 @@ sanitizeHtml()          - Remove script tags & HTML
 removeEventHandlers()   - Remove onclick, onerror, etc
 sanitizeUrl()           - Block javascript:, data: protocols
 ```
-**Test File**: `__tests__/unit/utils/sanitizer.test.ts`
+**Test File**: `__tests__/security/utils/sanitizer.test.ts`
 
 **Coverage**:
 - Script tag removal
@@ -48,7 +48,7 @@ sanitizeUrl()           - Block javascript:, data: protocols
 PasswordValidator       - Strength rules validation
 bcryptjs               - Secure hashing with salt
 ```
-**Test File**: `__tests__/unit/auth/password.test.ts`
+**Test File**: `__tests__/security/auth/password.test.ts`
 
 **Coverage**:
 - Minimum length (8+ chars)
@@ -62,7 +62,7 @@ Email, URL, domain validators
 Type guards for safe casting
 CSV injection prevention
 ```
-**Test File**: `__tests__/unit/validators/validators.test.ts`
+**Test File**: `__tests__/security/validators/validators.test.ts`
 
 **Coverage**:
 - RFC 5322 email validation
@@ -84,7 +84,7 @@ OAuth provider integration
 State parameter validation
 PKCE verification
 ```
-**Test File**: `__tests__/unit/auth/oauth.test.ts`
+**Test File**: `__tests__/security/auth/oauth.test.ts`
 
 #### 6. **Error Handling** (62 tests) ✅
 ```
@@ -144,10 +144,10 @@ Error: payload must be an instance of Uint8Array
 ```
 
 **Test Files**:
-- `__tests__/unit/cache/cache-managers.test.ts` (49 tests)
-- `__tests__/unit/cache/cache-advanced.test.ts` (30 tests)
-- `__tests__/unit/cache/cache-limit-lru.test.ts` (11 tests)
-- `__tests__/unit/cache/redis-delete-pattern-scan.test.ts` (6 tests)
+- `__tests__/performance/cache/cache-managers.test.ts` (49 tests)
+- `__tests__/performance/cache/cache-advanced.test.ts` (30 tests)
+- `__tests__/performance/cache/cache-limit-lru.test.ts` (11 tests)
+- `__tests__/performance/cache/redis-delete-pattern-scan.test.ts` (6 tests)
 - `__tests__/integration/cache.integration.test.ts` (6 tests)
 
 ### ✅ Logging & Monitoring
@@ -207,7 +207,7 @@ Error: payload must be an instance of Uint8Array
 - Modal triggers ✅
 ```
 
-**Test File**: `__tests__/unit/hooks/hooks.test.tsx`
+**Test File**: `__tests__/accessibility/hooks/hooks.test.tsx`
 
 ### ✅ UI Components (11 tests) ✅
 
@@ -218,7 +218,7 @@ Error: payload must be an instance of Uint8Array
 - Format utilities ✅
 ```
 
-**Test File**: `__tests__/unit/components/client-utils.test.ts`
+**Test File**: `__tests__/accessibility/components/client-utils.test.ts`
 
 ### 📋 Accessibility Checklist
 

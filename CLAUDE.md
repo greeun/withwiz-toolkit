@@ -104,23 +104,34 @@ npm run test:integration # Integration tests only
 
 ### Test Organization
 
-Tests mirror the source structure:
+Tests are organized by type and category:
 
 ```
-__tests__/unit/
-├── auth/
-├── cache/
-├── components/
-├── error/
-├── geolocation/
-├── hooks/
-├── logger/
-├── middleware/
-├── utils/
-├── validators/
-└── system/
-
-__tests__/integration/
+__tests__/
+├── unit/                          # Unit tests by module
+│   ├── auth/
+│   ├── cache/
+│   ├── components/
+│   ├── error/
+│   ├── geolocation/
+│   ├── hooks/
+│   ├── logger/
+│   ├── middleware/
+│   ├── system/
+│   ├── utils/
+│   └── validators/
+├── integration/                   # Integration tests
+│   └── cache.integration.test.ts
+├── security/                      # Security-focused tests
+│   ├── auth/
+│   ├── utils/ (sanitizer)
+│   └── validators/
+├── performance/                   # Performance tests
+│   └── cache/
+├── accessibility/                 # Accessibility tests
+│   ├── components/
+│   └── hooks/
+└── docs/                          # Test documentation
 ```
 
 **Naming**: `<module>.test.ts` or `.test.tsx` for React components
@@ -178,15 +189,17 @@ logError('Failed to fetch', { error, userId, context: 'payment' })
 ### Running a Single Test
 
 ```bash
-npm test -- __tests__/unit/auth/jwt.test.ts
+npm test -- __tests__/unit/error/app-error.test.ts
 # or watch mode
-npm run test:watch -- jwt.test.ts
+npm run test:watch -- app-error.test.ts
 ```
 
-### Running Tests for a Module
+### Running Tests for a Category
 
 ```bash
-npm test -- __tests__/unit/cache/
+npm test -- __tests__/security/
+npm test -- __tests__/performance/
+npm test -- __tests__/accessibility/
 ```
 
 ### Debugging Tests
@@ -243,7 +256,9 @@ export * from './core/oauth'
 
 ### Testing
 
-- Test files must match source structure: `src/auth/index.ts` → `__tests__/unit/auth/index.test.ts`
+- Test files are organized by **type** (`unit/`, `integration/`) and **category** (`security/`, `performance/`, `accessibility/`)
+- Unit tests mirror source structure: `src/auth/index.ts` → `__tests__/unit/auth/index.test.ts`
+- Category tests group related tests by concern (security/auth, performance/cache, etc.)
 - Use `vitest` globals (no imports needed for `describe`, `it`, `expect`)
 - Mock external dependencies (Redis, API calls, file I/O)
 - Focus on behavior and API contracts, not implementation details
