@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -30,6 +30,8 @@
     "./cache/cache-env": "./dist/cache/cache-env.js",
     "./cache/hybrid-cache-manager": "./dist/cache/hybrid-cache-manager.js",
     "./components/ui/*": "./dist/components/ui/*.js",
+    "./components/ui/data-table": "./dist/components/ui/data-table/index.js",
+    "./components/ui/data-table/*": "./dist/components/ui/data-table/*.js",
     "./constants": "./dist/constants/index.js",
     "./constants/error-codes": "./dist/constants/error-codes.js",
     "./constants/messages": "./dist/constants/messages.js",
