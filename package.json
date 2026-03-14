@@ -82,7 +82,6 @@
     "./utils/ip-utils": "./dist/utils/ip-utils.js",
     "./utils/optimistic-lock": "./dist/utils/optimistic-lock.js",
     "./utils/sanitizer": "./dist/utils/sanitizer.js",
-    "./utils/shared-utils": "./dist/utils/shared-utils.js",
     "./utils/short-code-generator": "./dist/utils/short-code-generator.js",
     "./utils/timezone": "./dist/utils/timezone.js",
     "./utils/type-guards": "./dist/utils/type-guards.js",
