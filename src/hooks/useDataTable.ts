@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDebounce } from './useDebounce';
 
 export interface DataTableFilters {
@@ -37,8 +37,8 @@ export interface UseDataTableOptions<T> {
   }) => Promise<void>;
 }
 
-export interface UseDataTableReturn<T> {
-  // 상태
+// 그룹화된 리턴 타입
+export interface UseDataTableState<T> {
   data: T[];
   loading: boolean;
   error: string | null;
@@ -47,34 +47,83 @@ export interface UseDataTableReturn<T> {
   sort: DataTableSort;
   pagination: DataTablePagination;
   selectedIds: string[];
-  
-  // 데이터 관리
+}
+
+export interface UseDataTableDataActions<T> {
   setData: (data: T[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setTotal: (total: number) => void;
-  
-  // 필터 관리
+}
+
+export interface UseDataTableFilterActions {
   setFilters: (filters: DataTableFilters) => void;
   updateFilter: (key: string, value: any) => void;
   clearFilters: () => void;
-  
-  // 정렬 관리
+}
+
+export interface UseDataTableSortActions {
   setSort: (sort: string, order?: 'asc' | 'desc') => void;
-  
-  // 페이지네이션 관리
+}
+
+export interface UseDataTablePaginationActions {
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
-  
-  // 선택 관리
+}
+
+export interface UseDataTableSelectionActions {
   setSelectedIds: (ids: string[]) => void;
   toggleSelection: (id: string) => void;
   selectAll: () => void;
   clearSelection: () => void;
-  
-  // 액션
+}
+
+export interface UseDataTableActions {
   refresh: () => Promise<void>;
   bulkAction: (action: (ids: string[]) => Promise<void>) => Promise<void>;
+}
+
+export interface UseDataTableReturn<T> {
+  // 기존 flat 리턴 (하위 호환)
+  data: T[];
+  loading: boolean;
+  error: string | null;
+  total: number;
+  filters: DataTableFilters;
+  sort: DataTableSort;
+  pagination: DataTablePagination;
+  selectedIds: string[];
+
+  setData: (data: T[]) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setTotal: (total: number) => void;
+
+  setFilters: (filters: DataTableFilters) => void;
+  updateFilter: (key: string, value: any) => void;
+  clearFilters: () => void;
+
+  setSort: (sort: string, order?: 'asc' | 'desc') => void;
+
+  setPage: (page: number) => void;
+  setPageSize: (pageSize: number) => void;
+
+  setSelectedIds: (ids: string[]) => void;
+  toggleSelection: (id: string) => void;
+  selectAll: () => void;
+  clearSelection: () => void;
+
+  refresh: () => Promise<void>;
+  bulkAction: (action: (ids: string[]) => Promise<void>) => Promise<void>;
+
+  // 새 그룹화 리턴
+  state: UseDataTableState<T>;
+  dataActions: UseDataTableDataActions<T>;
+  filterActions: UseDataTableFilterActions;
+  sortActions: UseDataTableSortActions;
+  paginationActions: UseDataTablePaginationActions;
+  selectionActions: UseDataTableSelectionActions;
+  actions: UseDataTableActions;
 }
 
 export function useDataTable<T>({
@@ -104,10 +153,10 @@ export function useDataTable<T>({
   // 데이터 새로고침
   const refresh = useCallback(async () => {
     if (!onDataChange) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       await onDataChange({
         filters: { ...filters, search: debouncedSearch },
@@ -127,7 +176,7 @@ export function useDataTable<T>({
       ...prev,
       [key]: value,
     }));
-    
+
     // 검색어가 아닌 필터는 즉시 페이지를 1로 리셋
     if (key !== 'search') {
       setPaginationState(prev => ({ ...prev, page: 1 }));
@@ -169,8 +218,8 @@ export function useDataTable<T>({
 
   // 선택 관리
   const toggleSelection = useCallback((id: string) => {
-    setSelectedIds(prev => 
-      prev.includes(id) 
+    setSelectedIds(prev =>
+      prev.includes(id)
         ? prev.filter(selectedId => selectedId !== id)
         : [...prev, id]
     );
@@ -187,7 +236,7 @@ export function useDataTable<T>({
   // 벌크 액션
   const bulkAction = useCallback(async (action: (ids: string[]) => Promise<void>) => {
     if (selectedIds.length === 0) return;
-    
+
     setLoading(true);
     try {
       await action(selectedIds);
@@ -200,20 +249,20 @@ export function useDataTable<T>({
     }
   }, [selectedIds, refresh]);
 
-  // 디바운스된 검색어 변경 시 자동 새로고침
-  useMemo(() => {
+  // 디바운스된 검색어 변경 시 페이지 리셋
+  useEffect(() => {
     if (debouncedSearch !== filters.search) {
       setPaginationState(prev => ({ ...prev, page: 1 }));
     }
   }, [debouncedSearch, filters.search]);
 
   // 필터, 정렬, 페이지네이션 변경 시 자동 새로고침
-  useMemo(() => {
+  useEffect(() => {
     refresh();
   }, [debouncedSearch, sort.sort, sort.order, pagination.page, pagination.pageSize]);
 
   return {
-    // 상태
+    // 기존 flat 리턴 (하위 호환)
     data,
     loading,
     error,
@@ -222,33 +271,36 @@ export function useDataTable<T>({
     sort,
     pagination,
     selectedIds,
-    
-    // 데이터 관리
+
     setData,
     setLoading,
     setError,
     setTotal,
-    
-    // 필터 관리
+
     setFilters,
     updateFilter,
     clearFilters,
-    
-    // 정렬 관리
+
     setSort,
-    
-    // 페이지네이션 관리
+
     setPage,
     setPageSize,
-    
-    // 선택 관리
+
     setSelectedIds,
     toggleSelection,
     selectAll,
     clearSelection,
-    
-    // 액션
+
     refresh,
     bulkAction,
+
+    // 새 그룹화 리턴
+    state: { data, loading, error, total, filters, sort, pagination, selectedIds },
+    dataActions: { setData, setLoading, setError, setTotal },
+    filterActions: { setFilters, updateFilter, clearFilters },
+    sortActions: { setSort },
+    paginationActions: { setPage, setPageSize },
+    selectionActions: { setSelectedIds, toggleSelection, selectAll, clearSelection },
+    actions: { refresh, bulkAction },
   };
 }
