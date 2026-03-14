@@ -10,3 +10,4 @@ __tests__/coverage/
 .turbo/
 .bkit*
 .serena/
+docs/.pdca-status.json
