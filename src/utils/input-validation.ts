@@ -141,8 +141,7 @@ export function escapeHTML(input: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    .replace(/'/g, '&#x27;');
 }
 
 /**
@@ -251,21 +250,21 @@ export function sanitizeInput(
     sanitized = sanitized.trim();
   }
 
-  // 2. 길이 제한
-  if (sanitized.length > maxLength) {
-    sanitized = sanitized.substring(0, maxLength);
-  }
-
-  // 3. HTML 이스케이프
+  // 2. HTML 이스케이프 (길이 제한 전에 실행 - 이스케이프로 문자열 팽창 가능)
   if (!allowHTML) {
     sanitized = escapeHTML(sanitized);
   }
 
-  // 4. NULL 바이트 제거
+  // 3. NULL 바이트 제거
   sanitized = sanitized.replace(/\0/g, '');
 
-  // 5. 제어 문자 제거 (탭, 개행 제외)
+  // 4. 제어 문자 제거 (탭, 개행 제외)
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+  // 5. 길이 제한 (이스케이프/정제 후 최종 적용)
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength);
+  }
 
   return sanitized;
 }
