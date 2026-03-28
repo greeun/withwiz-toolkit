@@ -15,6 +15,7 @@ import {
   getAllErrorCodes,
   getErrorCodesByCategory,
   formatErrorMessage,
+  classifyError,
 } from "@withwiz/constants/error-codes";
 import type { ErrorCodeKey } from "@withwiz/constants/error-codes";
 
@@ -266,17 +267,68 @@ describe("Core Error Code Existence Check", () => {
     "UNAUTHORIZED",
     "INVALID_TOKEN",
     "TOKEN_EXPIRED",
+    "LINK_PASSWORD_REQUIRED",
+    "LINK_PASSWORD_INCORRECT",
     "FORBIDDEN",
     "NOT_FOUND",
     "CONFLICT",
     "RATE_LIMIT_EXCEEDED",
     "INTERNAL_SERVER_ERROR",
     "SERVER_ERROR",
+    "DATABASE_ERROR",
+    "CACHE_ERROR",
+    "EXTERNAL_SERVICE_ERROR",
+    "CORS_VIOLATION",
   ];
 
   test.each(requiredErrorKeys)("Verify existence of error code '%s'", (key) => {
     expect(ERROR_CODES[key]).toBeDefined();
     expect(ERROR_CODES[key].code).toBeDefined();
     expect(ERROR_CODES[key].message).toBeDefined();
+  });
+});
+
+// ============================================================================
+// LINK_PASSWORD 코드 이동 확인 (422→401)
+// ============================================================================
+describe("LINK_PASSWORD code migration to 401xx", () => {
+  test("LINK_PASSWORD_REQUIRED should be 40104 with status 401", () => {
+    expect(ERROR_CODES.LINK_PASSWORD_REQUIRED.code).toBe(40104);
+    expect(ERROR_CODES.LINK_PASSWORD_REQUIRED.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+  });
+
+  test("LINK_PASSWORD_INCORRECT should be 40105 with status 401", () => {
+    expect(ERROR_CODES.LINK_PASSWORD_INCORRECT.code).toBe(40105);
+    expect(ERROR_CODES.LINK_PASSWORD_INCORRECT.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+  });
+
+  test("LINK_PASSWORD codes should be classified as auth category", () => {
+    expect(getErrorCategory(40104)).toBe("auth");
+    expect(getErrorCategory(40105)).toBe("auth");
+  });
+
+  test("Old 422xx codes should no longer exist in ERROR_CODES", () => {
+    const allCodes = getAllErrorCodes();
+    const codes42206 = allCodes.filter(e => e.code === 42206);
+    const codes42207 = allCodes.filter(e => e.code === 42207);
+    expect(codes42206).toHaveLength(0);
+    expect(codes42207).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// classifyError export 확인
+// ============================================================================
+describe("classifyError is exported and callable", () => {
+  test("classifyError should be a function", () => {
+    expect(typeof classifyError).toBe("function");
+  });
+
+  test("classifyError should return IErrorCodeInfo shape", () => {
+    const result = classifyError(new Error("test"));
+    expect(result).toHaveProperty("code");
+    expect(result).toHaveProperty("key");
+    expect(result).toHaveProperty("status");
+    expect(result).toHaveProperty("message");
   });
 });

@@ -25,7 +25,7 @@ export class JWTManager {
 
     // 보안 검증
     if (config.secret.length < 32) {
-      throw new Error("JWT secret must be at least 32 characters long");
+      throw new JWTError("JWT secret must be at least 32 characters long", "TOKEN_CREATION_FAILED");
     }
   }
 

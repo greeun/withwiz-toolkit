@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-03-28
+
+### Added
+- `classifyError()` 공통 에러 분류 함수 (`constants/error-codes.ts`)
+  - DB, 네트워크, 캐시, 이메일, 파일업로드 등 패턴 기반 자동 분류
+  - `AppError.from()`, `processError()`, 미들웨어에서 공유
+- `AUTH_ERROR_CODE_MAP` — AuthError(JWT/OAuth/Password) → 5자리 에러코드 매핑
+- `AppError.corsViolation()` 팩토리 메서드
+- `ErrorResponse` 유틸리티에 누락된 팩토리 메서드 추가 (invalidInput, missingField, tagNotFound 등)
+- `./error/messages` subpath export (package.json)
+- `classifyError()` 및 AuthError 통합 테스트 29개
+
+### Changed
+- **BREAKING**: `LINK_PASSWORD_REQUIRED` 코드 42206→40104, `LINK_PASSWORD_INCORRECT` 코드 42207→40105 (422→401)
+- `error-display.ts`: v1→v2 메시지 시스템으로 전환
+- `error-display.ts`: `handleApiResponse()`에서 `throw new Error` → `throw new AppError`
+- `JWTManager` 생성자: `throw new Error` → `throw new JWTError`
+- `r2-storage.ts`: `throw new Error` → `AppError.serviceUnavailable()` (3곳)
+- `AppError` 생성자에 5자리 코드 유효성 검증 추가 (10000~59999)
+- `middleware/error-handler.ts`에서 AuthError를 `AUTH_ERROR_CODE_MAP` 기반으로 정밀 매핑
+- 에러코드 번호 갭에 `Reserved:` 주석 문서화
+
+### Fixed
+- catch 블록에서 모든 에러가 500으로 뭉개지던 문제 — 식별 가능한 에러에 명시적 상태코드 사용
+- JWTError/OAuthError가 500으로 fallback되던 문제
+- `error-handler.ts`와 `middleware/error-handler.ts`에서 동일 AuthError의 응답 코드 불일치 수정
+- `friendly-messages.ts` v1 deprecated 처리
+
 ## [0.1.1] - 2025-03-03
 
 ### Added

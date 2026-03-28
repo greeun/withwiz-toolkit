@@ -11,22 +11,36 @@ import { AppError } from './app-error';
 import { AuthError } from '@withwiz/auth/errors';
 
 // AuthError.code → ERROR_CODES 키 매핑
-const AUTH_ERROR_CODE_MAP: Record<string, number> = {
+export const AUTH_ERROR_CODE_MAP: Record<string, number> = {
+  // JWT
   TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
   TOKEN_INVALID: ERROR_CODES.INVALID_TOKEN.code,
-  INVALID_CREDENTIALS: ERROR_CODES.INVALID_CREDENTIALS.code,
-  USER_NOT_FOUND: ERROR_CODES.USER_NOT_FOUND.code,
-  EMAIL_ALREADY_EXISTS: ERROR_CODES.EMAIL_ALREADY_EXISTS.code,
-  UNAUTHORIZED: ERROR_CODES.UNAUTHORIZED.code,
-  EMAIL_SEND_FAILED: ERROR_CODES.EMAIL_SEND_FAILED.code,
-  EMAIL_TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
-  EMAIL_TOKEN_INVALID: ERROR_CODES.INVALID_TOKEN.code,
+  TOKEN_CREATION_FAILED: ERROR_CODES.SERVER_ERROR.code,
+  TOKEN_VERIFICATION_FAILED: ERROR_CODES.INVALID_TOKEN.code,
+  REFRESH_TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
+  INVALID_PAYLOAD: ERROR_CODES.INVALID_TOKEN.code,
+  // OAuth
+  OAUTH_PROVIDER_NOT_CONFIGURED: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code,
+  OAUTH_TOKEN_EXCHANGE_FAILED: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code,
+  OAUTH_USER_INFO_FAILED: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code,
+  // Password
   PASSWORD_TOO_SHORT: ERROR_CODES.PASSWORD_TOO_WEAK.code,
   PASSWORD_TOO_LONG: ERROR_CODES.PASSWORD_TOO_WEAK.code,
   PASSWORD_MISSING_NUMBER: ERROR_CODES.PASSWORD_TOO_WEAK.code,
   PASSWORD_MISSING_UPPERCASE: ERROR_CODES.PASSWORD_TOO_WEAK.code,
   PASSWORD_MISSING_LOWERCASE: ERROR_CODES.PASSWORD_TOO_WEAK.code,
   PASSWORD_MISSING_SPECIAL_CHAR: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_HASH_FAILED: ERROR_CODES.SERVER_ERROR.code,
+  PASSWORD_VERIFY_FAILED: ERROR_CODES.SERVER_ERROR.code,
+  // Email
+  EMAIL_SEND_FAILED: ERROR_CODES.EMAIL_SEND_FAILED.code,
+  EMAIL_TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
+  EMAIL_TOKEN_INVALID: ERROR_CODES.INVALID_TOKEN.code,
+  // Generic
+  INVALID_CREDENTIALS: ERROR_CODES.INVALID_CREDENTIALS.code,
+  USER_NOT_FOUND: ERROR_CODES.USER_NOT_FOUND.code,
+  EMAIL_ALREADY_EXISTS: ERROR_CODES.EMAIL_ALREADY_EXISTS.code,
+  UNAUTHORIZED: ERROR_CODES.UNAUTHORIZED.code,
 };
 
 // Prisma 에러 코드 매핑
@@ -142,58 +156,77 @@ export const ErrorResponse = {
   // 400xx
   validation: (message?: string, details?: unknown) => errorToResponse(AppError.validation(message, details ? { ...details as object } : undefined)),
   badRequest: (message?: string) => errorToResponse(AppError.badRequest(message)),
+  invalidInput: (message?: string) => errorToResponse(AppError.invalidInput(message)),
+  missingField: (fieldName: string) => errorToResponse(AppError.missingField(fieldName)),
   invalidUrl: () => errorToResponse(AppError.invalidUrl()),
   invalidEmail: () => errorToResponse(AppError.invalidEmail()),
+  weakPassword: () => errorToResponse(AppError.weakPassword()),
   invalidAlias: () => errorToResponse(AppError.invalidAlias()),
-  
+
   // 401xx
   unauthorized: (message?: string) => errorToResponse(AppError.unauthorized(message)),
   invalidToken: () => errorToResponse(AppError.invalidToken()),
   tokenExpired: () => errorToResponse(AppError.tokenExpired()),
+  linkPasswordRequired: () => errorToResponse(AppError.linkPasswordRequired()),
+  linkPasswordIncorrect: () => errorToResponse(AppError.linkPasswordIncorrect()),
   invalidCredentials: () => errorToResponse(AppError.invalidCredentials()),
   sessionExpired: () => errorToResponse(AppError.sessionExpired()),
-  
+
   // 403xx
   forbidden: (message?: string) => errorToResponse(AppError.forbidden(message)),
   emailNotVerified: () => errorToResponse(AppError.emailNotVerified()),
   accountDisabled: () => errorToResponse(AppError.accountDisabled()),
   accountLocked: () => errorToResponse(AppError.accountLocked()),
-  
+
   // 404xx
   notFound: (message?: string) => errorToResponse(AppError.notFound(message)),
   userNotFound: () => errorToResponse(AppError.userNotFound()),
   linkNotFound: () => errorToResponse(AppError.linkNotFound()),
-  
+  tagNotFound: () => errorToResponse(AppError.tagNotFound()),
+  favoriteNotFound: () => errorToResponse(AppError.favoriteNotFound()),
+  groupNotFound: () => errorToResponse(AppError.groupNotFound()),
+
   // 409xx
   conflict: (message?: string) => errorToResponse(AppError.conflict(message)),
   duplicate: (resource?: string) => errorToResponse(AppError.duplicate(resource)),
   emailExists: () => errorToResponse(AppError.emailExists()),
   aliasExists: () => errorToResponse(AppError.aliasExists()),
-  
+
   // 422xx
   businessRule: (message?: string) => errorToResponse(AppError.businessRule(message)),
+  invalidOperation: (message?: string) => errorToResponse(AppError.invalidOperation(message)),
   linkExpired: () => errorToResponse(AppError.linkExpired()),
   linkInactive: () => errorToResponse(AppError.linkInactive()),
-  linkPasswordRequired: () => errorToResponse(AppError.linkPasswordRequired()),
-  linkPasswordIncorrect: () => errorToResponse(AppError.linkPasswordIncorrect()),
   reservedWord: () => errorToResponse(AppError.reservedWord()),
   quotaExceeded: () => errorToResponse(AppError.quotaExceeded()),
-  
+  alreadyFavorited: () => errorToResponse(AppError.alreadyFavorited()),
+  fileTooLarge: (maxSize?: string) => errorToResponse(AppError.fileTooLarge(maxSize)),
+  unsupportedFileType: (fileType?: string) => errorToResponse(AppError.unsupportedFileType(fileType)),
+
   // 429xx
   rateLimit: () => errorToResponse(AppError.rateLimit()),
   dailyLimit: () => errorToResponse(AppError.dailyLimit()),
+  apiQuotaExceeded: () => errorToResponse(AppError.apiQuotaExceeded()),
   
   // 500xx
   serverError: (message?: string) => errorToResponse(AppError.serverError(message)),
-  databaseError: () => errorToResponse(AppError.databaseError()),
-  
+  internalError: (message?: string) => errorToResponse(AppError.internalError(message)),
+  databaseError: (message?: string) => errorToResponse(AppError.databaseError(message)),
+  emailSendFailed: () => errorToResponse(AppError.emailSendFailed()),
+  cacheError: () => errorToResponse(AppError.cacheError()),
+  fileUploadFailed: () => errorToResponse(AppError.fileUploadFailed()),
+
   // 503xx
-  serviceUnavailable: () => errorToResponse(AppError.serviceUnavailable()),
+  serviceUnavailable: (message?: string) => errorToResponse(AppError.serviceUnavailable(message)),
   externalServiceError: (service?: string) => errorToResponse(AppError.externalServiceError(service)),
-  
-  // 보안
-  accessBlocked: () => errorToResponse(AppError.accessBlocked()),
-  ipBlocked: () => errorToResponse(AppError.ipBlocked()),
+
+  // 보안 (403xx 71~79)
+  accessBlocked: (reason?: string) => errorToResponse(AppError.accessBlocked(reason)),
+  securityValidationFailed: () => errorToResponse(AppError.securityValidationFailed()),
+  blockedUrl: (url?: string) => errorToResponse(AppError.blockedUrl(url)),
+  suspiciousActivity: () => errorToResponse(AppError.suspiciousActivity()),
+  ipBlocked: (ip?: string) => errorToResponse(AppError.ipBlocked(ip)),
+  corsViolation: (origin?: string) => errorToResponse(AppError.corsViolation(origin)),
 };
 
 export default { errorToResponse, processError, withErrorHandler, ErrorResponse };
