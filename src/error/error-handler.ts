@@ -87,8 +87,41 @@ export function processError(error: unknown): { code: number; message: string; s
     if (error.message.toLowerCase().includes('unauthorized')) {
       return { code: ERROR_CODES.UNAUTHORIZED.code, message: formatErrorMessage(ERROR_CODES.UNAUTHORIZED.code), status: 401 };
     }
+    if (error.message.toLowerCase().includes('forbidden') || error.message.toLowerCase().includes('access denied')) {
+      return { code: ERROR_CODES.FORBIDDEN.code, message: formatErrorMessage(ERROR_CODES.FORBIDDEN.code), status: 403 };
+    }
+    if (error.message.toLowerCase().includes('too many request') || error.message.toLowerCase().includes('rate limit')) {
+      return { code: ERROR_CODES.RATE_LIMIT_EXCEEDED.code, message: formatErrorMessage(ERROR_CODES.RATE_LIMIT_EXCEEDED.code), status: 429 };
+    }
 
-    // 기본 서버 에러
+    // Prisma 매핑에 없는 DB 에러
+    if (error.message.match(/P\d{4}/) || error.message.toLowerCase().includes('database') || error.message.toLowerCase().includes('prisma')) {
+      return { code: ERROR_CODES.DATABASE_ERROR.code, message: formatErrorMessage(ERROR_CODES.DATABASE_ERROR.code), status: 500 };
+    }
+
+    // 네트워크/외부 서비스 에러
+    const errorCode = (error as NodeJS.ErrnoException).code;
+    if (errorCode === 'ECONNREFUSED' || errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT' || errorCode === 'ENOTFOUND'
+      || error.message.toLowerCase().includes('fetch failed') || error.message.toLowerCase().includes('network')) {
+      return { code: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code, message: formatErrorMessage(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code), status: 503 };
+    }
+
+    // Redis/캐시 에러
+    if (error.message.toLowerCase().includes('redis') || error.message.toLowerCase().includes('cache') || error.message.toLowerCase().includes('upstash')) {
+      return { code: ERROR_CODES.CACHE_ERROR.code, message: formatErrorMessage(ERROR_CODES.CACHE_ERROR.code), status: 500 };
+    }
+
+    // 이메일 전송 에러
+    if (error.message.toLowerCase().includes('email') && (error.message.toLowerCase().includes('send') || error.message.toLowerCase().includes('smtp'))) {
+      return { code: ERROR_CODES.EMAIL_SEND_FAILED.code, message: formatErrorMessage(ERROR_CODES.EMAIL_SEND_FAILED.code), status: 500 };
+    }
+
+    // 파일 업로드 에러
+    if (error.message.toLowerCase().includes('upload') || error.message.toLowerCase().includes('s3') || error.message.toLowerCase().includes('r2')) {
+      return { code: ERROR_CODES.FILE_UPLOAD_FAILED.code, message: formatErrorMessage(ERROR_CODES.FILE_UPLOAD_FAILED.code), status: 500 };
+    }
+
+    // 분류 불가 서버 에러
     return { code: ERROR_CODES.SERVER_ERROR.code, message: formatErrorMessage(ERROR_CODES.SERVER_ERROR.code), status: 500 };
   }
 
