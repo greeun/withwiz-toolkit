@@ -5,10 +5,11 @@
 
 import { toast } from 'sonner';
 import { getErrorCategory } from '@withwiz/constants/error-codes';
-import { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from './friendly-messages';
+import { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from './friendly-messages-v2';
+import { AppError } from './app-error';
 
-// Re-export from friendly-messages for external use
-export { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from './friendly-messages';
+// Re-export from friendly-messages-v2 for external use
+export { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from './friendly-messages-v2';
 
 type TLocale = 'ko' | 'en';
 
@@ -115,7 +116,11 @@ export async function handleApiResponse<T>(
     });
   }
 
-  throw new Error(errorData.error?.message || `Request failed with status ${response.status}`);
+  const errorCode = errorData.error?.code;
+  if (errorCode) {
+    throw new AppError(errorCode, errorData.error?.message);
+  }
+  throw AppError.fromKey('SERVER_ERROR', `Request failed with status ${response.status}`);
 }
 
 /**

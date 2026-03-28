@@ -12,7 +12,8 @@ import { z } from 'zod';
 import type { TApiMiddleware } from './types';
 import { AppError } from '@withwiz/error/app-error';
 import { getErrorMessage } from '@withwiz/error/messages';
-import { ERROR_CODES } from '@withwiz/constants/error-codes';
+import { ERROR_CODES, classifyError } from '@withwiz/constants/error-codes';
+import { AuthError } from '@withwiz/auth/errors';
 import { logger } from '@withwiz/logger/logger';
 
 /**
@@ -65,18 +66,32 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       );
     }
 
-    // 식별 가능한 에러 분류
-    const resolvedCode = resolveErrorCode(error);
+    // AuthError인 경우 (JWTError, OAuthError 등)
+    if (error instanceof AuthError) {
+      const statusCode = error.statusCode;
+      const fallbackCode = statusCode === 401 ? ERROR_CODES.UNAUTHORIZED.code : ERROR_CODES.BAD_REQUEST.code;
+      return createErrorResponse(
+        fallbackCode,
+        error.message,
+        context.locale,
+        context.requestId
+      );
+    }
+
+    // 공통 에러 분류
+    const classified = error instanceof Error
+      ? classifyError(error)
+      : ERROR_CODES.INTERNAL_SERVER_ERROR;
 
     logger.error('[ErrorHandler] Unexpected error:', error);
 
     const isProduction = process.env.NODE_ENV === 'production';
     const safeMessage = isProduction
-      ? resolvedCode.message
+      ? classified.message
       : (error instanceof Error ? error.message : 'Unknown error');
 
     return createErrorResponse(
-      resolvedCode.code,
+      classified.code,
       safeMessage,
       context.locale,
       context.requestId,
@@ -86,47 +101,6 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
     );
   }
 };
-
-/**
- * 식별 가능한 에러를 적절한 에러 코드로 분류
- */
-function resolveErrorCode(error: unknown): { code: number; message: string } {
-  if (!(error instanceof Error)) {
-    return { code: ERROR_CODES.INTERNAL_SERVER_ERROR.code, message: ERROR_CODES.INTERNAL_SERVER_ERROR.message };
-  }
-
-  const msg = error.message.toLowerCase();
-  const errCode = (error as NodeJS.ErrnoException).code;
-
-  // DB/Prisma 에러
-  if (error.message.match(/P\d{4}/) || msg.includes('database') || msg.includes('prisma')) {
-    return { code: ERROR_CODES.DATABASE_ERROR.code, message: ERROR_CODES.DATABASE_ERROR.message };
-  }
-
-  // 네트워크/외부 서비스 에러
-  if (errCode === 'ECONNREFUSED' || errCode === 'ECONNRESET' || errCode === 'ETIMEDOUT' || errCode === 'ENOTFOUND'
-    || msg.includes('fetch failed') || msg.includes('network')) {
-    return { code: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code, message: ERROR_CODES.EXTERNAL_SERVICE_ERROR.message };
-  }
-
-  // Redis/캐시 에러
-  if (msg.includes('redis') || msg.includes('cache') || msg.includes('upstash')) {
-    return { code: ERROR_CODES.CACHE_ERROR.code, message: ERROR_CODES.CACHE_ERROR.message };
-  }
-
-  // 이메일 전송 에러
-  if (msg.includes('email') && (msg.includes('send') || msg.includes('smtp'))) {
-    return { code: ERROR_CODES.EMAIL_SEND_FAILED.code, message: ERROR_CODES.EMAIL_SEND_FAILED.message };
-  }
-
-  // 파일 업로드 에러
-  if (msg.includes('upload') || msg.includes('s3') || msg.includes('r2')) {
-    return { code: ERROR_CODES.FILE_UPLOAD_FAILED.code, message: ERROR_CODES.FILE_UPLOAD_FAILED.message };
-  }
-
-  // 분류 불가
-  return { code: ERROR_CODES.INTERNAL_SERVER_ERROR.code, message: ERROR_CODES.INTERNAL_SERVER_ERROR.message };
-}
 
 /**
  * 에러 응답 생성
