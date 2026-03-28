@@ -67,6 +67,16 @@ export const enMessages: TErrorMessages = {
     description: 'Your session has expired for security.',
     action: 'Please login again.',
   },
+  40104: {
+    title: 'Password required',
+    description: 'You must enter a password.',
+    action: 'Please enter the password.',
+  },
+  40105: {
+    title: 'Incorrect password',
+    description: 'The password is incorrect.',
+    action: 'Please check again.',
+  },
   40106: {
     title: 'Login failed',
     description: 'Email or password is incorrect.',
@@ -183,16 +193,7 @@ export const enMessages: TErrorMessages = {
     description: 'Usage has been stopped.',
     action: 'Please contact the owner.',
   },
-  42206: {
-    title: 'Password required',
-    description: 'You must enter a password.',
-    action: 'Please enter the password.',
-  },
-  42207: {
-    title: 'Incorrect password',
-    description: 'The password is incorrect.',
-    action: 'Please check again.',
-  },
+  // 42206, 42207: moved to 401xx → see 40104, 40105 below
   42208: {
     title: 'Alias not allowed',
     description: 'This is a system reserved word.',

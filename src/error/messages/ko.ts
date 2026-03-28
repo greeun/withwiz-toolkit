@@ -67,6 +67,16 @@ export const koMessages: TErrorMessages = {
     description: '보안을 위해 세션이 만료되었습니다.',
     action: '다시 로그인해 주세요.',
   },
+  40104: {
+    title: '비밀번호가 필요해요',
+    description: '비밀번호를 입력해야 합니다.',
+    action: '비밀번호를 입력해 주세요.',
+  },
+  40105: {
+    title: '비밀번호가 틀렸어요',
+    description: '비밀번호가 올바르지 않습니다.',
+    action: '다시 확인해 주세요.',
+  },
   40106: {
     title: '로그인에 실패했어요',
     description: '이메일 또는 비밀번호가 일치하지 않습니다.',
@@ -183,16 +193,7 @@ export const koMessages: TErrorMessages = {
     description: '사용이 중지되었습니다.',
     action: '소유자에게 문의해 주세요.',
   },
-  42206: {
-    title: '비밀번호가 필요해요',
-    description: '비밀번호를 입력해야 합니다.',
-    action: '비밀번호를 입력해 주세요.',
-  },
-  42207: {
-    title: '비밀번호가 틀렸어요',
-    description: '비밀번호가 올바르지 않습니다.',
-    action: '다시 확인해 주세요.',
-  },
+  // 42206, 42207: 401xx로 이동 → 아래 40104, 40105 참조
   42208: {
     title: '사용할 수 없는 별칭이에요',
     description: '시스템 예약어입니다.',

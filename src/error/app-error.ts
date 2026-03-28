@@ -13,6 +13,7 @@ import {
   formatErrorMessage,
   getHttpStatus,
   getErrorCategory,
+  classifyError,
 } from "@withwiz/constants/error-codes";
 import type {
   ErrorCodeKey,
@@ -73,6 +74,21 @@ export class AppError extends Error {
   ) {
     const formattedMessage = formatErrorMessage(code, message);
     super(formattedMessage);
+
+    // 5자리 코드 유효성 검증 (XXXYY: 10000~59999)
+    if (!Number.isInteger(code) || code < 10000 || code > 59999) {
+      const safeCode = ERROR_CODES.INTERNAL_SERVER_ERROR.code;
+      this.name = "AppError";
+      this.code = safeCode;
+      this.status = getHttpStatus(safeCode);
+      this.key = "INTERNAL_SERVER_ERROR";
+      this.category = getErrorCategory(safeCode);
+      this.details = details;
+      this.timestamp = new Date();
+      this.requestId = requestId;
+      Object.setPrototypeOf(this, AppError.prototype);
+      return;
+    }
 
     this.name = "AppError";
     this.code = code;
@@ -183,40 +199,9 @@ export class AppError extends Error {
         return new AppError(code, error.message.replace(/\s*\[\d{5}\]$/, ""));
       }
 
-      const msg = error.message.toLowerCase();
-      const errCode = (error as NodeJS.ErrnoException).code;
-
-      // DB/Prisma 에러
-      if (error.message.match(/P\d{4}/) || msg.includes('database') || msg.includes('prisma')) {
-        return new AppError(ERROR_CODES.DATABASE_ERROR.code, fallbackMessage || ERROR_CODES.DATABASE_ERROR.message);
-      }
-
-      // 네트워크/외부 서비스 에러
-      if (errCode === 'ECONNREFUSED' || errCode === 'ECONNRESET' || errCode === 'ETIMEDOUT' || errCode === 'ENOTFOUND'
-        || msg.includes('fetch failed') || msg.includes('network')) {
-        return new AppError(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code, fallbackMessage || ERROR_CODES.EXTERNAL_SERVICE_ERROR.message);
-      }
-
-      // Redis/캐시 에러
-      if (msg.includes('redis') || msg.includes('cache') || msg.includes('upstash')) {
-        return new AppError(ERROR_CODES.CACHE_ERROR.code, fallbackMessage || ERROR_CODES.CACHE_ERROR.message);
-      }
-
-      // 이메일 전송 에러
-      if (msg.includes('email') && (msg.includes('send') || msg.includes('smtp'))) {
-        return new AppError(ERROR_CODES.EMAIL_SEND_FAILED.code, fallbackMessage || ERROR_CODES.EMAIL_SEND_FAILED.message);
-      }
-
-      // 파일 업로드 에러
-      if (msg.includes('upload') || msg.includes('s3') || msg.includes('r2')) {
-        return new AppError(ERROR_CODES.FILE_UPLOAD_FAILED.code, fallbackMessage || ERROR_CODES.FILE_UPLOAD_FAILED.message);
-      }
-
-      // 분류 불가 서버 에러
-      return new AppError(
-        ERROR_CODES.SERVER_ERROR.code,
-        fallbackMessage || ERROR_CODES.SERVER_ERROR.message,
-      );
+      // 공통 에러 분류
+      const classified = classifyError(error);
+      return new AppError(classified.code, fallbackMessage || classified.message);
     }
 
     // 알 수 없는 타입
@@ -512,6 +497,10 @@ export class AppError extends Error {
 
   static ipBlocked(ip?: string): AppError {
     return AppError.fromKey("IP_BLOCKED", undefined, { value: ip });
+  }
+
+  static corsViolation(origin?: string): AppError {
+    return AppError.fromKey("CORS_VIOLATION", undefined, { value: origin });
   }
 }
 
