@@ -1,4 +1,7 @@
 /**
+ * @deprecated friendly-messages-v2.ts를 사용하세요.
+ * 이 파일은 하위 호환용으로만 유지됩니다. 신규 코드에서 import하지 마세요.
+ *
  * 사용자 친화적 에러 메시지 정의
  * 5자리 HTTP 확장 에러 코드별 프렌들리 메시지
  */
@@ -62,8 +65,9 @@ const koMessages: Record<number, IFriendlyMessage> = {
   42203: { title: '사용량을 초과했어요', description: '한도를 초과했습니다.', action: '플랜 업그레이드를 고려해 주세요.' },
   42204: { title: '만료된 링크예요', description: '유효 기간이 지났습니다.', action: '새 링크를 생성해 주세요.' },
   42205: { title: '비활성화된 링크예요', description: '사용이 중지되었습니다.', action: '소유자에게 문의해 주세요.' },
-  42206: { title: '비밀번호가 필요해요', description: '비밀번호를 입력해야 합니다.', action: '비밀번호를 입력해 주세요.' },
-  42207: { title: '비밀번호가 틀렸어요', description: '비밀번호가 올바르지 않습니다.', action: '다시 확인해 주세요.' },
+  // 42206, 42207: 401xx로 이동 (40104, 40105)
+  40104: { title: '비밀번호가 필요해요', description: '비밀번호를 입력해야 합니다.', action: '비밀번호를 입력해 주세요.' },
+  40105: { title: '비밀번호가 틀렸어요', description: '비밀번호가 올바르지 않습니다.', action: '다시 확인해 주세요.' },
   42208: { title: '사용할 수 없는 별칭이에요', description: '시스템 예약어입니다.', action: '다른 별칭을 선택해 주세요.' },
   42209: { title: '이미 즐겨찾기에 있어요', description: '이미 추가되어 있습니다.' },
   42210: { title: '삭제할 수 없어요', description: '본인 관리자 계정은 삭제 불가합니다.' },

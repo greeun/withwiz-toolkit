@@ -6,8 +6,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { logger } from '@withwiz/logger/logger';
-import { ERROR_CODES, formatErrorMessage, getHttpStatus } from '@withwiz/constants/error-codes';
+import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError } from '@withwiz/constants/error-codes';
 import { AppError } from './app-error';
+import { AuthError } from '@withwiz/auth/errors';
+
+// AuthError.code → ERROR_CODES 키 매핑
+const AUTH_ERROR_CODE_MAP: Record<string, number> = {
+  TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
+  TOKEN_INVALID: ERROR_CODES.INVALID_TOKEN.code,
+  INVALID_CREDENTIALS: ERROR_CODES.INVALID_CREDENTIALS.code,
+  USER_NOT_FOUND: ERROR_CODES.USER_NOT_FOUND.code,
+  EMAIL_ALREADY_EXISTS: ERROR_CODES.EMAIL_ALREADY_EXISTS.code,
+  UNAUTHORIZED: ERROR_CODES.UNAUTHORIZED.code,
+  EMAIL_SEND_FAILED: ERROR_CODES.EMAIL_SEND_FAILED.code,
+  EMAIL_TOKEN_EXPIRED: ERROR_CODES.TOKEN_EXPIRED.code,
+  EMAIL_TOKEN_INVALID: ERROR_CODES.INVALID_TOKEN.code,
+  PASSWORD_TOO_SHORT: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_TOO_LONG: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_MISSING_NUMBER: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_MISSING_UPPERCASE: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_MISSING_LOWERCASE: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+  PASSWORD_MISSING_SPECIAL_CHAR: ERROR_CODES.PASSWORD_TOO_WEAK.code,
+};
 
 // Prisma 에러 코드 매핑
 const PRISMA_ERROR_MAP: Record<string, { code: number; message: string }> = {
@@ -69,7 +89,18 @@ export function processError(error: unknown): { code: number; message: string; s
     };
   }
 
-  // 3. 일반 Error
+  // 3. AuthError (JWTError, OAuthError 등)
+  if (error instanceof AuthError) {
+    const mappedCode = AUTH_ERROR_CODE_MAP[error.code];
+    if (mappedCode) {
+      return { code: mappedCode, message: formatErrorMessage(mappedCode, error.message), status: getHttpStatus(mappedCode) };
+    }
+    // 매핑에 없는 AuthError는 statusCode 기반으로 처리
+    const fallbackCode = error.statusCode === 401 ? ERROR_CODES.UNAUTHORIZED.code : ERROR_CODES.BAD_REQUEST.code;
+    return { code: fallbackCode, message: formatErrorMessage(fallbackCode, error.message), status: error.statusCode };
+  }
+
+  // 4. 일반 Error
   if (error instanceof Error) {
     // Prisma 에러 확인
     const prismaMatch = error.message.match(/P\d{4}/);
@@ -80,49 +111,9 @@ export function processError(error: unknown): { code: number; message: string; s
       }
     }
 
-    // 특정 패턴 매칭
-    if (error.message.toLowerCase().includes('not found')) {
-      return { code: ERROR_CODES.NOT_FOUND.code, message: formatErrorMessage(ERROR_CODES.NOT_FOUND.code), status: 404 };
-    }
-    if (error.message.toLowerCase().includes('unauthorized')) {
-      return { code: ERROR_CODES.UNAUTHORIZED.code, message: formatErrorMessage(ERROR_CODES.UNAUTHORIZED.code), status: 401 };
-    }
-    if (error.message.toLowerCase().includes('forbidden') || error.message.toLowerCase().includes('access denied')) {
-      return { code: ERROR_CODES.FORBIDDEN.code, message: formatErrorMessage(ERROR_CODES.FORBIDDEN.code), status: 403 };
-    }
-    if (error.message.toLowerCase().includes('too many request') || error.message.toLowerCase().includes('rate limit')) {
-      return { code: ERROR_CODES.RATE_LIMIT_EXCEEDED.code, message: formatErrorMessage(ERROR_CODES.RATE_LIMIT_EXCEEDED.code), status: 429 };
-    }
-
-    // Prisma 매핑에 없는 DB 에러
-    if (error.message.match(/P\d{4}/) || error.message.toLowerCase().includes('database') || error.message.toLowerCase().includes('prisma')) {
-      return { code: ERROR_CODES.DATABASE_ERROR.code, message: formatErrorMessage(ERROR_CODES.DATABASE_ERROR.code), status: 500 };
-    }
-
-    // 네트워크/외부 서비스 에러
-    const errorCode = (error as NodeJS.ErrnoException).code;
-    if (errorCode === 'ECONNREFUSED' || errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT' || errorCode === 'ENOTFOUND'
-      || error.message.toLowerCase().includes('fetch failed') || error.message.toLowerCase().includes('network')) {
-      return { code: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code, message: formatErrorMessage(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code), status: 503 };
-    }
-
-    // Redis/캐시 에러
-    if (error.message.toLowerCase().includes('redis') || error.message.toLowerCase().includes('cache') || error.message.toLowerCase().includes('upstash')) {
-      return { code: ERROR_CODES.CACHE_ERROR.code, message: formatErrorMessage(ERROR_CODES.CACHE_ERROR.code), status: 500 };
-    }
-
-    // 이메일 전송 에러
-    if (error.message.toLowerCase().includes('email') && (error.message.toLowerCase().includes('send') || error.message.toLowerCase().includes('smtp'))) {
-      return { code: ERROR_CODES.EMAIL_SEND_FAILED.code, message: formatErrorMessage(ERROR_CODES.EMAIL_SEND_FAILED.code), status: 500 };
-    }
-
-    // 파일 업로드 에러
-    if (error.message.toLowerCase().includes('upload') || error.message.toLowerCase().includes('s3') || error.message.toLowerCase().includes('r2')) {
-      return { code: ERROR_CODES.FILE_UPLOAD_FAILED.code, message: formatErrorMessage(ERROR_CODES.FILE_UPLOAD_FAILED.code), status: 500 };
-    }
-
-    // 분류 불가 서버 에러
-    return { code: ERROR_CODES.SERVER_ERROR.code, message: formatErrorMessage(ERROR_CODES.SERVER_ERROR.code), status: 500 };
+    // 공통 에러 분류
+    const classified = classifyError(error);
+    return { code: classified.code, message: formatErrorMessage(classified.code), status: classified.status };
   }
 
   // 4. 알 수 없는 에러

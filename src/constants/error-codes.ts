@@ -116,6 +116,18 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.UNAUTHORIZED,
     message: "Invalid email or password.",
   },
+  LINK_PASSWORD_REQUIRED: {
+    code: 40104,
+    key: "LINK_PASSWORD_REQUIRED",
+    status: HTTP_STATUS.UNAUTHORIZED,
+    message: "Link password is required.",
+  },
+  LINK_PASSWORD_INCORRECT: {
+    code: 40105,
+    key: "LINK_PASSWORD_INCORRECT",
+    status: HTTP_STATUS.UNAUTHORIZED,
+    message: "Incorrect link password.",
+  },
   SESSION_EXPIRED: {
     code: 40107,
     key: "SESSION_EXPIRED",
@@ -125,6 +137,7 @@ export const ERROR_CODES = {
 
   // ============================================
   // Permissions Related (403xx - 01~09)
+  // Reserved: 40301~40303 (미사용, 향후 세분화 확장용)
   // ============================================
   FORBIDDEN: {
     code: 40304,
@@ -138,6 +151,7 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.FORBIDDEN,
     message: "Email verification required.",
   },
+  // Reserved: 40306~40307 (미사용, 향후 확장용)
   ACCOUNT_DISABLED: {
     code: 40308,
     key: "ACCOUNT_DISABLED",
@@ -153,6 +167,7 @@ export const ERROR_CODES = {
 
   // ============================================
   // Resource Not Found (404xx)
+  // Reserved: 40404~40407 (미사용, 향후 리소스 타입 확장용)
   // ============================================
   NOT_FOUND: {
     code: 40401,
@@ -193,6 +208,7 @@ export const ERROR_CODES = {
 
   // ============================================
   // Conflict (409xx)
+  // Reserved: 40901~40903 (미사용, 향후 확장용)
   // ============================================
   CONFLICT: {
     code: 40904,
@@ -252,18 +268,8 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
     message: "Link is inactive.",
   },
-  LINK_PASSWORD_REQUIRED: {
-    code: 42206,
-    key: "LINK_PASSWORD_REQUIRED",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Link password is required.",
-  },
-  LINK_PASSWORD_INCORRECT: {
-    code: 42207,
-    key: "LINK_PASSWORD_INCORRECT",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Incorrect link password.",
-  },
+  // LINK_PASSWORD_REQUIRED: 401xx로 이동 (40104)
+  // LINK_PASSWORD_INCORRECT: 401xx로 이동 (40105)
   RESERVED_WORD_USED: {
     code: 42208,
     key: "RESERVED_WORD_USED",
@@ -338,6 +344,7 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
     message: "An error occurred during data processing.",
   },
+  // Reserved: 50004~50005 (미사용, 향후 서버 에러 세분화용)
   EMAIL_SEND_FAILED: {
     code: 50006,
     key: "EMAIL_SEND_FAILED",
@@ -359,6 +366,7 @@ export const ERROR_CODES = {
 
   // ============================================
   // Service Unavailable (503xx)
+  // Reserved: 50301~50303 (미사용, 향후 확장용)
   // ============================================
   EXTERNAL_SERVICE_ERROR: {
     code: 50304,
@@ -551,6 +559,46 @@ export function formatErrorMessage(
     errorInfo?.message ||
     getDefaultErrorMessage(getHttpStatus(code))
   );
+}
+
+// ============================================================================
+// Error Classification from Unknown Errors
+// ============================================================================
+
+/**
+ * 알 수 없는 Error 인스턴스에서 에러 메시지/코드 패턴을 분석하여
+ * 가장 적합한 에러코드를 반환하는 공통 함수.
+ *
+ * AppError.from(), processError(), resolveErrorCode() 등에서 공유.
+ */
+export function classifyError(error: Error): IErrorCodeInfo {
+  const msg = error.message.toLowerCase();
+  const errCode = (error as NodeJS.ErrnoException).code;
+
+  // 메시지 기반 클라이언트 에러 분류
+  if (msg.includes('not found')) return ERROR_CODES.NOT_FOUND;
+  if (msg.includes('unauthorized')) return ERROR_CODES.UNAUTHORIZED;
+  if (msg.includes('forbidden') || msg.includes('access denied')) return ERROR_CODES.FORBIDDEN;
+  if (msg.includes('too many request') || msg.includes('rate limit')) return ERROR_CODES.RATE_LIMIT_EXCEEDED;
+
+  // DB/Prisma 에러
+  if (error.message.match(/P\d{4}/) || msg.includes('database') || msg.includes('prisma')) return ERROR_CODES.DATABASE_ERROR;
+
+  // 네트워크/외부 ���비스 에러
+  if (errCode === 'ECONNREFUSED' || errCode === 'ECONNRESET' || errCode === 'ETIMEDOUT' || errCode === 'ENOTFOUND'
+    || msg.includes('fetch failed') || msg.includes('network')) return ERROR_CODES.EXTERNAL_SERVICE_ERROR;
+
+  // Redis/캐시 에러
+  if (msg.includes('redis') || msg.includes('cache') || msg.includes('upstash')) return ERROR_CODES.CACHE_ERROR;
+
+  // 이메일 전송 에러
+  if (msg.includes('email') && (msg.includes('send') || msg.includes('smtp'))) return ERROR_CODES.EMAIL_SEND_FAILED;
+
+  // 파일 업로드 에러
+  if (msg.includes('upload') || msg.includes('s3') || msg.includes('r2')) return ERROR_CODES.FILE_UPLOAD_FAILED;
+
+  // 분류 불가
+  return ERROR_CODES.SERVER_ERROR;
 }
 
 // ============================================================================
