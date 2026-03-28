@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -41,6 +41,7 @@
     "./error/app-error": "./dist/error/app-error.js",
     "./error/error-handler": "./dist/error/error-handler.js",
     "./error/error-display": "./dist/error/error-display.js",
+    "./error/messages": "./dist/error/messages/index.js",
     "./geolocation": "./dist/geolocation/index.js",
     "./geolocation/batch-processor": "./dist/geolocation/batch-processor.js",
     "./geolocation/providers": "./dist/geolocation/providers/index.js",

@@ -11,8 +11,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { TApiMiddleware } from './types';
 import { AppError } from '@withwiz/error/app-error';
+import { AUTH_ERROR_CODE_MAP } from '@withwiz/error/error-handler';
 import { getErrorMessage } from '@withwiz/error/messages';
-import { ERROR_CODES, classifyError } from '@withwiz/constants/error-codes';
+import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/constants/error-codes';
 import { AuthError } from '@withwiz/auth/errors';
 import { logger } from '@withwiz/logger/logger';
 
@@ -68,8 +69,17 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
 
     // AuthError인 경우 (JWTError, OAuthError 등)
     if (error instanceof AuthError) {
-      const statusCode = error.statusCode;
-      const fallbackCode = statusCode === 401 ? ERROR_CODES.UNAUTHORIZED.code : ERROR_CODES.BAD_REQUEST.code;
+      const mappedCode = AUTH_ERROR_CODE_MAP[error.code];
+      if (mappedCode) {
+        return createErrorResponse(
+          mappedCode,
+          error.message,
+          context.locale,
+          context.requestId
+        );
+      }
+      // 매핑에 없는 AuthError는 statusCode 기반으로 처리
+      const fallbackCode = error.statusCode === 401 ? ERROR_CODES.UNAUTHORIZED.code : ERROR_CODES.BAD_REQUEST.code;
       return createErrorResponse(
         fallbackCode,
         error.message,

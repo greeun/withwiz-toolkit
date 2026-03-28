@@ -2,6 +2,8 @@
  * R2 Storage Unit Tests
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AppError } from '@withwiz/error/app-error';
+import { ERROR_CODES } from '@withwiz/constants/error-codes';
 
 // S3Client mock
 const mockSend = vi.fn();
@@ -64,10 +66,17 @@ describe('R2 Storage', () => {
   });
 
   describe('uploadToR2', () => {
-    it('should throw when R2 is not configured', async () => {
+    it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
       const { uploadToR2 } = await import('@withwiz/storage/r2-storage');
-      await expect(uploadToR2('test.txt', Buffer.from('hello'), 'text/plain'))
-        .rejects.toThrow('R2 storage is not configured');
+      try {
+        await uploadToR2('test.txt', Buffer.from('hello'), 'text/plain');
+        expect.unreachable('Should have thrown');
+      } catch (error: any) {
+        expect(error.name).toBe('AppError');
+        expect(error.code).toBe(ERROR_CODES.SERVICE_UNAVAILABLE.code);
+        expect(error.status).toBe(503);
+        expect(error.message).toContain('R2 storage is not configured');
+      }
     });
 
     it('should upload file and return result with public URL', async () => {
@@ -102,9 +111,15 @@ describe('R2 Storage', () => {
   });
 
   describe('deleteFromR2', () => {
-    it('should throw when R2 is not configured', async () => {
+    it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
       const { deleteFromR2 } = await import('@withwiz/storage/r2-storage');
-      await expect(deleteFromR2('test.txt')).rejects.toThrow('R2 storage is not configured');
+      try {
+        await deleteFromR2('test.txt');
+        expect.unreachable('Should have thrown');
+      } catch (error: any) {
+        expect(error.name).toBe('AppError');
+        expect(error.code).toBe(ERROR_CODES.SERVICE_UNAVAILABLE.code);
+      }
     });
 
     it('should delete file successfully', async () => {
@@ -118,9 +133,15 @@ describe('R2 Storage', () => {
   });
 
   describe('getFromR2', () => {
-    it('should throw when R2 is not configured', async () => {
+    it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
       const { getFromR2 } = await import('@withwiz/storage/r2-storage');
-      await expect(getFromR2('test.txt')).rejects.toThrow('R2 storage is not configured');
+      try {
+        await getFromR2('test.txt');
+        expect.unreachable('Should have thrown');
+      } catch (error: any) {
+        expect(error.name).toBe('AppError');
+        expect(error.code).toBe(ERROR_CODES.SERVICE_UNAVAILABLE.code);
+      }
     });
 
     it('should return file body and content type', async () => {

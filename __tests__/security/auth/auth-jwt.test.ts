@@ -200,4 +200,23 @@ describe("JWT configuration validation", () => {
       "JWT secret must be at least 32 characters long",
     );
   });
+
+  test("TC-AUTH-JWT-010b: Short secret should throw JWTError with TOKEN_CREATION_FAILED code", () => {
+    const shortSecretConfig: JWTConfig = {
+      secret: "short",
+      accessTokenExpiry: "15m",
+      refreshTokenExpiry: "7d",
+      algorithm: "HS256",
+    };
+
+    try {
+      new JWTService(shortSecretConfig);
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(JWTError);
+      expect((error as JWTError).code).toBe("TOKEN_CREATION_FAILED");
+      expect((error as JWTError).statusCode).toBe(401);
+      expect((error as JWTError).name).toBe("JWTError");
+    }
+  });
 });

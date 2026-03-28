@@ -278,3 +278,124 @@ describe("Utility methods", () => {
     expect(error.timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
   });
 });
+
+// ============================================================================
+// SC-ERR-006: 코드 유효성 검증 (생성자)
+// ============================================================================
+describe("SC-ERR-006: Constructor code validation", () => {
+  test("should fallback to INTERNAL_SERVER_ERROR for code below 10000", () => {
+    const error = new AppError(999);
+    expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
+    expect(error.status).toBe(500);
+    expect(error.key).toBe("INTERNAL_SERVER_ERROR");
+  });
+
+  test("should fallback to INTERNAL_SERVER_ERROR for code above 59999", () => {
+    const error = new AppError(60000);
+    expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
+  });
+
+  test("should fallback to INTERNAL_SERVER_ERROR for non-integer code", () => {
+    const error = new AppError(40001.5);
+    expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
+  });
+
+  test("should fallback to INTERNAL_SERVER_ERROR for NaN", () => {
+    const error = new AppError(NaN);
+    expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
+  });
+
+  test("should accept valid 5-digit code at boundaries", () => {
+    const errorLow = new AppError(10000);
+    expect(errorLow.code).toBe(10000);
+
+    const errorHigh = new AppError(59999);
+    expect(errorHigh.code).toBe(59999);
+  });
+});
+
+// ============================================================================
+// SC-ERR-007: CORS_VIOLATION 팩토리 메서드
+// ============================================================================
+describe("SC-ERR-007: corsViolation factory method", () => {
+  test("should create CORS_VIOLATION error with correct code", () => {
+    const error = AppError.corsViolation();
+    expect(error.code).toBe(ERROR_CODES.CORS_VIOLATION.code);
+    expect(error.status).toBe(403);
+    expect(error.category).toBe("security");
+  });
+
+  test("should include origin in details", () => {
+    const error = AppError.corsViolation("https://evil.com");
+    expect(error.details?.value).toBe("https://evil.com");
+  });
+});
+
+// ============================================================================
+// SC-ERR-008: LINK_PASSWORD 401 상태코드
+// ============================================================================
+describe("SC-ERR-008: LINK_PASSWORD errors in 401xx", () => {
+  test("linkPasswordRequired should return 401", () => {
+    const error = AppError.linkPasswordRequired();
+    expect(error.code).toBe(ERROR_CODES.LINK_PASSWORD_REQUIRED.code);
+    expect(error.status).toBe(401);
+    expect(error.category).toBe("auth");
+  });
+
+  test("linkPasswordIncorrect should return 401", () => {
+    const error = AppError.linkPasswordIncorrect();
+    expect(error.code).toBe(ERROR_CODES.LINK_PASSWORD_INCORRECT.code);
+    expect(error.status).toBe(401);
+    expect(error.category).toBe("auth");
+  });
+});
+
+// ============================================================================
+// SC-ERR-009: AppError.from() classifyError 연동
+// ============================================================================
+describe("SC-ERR-009: AppError.from() uses classifyError", () => {
+  test("should classify database error", () => {
+    const error = AppError.from(new Error("Prisma P2010 query failed"));
+    expect(error.code).toBe(ERROR_CODES.DATABASE_ERROR.code);
+    expect(error.status).toBe(500);
+  });
+
+  test("should classify network error via errno code", () => {
+    const netErr = new Error("Connection refused");
+    (netErr as NodeJS.ErrnoException).code = "ECONNREFUSED";
+    const error = AppError.from(netErr);
+    expect(error.code).toBe(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code);
+    expect(error.status).toBe(503);
+  });
+
+  test("should classify redis error", () => {
+    const error = AppError.from(new Error("Redis cluster unavailable"));
+    expect(error.code).toBe(ERROR_CODES.CACHE_ERROR.code);
+  });
+
+  test("should classify email error", () => {
+    const error = AppError.from(new Error("Failed to send email via SMTP"));
+    expect(error.code).toBe(ERROR_CODES.EMAIL_SEND_FAILED.code);
+  });
+
+  test("should classify upload error", () => {
+    const error = AppError.from(new Error("Upload to R2 failed"));
+    expect(error.code).toBe(ERROR_CODES.FILE_UPLOAD_FAILED.code);
+  });
+
+  test("should use fallbackMessage when provided", () => {
+    const error = AppError.from(new Error("Something"), "Custom fallback");
+    expect(error.message).toBe("Custom fallback");
+  });
+
+  test("should return same AppError if already AppError", () => {
+    const original = AppError.notFound("test");
+    const converted = AppError.from(original);
+    expect(converted).toBe(original);
+  });
+
+  test("should handle non-Error types", () => {
+    const error = AppError.from("string error");
+    expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
+  });
+});
