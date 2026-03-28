@@ -65,27 +65,68 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       );
     }
 
-    // 알 수 없는 에러 (500)
+    // 식별 가능한 에러 분류
+    const resolvedCode = resolveErrorCode(error);
+
     logger.error('[ErrorHandler] Unexpected error:', error);
 
-    // 프로덕션 환경에서는 민감한 정보 숨김
     const isProduction = process.env.NODE_ENV === 'production';
     const safeMessage = isProduction
-      ? 'Internal server error'
+      ? resolvedCode.message
       : (error instanceof Error ? error.message : 'Unknown error');
 
     return createErrorResponse(
-      ERROR_CODES.INTERNAL_SERVER_ERROR.code,
+      resolvedCode.code,
       safeMessage,
       context.locale,
       context.requestId,
-      // 개발 환경에서만 스택 트레이스 포함
       !isProduction && error instanceof Error
         ? { stack: error.stack?.split('\n').slice(0, 5) }
         : undefined
     );
   }
 };
+
+/**
+ * 식별 가능한 에러를 적절한 에러 코드로 분류
+ */
+function resolveErrorCode(error: unknown): { code: number; message: string } {
+  if (!(error instanceof Error)) {
+    return { code: ERROR_CODES.INTERNAL_SERVER_ERROR.code, message: ERROR_CODES.INTERNAL_SERVER_ERROR.message };
+  }
+
+  const msg = error.message.toLowerCase();
+  const errCode = (error as NodeJS.ErrnoException).code;
+
+  // DB/Prisma 에러
+  if (error.message.match(/P\d{4}/) || msg.includes('database') || msg.includes('prisma')) {
+    return { code: ERROR_CODES.DATABASE_ERROR.code, message: ERROR_CODES.DATABASE_ERROR.message };
+  }
+
+  // 네트워크/외부 서비스 에러
+  if (errCode === 'ECONNREFUSED' || errCode === 'ECONNRESET' || errCode === 'ETIMEDOUT' || errCode === 'ENOTFOUND'
+    || msg.includes('fetch failed') || msg.includes('network')) {
+    return { code: ERROR_CODES.EXTERNAL_SERVICE_ERROR.code, message: ERROR_CODES.EXTERNAL_SERVICE_ERROR.message };
+  }
+
+  // Redis/캐시 에러
+  if (msg.includes('redis') || msg.includes('cache') || msg.includes('upstash')) {
+    return { code: ERROR_CODES.CACHE_ERROR.code, message: ERROR_CODES.CACHE_ERROR.message };
+  }
+
+  // 이메일 전송 에러
+  if (msg.includes('email') && (msg.includes('send') || msg.includes('smtp'))) {
+    return { code: ERROR_CODES.EMAIL_SEND_FAILED.code, message: ERROR_CODES.EMAIL_SEND_FAILED.message };
+  }
+
+  // 파일 업로드 에러
+  if (msg.includes('upload') || msg.includes('s3') || msg.includes('r2')) {
+    return { code: ERROR_CODES.FILE_UPLOAD_FAILED.code, message: ERROR_CODES.FILE_UPLOAD_FAILED.message };
+  }
+
+  // 분류 불가
+  return { code: ERROR_CODES.INTERNAL_SERVER_ERROR.code, message: ERROR_CODES.INTERNAL_SERVER_ERROR.message };
+}
 
 /**
  * 에러 응답 생성
