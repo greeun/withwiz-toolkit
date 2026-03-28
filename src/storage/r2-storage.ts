@@ -6,6 +6,7 @@
  */
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { AppError } from '@withwiz/error/app-error';
 
 export interface R2Config {
   accountId: string;
@@ -84,7 +85,7 @@ export async function uploadToR2(
   const config = getConfig();
 
   if (!client || !config) {
-    throw new Error('R2 storage is not configured');
+    throw AppError.serviceUnavailable('R2 storage is not configured');
   }
 
   await client.send(
@@ -115,7 +116,7 @@ export async function deleteFromR2(key: string): Promise<void> {
   const config = getConfig();
 
   if (!client || !config) {
-    throw new Error('R2 storage is not configured');
+    throw AppError.serviceUnavailable('R2 storage is not configured');
   }
 
   await client.send(
@@ -134,7 +135,7 @@ export async function getFromR2(key: string): Promise<{ body: ReadableStream; co
   const config = getConfig();
 
   if (!client || !config) {
-    throw new Error('R2 storage is not configured');
+    throw AppError.serviceUnavailable('R2 storage is not configured');
   }
 
   try {

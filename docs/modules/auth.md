@@ -323,10 +323,12 @@ interface Logger {
 
 ## 에러 처리
 
-### JWTError
+### JWTError와 AppError 연동
+
+JWTError, OAuthError 등 AuthError 계열은 에러 핸들러에서 자동으로 AppError 5자리 에러코드로 매핑됩니다:
 
 ```typescript
-import { JWTError } from '@/shared/auth/errors';
+import { JWTError } from '@withwiz/auth/errors';
 
 try {
   const payload = await jwt.verifyAccessToken(token);
@@ -335,13 +337,32 @@ try {
     console.error(error.code); // 'TOKEN_EXPIRED', 'TOKEN_INVALID', etc.
     console.error(error.statusCode); // 401
   }
+  // processError()에서 자동 매핑:
+  // TOKEN_EXPIRED → 40103 (401)
+  // TOKEN_CREATION_FAILED → 50002 (500)
+  // OAUTH_TOKEN_EXCHANGE_FAILED → 50304 (503)
 }
 ```
+
+### 에러 코드 매핑 테이블
+
+| AUTH_ERROR_CODES | → 5자리 에러코드 | HTTP |
+|-----------------|-----------------|------|
+| TOKEN_EXPIRED | 40103 | 401 |
+| TOKEN_INVALID | 40102 | 401 |
+| TOKEN_CREATION_FAILED | 50002 | 500 |
+| REFRESH_TOKEN_EXPIRED | 40103 | 401 |
+| INVALID_CREDENTIALS | 40106 | 401 |
+| OAUTH_PROVIDER_NOT_CONFIGURED | 50304 | 503 |
+| OAUTH_TOKEN_EXCHANGE_FAILED | 50304 | 503 |
+| PASSWORD_HASH_FAILED | 50002 | 500 |
+| PASSWORD_TOO_SHORT 등 | 40007 | 400 |
+| EMAIL_SEND_FAILED | 50006 | 500 |
 
 ### 에러 코드
 
 ```typescript
-import { AUTH_ERROR_CODES } from '@/shared/auth/errors';
+import { AUTH_ERROR_CODES } from '@withwiz/auth/errors';
 
 AUTH_ERROR_CODES.TOKEN_EXPIRED
 AUTH_ERROR_CODES.TOKEN_INVALID
