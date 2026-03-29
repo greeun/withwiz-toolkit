@@ -55,7 +55,9 @@ const colors = {
 winston.addColors(colors)
 
 // 테스트 환경 및 빌드 타임에는 파일 로깅을 비활성화
-const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+const isTestEnv = process.env.NODE_ENV === 'test'
+  || process.env.VITEST !== undefined
+  || process.env.JEST_WORKER_ID !== undefined;
 // Next.js 빌드 타임 감지: 빌드 시 process.argv에 build 명령이 포함되거나, NEXT_PHASE 환경변수 확인
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
                     process.argv.some(arg => arg.includes('build'));

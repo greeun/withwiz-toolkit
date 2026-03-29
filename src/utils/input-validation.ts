@@ -43,6 +43,8 @@ export interface URLValidationOptions {
   allowedSchemes?: string[];
   maxLength?: number;
   requireProtocol?: boolean;
+  /** localhost/127.0.0.1 URL 허용 여부 (기본값: false) */
+  allowLocalhost?: boolean;
 }
 
 /**
@@ -64,6 +66,7 @@ export function validateURL(
     allowedSchemes = ALLOWED_URL_SCHEMES,
     maxLength = 2048,
     requireProtocol = true,
+    allowLocalhost = false,
   } = options;
 
   // 1. 빈 문자열 체크
@@ -108,12 +111,9 @@ export function validateURL(
     const urlToParse = hasProtocol ? trimmedUrl : `https://${trimmedUrl}`;
     const parsed = new URL(urlToParse);
 
-    // 8. localhost/내부 IP 체크 (선택사항)
-    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-      // 프로덕션에서는 차단할 수 있음
-      if (process.env.NODE_ENV === 'production') {
-        return { valid: false, error: 'Internal URLs are not allowed' };
-      }
+    // 8. localhost/내부 IP 체크
+    if (!allowLocalhost && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')) {
+      return { valid: false, error: 'Internal URLs are not allowed' };
     }
 
     return {

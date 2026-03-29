@@ -280,21 +280,15 @@ export class JWTManager {
 export class JWTService {
   private manager: JWTManager;
 
-  constructor(config: JWTConfig) {
-    // 간단한 console logger 사용
-    const logger: Logger = {
-      debug: () => {}, // 테스트에서는 로그 출력 안 함
+  constructor(config: JWTConfig, logger?: Logger) {
+    const resolvedLogger: Logger = logger ?? {
+      debug: () => {},
       info: () => {},
       warn: () => {},
-      error: (message: string, meta?: any) => {
-        // 테스트 디버깅을 위해 에러는 출력
-        if (process.env.NODE_ENV === "test") {
-          console.error("[JWTService Error]", message, meta);
-        }
-      },
+      error: () => {},
     };
 
-    this.manager = new JWTManager(config, logger);
+    this.manager = new JWTManager(config, resolvedLogger);
   }
 
   /**
