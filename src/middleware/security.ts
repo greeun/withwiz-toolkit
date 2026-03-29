@@ -8,6 +8,7 @@
 
 import { NextResponse } from 'next/server';
 import type { TApiMiddleware } from './types';
+import { logger } from '../logger/logger';
 
 /**
  * 차단할 HTTP 메서드 목록
@@ -181,6 +182,6 @@ export const securityMiddleware: TApiMiddleware = async (context, next) => {
  * 서버 시작 시 호출하여 보안 설정을 로깅합니다.
  */
 export function validateSecurityConfiguration(): void {
-  console.log('[Security Middleware] Blocked methods:', BLOCKED_METHODS.join(', '));
-  console.log('[Security Middleware] Allowed Content-Types:', ALLOWED_CONTENT_TYPES.join(', '));
+  logger.info('[Security Middleware] Blocked methods: ' + BLOCKED_METHODS.join(', '));
+  logger.info('[Security Middleware] Allowed Content-Types: ' + ALLOWED_CONTENT_TYPES.join(', '));
 }
