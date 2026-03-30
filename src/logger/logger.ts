@@ -194,7 +194,7 @@ if (fileLoggingEnabled) {
 // global 싱글톤으로 Console transport 중복 등록 문제 해결
 export const logger: winston.Logger = globalThis.__winstonLoggerInstance ?? (() => {
   const instance = winston.createLogger({
-    level: 'info',
+    level: logLevel,
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
