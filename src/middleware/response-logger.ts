@@ -6,7 +6,7 @@
  * - Rate limit 헤더 추가
  */
 
-import { logger } from '@withwiz/logger/logger';
+import { logger, logApiRequest, logApiResponse } from '@withwiz/logger/logger';
 import type { TApiMiddleware } from './types';
 
 /**
@@ -29,18 +29,24 @@ export const responseLoggerMiddleware: TApiMiddleware = async (
   const startTime = context.startTime || Date.now();
 
   try {
+    // 요청 상세 로깅 (debug 레벨)
+    logApiRequest(context.request, { requestId: context.requestId });
+
     // 다음 미들웨어/핸들러 실행
     const response = await next();
 
     // 응답 시간 계산
     const duration = Date.now() - startTime;
 
-    // 로깅
+    // access 로그 (info 레벨)
     const path = new URL(context.request.url).pathname;
     const rl = context.metadata.rateLimit as any;
     const rlInfo = rl ? ` rl:${rl.remaining}/${rl.limit}` : '';
     const userInfo = context.user ? ` u:${context.user.id.slice(0, 8)}` : '';
     logger.info(`API ${response.status} ${context.request.method} ${path} (${duration}ms)${userInfo}${rlInfo}`);
+
+    // 응답 상세 로깅 (debug 레벨)
+    logApiResponse(context.request, response, { requestId: context.requestId, duration: `${duration}ms` });
 
     // Rate limit 헤더 추가 (있는 경우)
     if (context.metadata.rateLimit) {
