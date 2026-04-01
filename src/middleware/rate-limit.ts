@@ -38,8 +38,22 @@ export interface IRateLimitAdapter {
   isEnabled?: (type?: string) => Promise<boolean>;
 }
 
-let _rateLimitAdapter: IRateLimitAdapter | null = null;
-let _adapterWarningLogged = false; // 경고 한 번만 출력
+// globalThis를 사용하여 번들 간 상태 공유 (Next.js Turbopack 환경에서 모듈이 별도 번들로 분리됨)
+const GLOBAL_KEY = '__withwiz_rateLimitAdapter__' as const;
+const GLOBAL_WARN_KEY = '__withwiz_rateLimitWarningLogged__' as const;
+
+function _getAdapter(): IRateLimitAdapter | null {
+  return (globalThis as any)[GLOBAL_KEY] ?? null;
+}
+function _setAdapter(adapter: IRateLimitAdapter): void {
+  (globalThis as any)[GLOBAL_KEY] = adapter;
+}
+function _isWarningLogged(): boolean {
+  return (globalThis as any)[GLOBAL_WARN_KEY] ?? false;
+}
+function _setWarningLogged(value: boolean): void {
+  (globalThis as any)[GLOBAL_WARN_KEY] = value;
+}
 
 /**
  * Rate Limit 어댑터 설정
@@ -55,14 +69,15 @@ let _adapterWarningLogged = false; // 경고 한 번만 출력
  * ```
  */
 export function setRateLimitAdapter(adapter: IRateLimitAdapter): void {
-  const isInitialSetup = _rateLimitAdapter === null;
-  const previousTypes = _rateLimitAdapter
-    ? Object.keys(_rateLimitAdapter.rateLimiters).join(', ')
+  const current = _getAdapter();
+  const isInitialSetup = current === null;
+  const previousTypes = current
+    ? Object.keys(current.rateLimiters).join(', ')
     : 'none';
   const newTypes = Object.keys(adapter.rateLimiters).join(', ');
 
-  _rateLimitAdapter = adapter;
-  _adapterWarningLogged = false; // 어댑터 설정되면 경고 플래그 리셋
+  _setAdapter(adapter);
+  _setWarningLogged(false); // 어댑터 설정되면 경고 플래그 리셋
 
   if (isInitialSetup) {
     logger.info(
@@ -92,14 +107,15 @@ export function setRateLimitAdapter(adapter: IRateLimitAdapter): void {
  * ```
  */
 function getRateLimitAdapter(): IRateLimitAdapter | null {
-  if (!_rateLimitAdapter && !_adapterWarningLogged) {
+  const adapter = _getAdapter();
+  if (!adapter && !_isWarningLogged()) {
     logger.warn(
       "[Rate Limit Middleware] Adapter not configured. Rate limiting is DISABLED.\n" +
       "To enable: Call setRateLimitAdapter() in instrumentation.ts"
     );
-    _adapterWarningLogged = true;
+    _setWarningLogged(true);
   }
-  return _rateLimitAdapter;
+  return adapter;
 }
 
 // ============================================================================
