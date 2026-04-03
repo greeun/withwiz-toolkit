@@ -11,3 +11,4 @@ __tests__/coverage/
 .bkit*
 .serena/
 docs/.pdca-status.json
+.claude/settings.local.json

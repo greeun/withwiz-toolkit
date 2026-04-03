@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Alert, AlertDescription } from "../Alert";
 import { cn } from "@withwiz/utils/client/client-utils";
 import { DataTableSearch } from "./DataTableSearch";
@@ -15,7 +15,11 @@ import { DataTableBulkActions } from "./DataTableBulkActions";
 import { DataTableBody } from "./DataTableBody";
 import { DataTablePagination } from "./DataTablePagination";
 import { DEFAULT_LABELS } from "./types";
-import type { DataTableProps, BulkAction } from "./types";
+import type { DataTableProps, BulkAction, FilterConfig } from "./types";
+
+// 안정적 기본값 (매 호출마다 새 참조 생성 방지)
+const EMPTY_ARRAY: readonly never[] = [];
+const EMPTY_OBJECT: Record<string, never> = {};
 
 export function DataTable<T>({
   data,
@@ -24,14 +28,14 @@ export function DataTable<T>({
   error = null,
   pagination,
   sort,
-  bulkActions = [] as const,
-  filters = [] as const,
-  filterValues = {},
+  bulkActions = EMPTY_ARRAY as unknown as BulkAction[],
+  filters = EMPTY_ARRAY as unknown as FilterConfig[],
+  filterValues = EMPTY_OBJECT,
   onFilterChange,
   onClearFilters,
   selectable = false,
   onSelectionChange,
-  selectedIds = [] as const,
+  selectedIds = EMPTY_ARRAY as unknown as string[],
   getRowId,
   className,
   emptyMessage = "No data",
@@ -45,13 +49,28 @@ export function DataTable<T>({
   labels: customLabels,
   syncWithUrl = false,
 }: DataTableProps<T>) {
-  const labels = { ...DEFAULT_LABELS, ...customLabels };
+  // labels 안정화: customLabels가 변경되지 않으면 같은 참조 유지
+  const customLabelsRef = useRef(customLabels);
+  const labelsRef = useRef({ ...DEFAULT_LABELS, ...customLabels });
+  if (customLabelsRef.current !== customLabels) {
+    customLabelsRef.current = customLabels;
+    labelsRef.current = { ...DEFAULT_LABELS, ...customLabels };
+  }
+  const labels = labelsRef.current;
 
-  const [localSelectedIds, setLocalSelectedIds] = useState<string[]>(selectedIds);
+  const [localSelectedIds, setLocalSelectedIds] = useState<string[]>(
+    selectedIds as string[]
+  );
   const [bulkActionLoading, setBulkActionLoading] = useState<string | null>(null);
 
+  // selectedIds가 실제로 변경된 경우에만 동기화 (JSON 비교로 참조 문제 회피)
+  const prevSelectedIdsRef = useRef<string>(JSON.stringify(selectedIds));
   useEffect(() => {
-    setLocalSelectedIds(selectedIds);
+    const serialized = JSON.stringify(selectedIds);
+    if (serialized !== prevSelectedIdsRef.current) {
+      prevSelectedIdsRef.current = serialized;
+      setLocalSelectedIds(selectedIds as string[]);
+    }
   }, [selectedIds]);
 
   // 필터 활성 상태 확인
