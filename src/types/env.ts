@@ -1,12 +1,22 @@
 /**
  * Shared Environment Configuration Types
  *
- * src/shared/ 모듈에서 사용하는 환경 설정 인터페이스
- * 외부에서 의존성 주입을 통해 제공되어야 합니다.
+ * @deprecated Use types from '@withwiz/toolkit/initialize' and individual config modules instead.
+ * These types are kept for backward compatibility and will be removed in 0.4.0.
+ *
+ * New config types:
+ * - AuthConfig from '@withwiz/toolkit/auth/config'
+ * - CacheConfigInput from '@withwiz/toolkit/cache/config'
+ * - LoggerConfig from '@withwiz/toolkit/logger/config'
+ * - StorageConfig from '@withwiz/toolkit/storage/config'
+ * - GeolocationConfig from '@withwiz/toolkit/geolocation/config'
+ * - CorsConfig from '@withwiz/toolkit/middleware/cors-config'
+ * - ToolkitConfig from '@withwiz/toolkit/initialize'
  */
 
 /**
  * Redis 환경 설정
+ * @deprecated Use CacheConfigInput from '@withwiz/toolkit/cache/config' instead
  */
 export interface IRedisEnv {
   URL?: string;
