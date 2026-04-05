@@ -16,6 +16,7 @@ export interface ResolvedAuthConfig {
 let _config: ResolvedAuthConfig | null = null;
 
 export function initializeAuth(config: AuthConfig): void {
+  if (_config) return;
   if (!config.jwtSecret) {
     throw new ConfigurationError('Auth', 'jwtSecret is required');
   }

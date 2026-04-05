@@ -126,6 +126,7 @@ let _config: ResolvedCacheConfig | null = null;
  * redis가 제공된 경우 url과 token 유효성을 검사합니다.
  */
 export function initializeCache(input: CacheConfigInput): void {
+  if (_config) return;
   // Redis 유효성 검사
   if (input.redis !== undefined) {
     if (!input.redis.url) {
