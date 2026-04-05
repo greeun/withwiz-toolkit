@@ -8,6 +8,7 @@
 import type { IGeoIPApiResponse } from '@withwiz/types/geoip';
 import type { IGeoLocationData } from '@withwiz/types/database';
 import { BaseGeoIPProvider } from './base-provider';
+import { getGeolocationConfig } from '../config';
 
 export class MaxMindProvider extends BaseGeoIPProvider {
   name = 'maxmind';
@@ -27,6 +28,10 @@ export class MaxMindProvider extends BaseGeoIPProvider {
   }
 
   isAvailable(): boolean {
-    return !!process.env.MAXMIND_LICENSE_KEY;
+    try {
+      return !!getGeolocationConfig().maxmindLicenseKey;
+    } catch {
+      return false;
+    }
   }
 }
