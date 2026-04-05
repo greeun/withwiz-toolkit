@@ -7,47 +7,60 @@
 import { IEnvironmentInfo } from './types';
 import { getPlatform } from './utils';
 import os from 'os';
+import { getAuthConfig } from '../auth/config';
+import { getResolvedCacheConfig } from '../cache/config';
+import { getGeolocationConfig } from '../geolocation/config';
+import { getCommonConfig } from '../config/common';
 
 export function checkEnvironmentVariables(): IEnvironmentInfo[] {
   const platform = getPlatform();
-  const requiredVars = [
-    'DATABASE_URL',
-    'NEXT_PUBLIC_BASE_URL',
-    'JWT_SECRET',
-    'UPSTASH_REDIS_REST_URL',
-    'UPSTASH_REDIS_REST_TOKEN'
-  ];
-
-  const optionalVars = [
-    'IPGEOLOCATION_API_KEY',
-    'MAXMIND_LICENSE_KEY',
-    'CACHE_ENABLED'
-  ];
-
   const results: IEnvironmentInfo[] = [];
 
-  // 필수 환경 변수 체크
-  for (const key of requiredVars) {
-    const value = process.env[key];
-    const ok = !!value;
-    
+  // Auth 설정 체크
+  try {
+    const auth = getAuthConfig();
     results.push({
-      key,
-      ok,
-      value: ok ? (value!.length > 20 ? value!.substring(0, 20) + '...' : value!) : undefined
+      key: 'JWT_SECRET',
+      ok: true,
+      value: auth.jwtSecret.length > 20 ? auth.jwtSecret.substring(0, 20) + '...' : auth.jwtSecret
     });
+  } catch {
+    results.push({ key: 'JWT_SECRET', ok: false });
   }
 
-  // 선택적 환경 변수 체크
-  for (const key of optionalVars) {
-    const value = process.env[key];
-    const ok = !!value;
-    
+  // Cache/Redis 설정 체크
+  try {
+    const cache = getResolvedCacheConfig();
     results.push({
-      key,
-      ok,
-      value: ok ? (value!.length > 20 ? value!.substring(0, 20) + '...' : value!) : undefined
+      key: 'CACHE_ENABLED',
+      ok: true,
+      value: String(cache.enabled)
     });
+    if (cache.redis) {
+      results.push({
+        key: 'UPSTASH_REDIS_REST_URL',
+        ok: true,
+        value: cache.redis.url.length > 20 ? cache.redis.url.substring(0, 20) + '...' : cache.redis.url
+      });
+      results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: true, value: '***' });
+    } else {
+      results.push({ key: 'UPSTASH_REDIS_REST_URL', ok: false });
+      results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: false });
+    }
+  } catch {
+    results.push({ key: 'CACHE_ENABLED', ok: false });
+    results.push({ key: 'UPSTASH_REDIS_REST_URL', ok: false });
+    results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: false });
+  }
+
+  // Geolocation 설정 체크
+  try {
+    const geo = getGeolocationConfig();
+    results.push({ key: 'IPGEOLOCATION_API_KEY', ok: !!geo.ipgeolocationApiKey });
+    results.push({ key: 'MAXMIND_LICENSE_KEY', ok: !!geo.maxmindLicenseKey });
+  } catch {
+    results.push({ key: 'IPGEOLOCATION_API_KEY', ok: false });
+    results.push({ key: 'MAXMIND_LICENSE_KEY', ok: false });
   }
 
   // 플랫폼별 환경 정보 추가
@@ -57,10 +70,17 @@ export function checkEnvironmentVariables(): IEnvironmentInfo[] {
     value: platform === 'darwin' ? 'macOS' : 'Linux'
   });
 
+  // NODE_ENV: common config에서 읽되, 미초기화 시 폴백
+  let nodeEnvValue: string;
+  try {
+    nodeEnvValue = getCommonConfig().nodeEnv;
+  } catch {
+    nodeEnvValue = 'development';
+  }
   results.push({
     key: 'NODE_ENV',
     ok: true,
-    value: process.env.NODE_ENV || 'development'
+    value: nodeEnvValue
   });
 
   results.push({
@@ -110,4 +130,4 @@ export function checkEnvironmentVariables(): IEnvironmentInfo[] {
   }
 
   return results;
-} 
+}
