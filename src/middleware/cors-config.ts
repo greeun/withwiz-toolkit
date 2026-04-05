@@ -14,6 +14,7 @@ export interface ResolvedCorsConfig {
 let _config: ResolvedCorsConfig | null = null;
 
 export function initializeCors(config: CorsConfig): void {
+  if (_config) return;
   if (!config.allowedOrigins) {
     throw new ConfigurationError('CORS', 'allowedOrigins is required');
   }
