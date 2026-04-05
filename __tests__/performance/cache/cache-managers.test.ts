@@ -9,6 +9,7 @@
 import { InMemoryCacheManager } from "@withwiz/cache/inmemory-cache-manager";
 import { NoopCacheManager } from "@withwiz/cache/noop-cache-manager";
 import { HybridCacheManager } from "@withwiz/cache/hybrid-cache-manager";
+import { initializeCache, resetCache } from "../../../src/cache/config";
 
 // Mock Logger to avoid issues in test environment (e.g., setImmediate missing in jsdom/fakeTimers)
 vi.mock("@withwiz/logger/logger", () => ({
@@ -410,6 +411,9 @@ describe("Cache Managers", () => {
     let noop: NoopCacheManager;
 
     beforeEach(() => {
+      // Cache config 초기화 (NoopCacheManager.getConfig()가 cache config를 읽으므로)
+      resetCache();
+      initializeCache({ enabled: true, inmemory: { enabled: true } });
       noop = new NoopCacheManager("noop-test");
     });
 
@@ -503,6 +507,10 @@ describe("Cache Managers", () => {
     let hybridCache: any;
 
     beforeEach(() => {
+      // Cache config 초기화
+      resetCache();
+      initializeCache({ enabled: true, inmemory: { enabled: true } });
+
       // Clear instances before each test
       if (HybridCacheManager.clearInstances) {
         HybridCacheManager.clearInstances();

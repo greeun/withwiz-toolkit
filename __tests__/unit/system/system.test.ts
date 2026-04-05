@@ -118,10 +118,16 @@ describe('System Utils', () => {
 });
 
 describe('Environment Check', () => {
-  const originalEnv = { ...process.env };
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
+  // checkEnvironmentVariables는 config 모듈들을 읽으므로
+  // 각 테스트에서 config를 적절히 초기화/리셋합니다.
+  beforeEach(async () => {
+    // 각 테스트 전 config 리셋
+    const { resetCommon } = await import('../../../src/config/common');
+    const { resetAuth } = await import('../../../src/auth/config');
+    const { resetCache } = await import('../../../src/cache/config');
+    resetCommon();
+    resetAuth();
+    resetCache();
   });
 
   describe('checkEnvironmentVariables', () => {
@@ -151,8 +157,11 @@ describe('Environment Check', () => {
       expect(['macOS', 'Linux']).toContain(platformResult!.value);
     });
 
-    it('should include NODE_ENV', async () => {
-      process.env.NODE_ENV = 'test';
+    it('should include NODE_ENV from common config', async () => {
+      // common config를 'test'로 초기화
+      const { initializeCommon } = await import('../../../src/config/common');
+      initializeCommon({ nodeEnv: 'test' });
+
       const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
       const results = checkEnvironmentVariables();
 
@@ -170,28 +179,30 @@ describe('Environment Check', () => {
       expect(archResult!.ok).toBe(true);
     });
 
-    it('should mark missing required vars as not ok', async () => {
-      delete process.env.DATABASE_URL;
-      delete process.env.JWT_SECRET;
+    it('should mark JWT_SECRET as not ok when auth not initialized', async () => {
+      // resetAuth()는 beforeEach에서 이미 호출됨
       const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
       const results = checkEnvironmentVariables();
 
-      const dbResult = results.find((r) => r.key === 'DATABASE_URL');
-      expect(dbResult).toBeDefined();
-      expect(dbResult!.ok).toBe(false);
-      expect(dbResult!.value).toBeUndefined();
+      const jwtResult = results.find((r) => r.key === 'JWT_SECRET');
+      expect(jwtResult).toBeDefined();
+      expect(jwtResult!.ok).toBe(false);
+      expect(jwtResult!.value).toBeUndefined();
     });
 
-    it('should truncate long env var values', async () => {
-      process.env.DATABASE_URL = 'postgresql://user:password@host:5432/database_name_very_long';
+    it('should truncate long JWT_SECRET values', async () => {
+      const { initializeAuth } = await import('../../../src/auth/config');
+      const longSecret = 'a'.repeat(50); // 50자 JWT secret
+      initializeAuth({ jwtSecret: longSecret });
+
       const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
       const results = checkEnvironmentVariables();
 
-      const dbResult = results.find((r) => r.key === 'DATABASE_URL');
-      expect(dbResult).toBeDefined();
-      expect(dbResult!.ok).toBe(true);
-      expect(dbResult!.value!.endsWith('...')).toBe(true);
-      expect(dbResult!.value!.length).toBeLessThanOrEqual(23); // 20 + "..."
+      const jwtResult = results.find((r) => r.key === 'JWT_SECRET');
+      expect(jwtResult).toBeDefined();
+      expect(jwtResult!.ok).toBe(true);
+      expect(jwtResult!.value!.endsWith('...')).toBe(true);
+      expect(jwtResult!.value!.length).toBeLessThanOrEqual(23); // 20 + "..."
     });
   });
 });

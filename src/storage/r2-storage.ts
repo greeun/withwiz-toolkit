@@ -73,6 +73,14 @@ export function isR2Enabled(): boolean {
 }
 
 /**
+ * 모듈 레벨 캐시를 초기화합니다. (테스트용)
+ */
+export function resetR2(): void {
+  r2Client = null;
+  r2Config = null;
+}
+
+/**
  * R2에 파일 업로드
  */
 export async function uploadToR2(
