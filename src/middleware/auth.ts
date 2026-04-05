@@ -15,6 +15,7 @@ import { AppError } from "@withwiz/error/app-error";
 import { ERROR_CODES } from "@withwiz/constants/error-codes";
 import { JWTManager } from "@withwiz/auth/core/jwt";
 import { logger as winstonLogger } from "@withwiz/logger/logger";
+import { getAuthConfig } from "../auth/config";
 
 // ============================================================================
 // Access Token Blacklist Checker (의존성 주입 방식)
@@ -72,20 +73,21 @@ let _jwtWarningLogged = false; // 경고 한 번만 출력
  */
 function getJWTManager(): JWTManager | null {
   if (!_jwtManager) {
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
+    let authConfig;
+    try {
+      authConfig = getAuthConfig();
+    } catch {
       if (!_jwtWarningLogged) {
         winstonLogger.warn(
-          "[Auth Middleware] JWT_SECRET not configured. Authentication is DISABLED.\n" +
-            "Protected routes will fail. Set JWT_SECRET environment variable to enable auth.",
+          "[Auth Middleware] Auth not initialized. Authentication is DISABLED.\n" +
+            "Call initializeAuth() or initialize() to enable auth.",
         );
         _jwtWarningLogged = true;
       }
       return null;
     }
 
-    if (secret.length < 32) {
+    if (authConfig.jwtSecret.length < 32) {
       winstonLogger.error(
         "[Auth Middleware] JWT_SECRET must be at least 32 characters long",
       );
@@ -94,26 +96,21 @@ function getJWTManager(): JWTManager | null {
 
     _jwtManager = new JWTManager(
       {
-        secret: secret,
-        accessTokenExpiry: process.env.JWT_EXPIRES_IN || "7d",
-        refreshTokenExpiry: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || "30d",
+        secret: authConfig.jwtSecret,
+        accessTokenExpiry: authConfig.accessTokenExpiry,
+        refreshTokenExpiry: authConfig.refreshTokenExpiry,
         algorithm: "HS256",
       },
-      // Winston logger for middleware
       {
-        debug: (msg: string, meta?: any) =>
-          winstonLogger.debug(`[Auth] ${msg}`, meta),
-        info: (msg: string, meta?: any) =>
-          winstonLogger.info(`[Auth] ${msg}`, meta),
-        warn: (msg: string, meta?: any) =>
-          winstonLogger.warn(`[Auth] ${msg}`, meta),
-        error: (msg: string, meta?: any) =>
-          winstonLogger.error(`[Auth] ${msg}`, meta),
+        debug: (msg: string, meta?: any) => winstonLogger.debug(`[Auth] ${msg}`, meta),
+        info: (msg: string, meta?: any) => winstonLogger.info(`[Auth] ${msg}`, meta),
+        warn: (msg: string, meta?: any) => winstonLogger.warn(`[Auth] ${msg}`, meta),
+        error: (msg: string, meta?: any) => winstonLogger.error(`[Auth] ${msg}`, meta),
       },
     );
 
     winstonLogger.info(
-      `[Auth Middleware] ✅ Initialized - Access: ${process.env.JWT_EXPIRES_IN || "7d"}, Refresh: ${process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || "30d"}`,
+      `[Auth Middleware] ✅ Initialized - Access: ${authConfig.accessTokenExpiry}, Refresh: ${authConfig.refreshTokenExpiry}`,
     );
   }
 
