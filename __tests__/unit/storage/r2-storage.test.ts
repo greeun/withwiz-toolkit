@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AppError } from '@withwiz/error/app-error';
 import { ERROR_CODES } from '@withwiz/constants/error-codes';
+import { initializeStorage, resetStorage } from '../../../src/storage/config';
 
 // S3Client mock
 const mockSend = vi.fn();
@@ -24,50 +25,49 @@ vi.mock('@aws-sdk/client-s3', () => {
   };
 });
 
+// r2-storage를 static import로 가져옴 (resetR2로 캐시 초기화)
+import { isR2Enabled, uploadToR2, deleteFromR2, getFromR2, resetR2 } from '@withwiz/storage/r2-storage';
+
 describe('R2 Storage', () => {
-  const R2_ENV = {
-    R2_ACCOUNT_ID: 'test-account-id',
-    R2_ACCESS_KEY_ID: 'test-access-key',
-    R2_SECRET_ACCESS_KEY: 'test-secret-key',
-    R2_BUCKET_NAME: 'test-bucket',
-    R2_PUBLIC_URL: 'https://cdn.example.com',
+  const R2_STORAGE_CONFIG = {
+    accountId: 'test-account-id',
+    accessKeyId: 'test-access-key',
+    secretAccessKey: 'test-secret-key',
+    bucketName: 'test-bucket',
+    publicUrl: 'https://cdn.example.com',
   };
 
   beforeEach(() => {
-    vi.resetModules();
     mockSend.mockReset();
+    // 스토리지 config 및 r2 모듈 캐시 리셋
+    resetStorage();
+    resetR2();
   });
 
   afterEach(() => {
-    // 환경 변수 정리
-    Object.keys(R2_ENV).forEach((key) => {
-      delete process.env[key];
-    });
+    // 스토리지 config 및 r2 모듈 캐시 리셋
+    resetStorage();
+    resetR2();
   });
 
   describe('isR2Enabled', () => {
-    it('should return false when R2 env vars are not set', async () => {
-      const { isR2Enabled } = await import('@withwiz/storage/r2-storage');
+    it('should return false when R2 env vars are not set', () => {
       expect(isR2Enabled()).toBe(false);
     });
 
-    it('should return true when all R2 env vars are set', async () => {
-      Object.assign(process.env, R2_ENV);
-      const { isR2Enabled } = await import('@withwiz/storage/r2-storage');
+    it('should return true when all R2 config is set', () => {
+      initializeStorage(R2_STORAGE_CONFIG);
       expect(isR2Enabled()).toBe(true);
     });
 
-    it('should return false when partial R2 env vars are set', async () => {
-      process.env.R2_ACCOUNT_ID = 'test';
-      // missing other required vars
-      const { isR2Enabled } = await import('@withwiz/storage/r2-storage');
+    it('should return false when storage is not initialized', () => {
+      // resetStorage() 이후 초기화하지 않은 상태
       expect(isR2Enabled()).toBe(false);
     });
   });
 
   describe('uploadToR2', () => {
     it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
-      const { uploadToR2 } = await import('@withwiz/storage/r2-storage');
       try {
         await uploadToR2('test.txt', Buffer.from('hello'), 'text/plain');
         expect.unreachable('Should have thrown');
@@ -80,9 +80,8 @@ describe('R2 Storage', () => {
     });
 
     it('should upload file and return result with public URL', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       mockSend.mockResolvedValueOnce({});
-      const { uploadToR2 } = await import('@withwiz/storage/r2-storage');
 
       const body = Buffer.from('test content');
       const result = await uploadToR2('uploads/test.txt', body, 'text/plain');
@@ -96,11 +95,14 @@ describe('R2 Storage', () => {
     });
 
     it('should construct default URL when publicUrl is not set', async () => {
-      const envWithoutPublicUrl = { ...R2_ENV };
-      delete envWithoutPublicUrl.R2_PUBLIC_URL;
-      Object.assign(process.env, envWithoutPublicUrl);
+      initializeStorage({
+        accountId: R2_STORAGE_CONFIG.accountId,
+        accessKeyId: R2_STORAGE_CONFIG.accessKeyId,
+        secretAccessKey: R2_STORAGE_CONFIG.secretAccessKey,
+        bucketName: R2_STORAGE_CONFIG.bucketName,
+        // publicUrl 미설정
+      });
       mockSend.mockResolvedValueOnce({});
-      const { uploadToR2 } = await import('@withwiz/storage/r2-storage');
 
       const result = await uploadToR2('file.jpg', Buffer.from('img'), 'image/jpeg');
 
@@ -112,7 +114,6 @@ describe('R2 Storage', () => {
 
   describe('deleteFromR2', () => {
     it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
-      const { deleteFromR2 } = await import('@withwiz/storage/r2-storage');
       try {
         await deleteFromR2('test.txt');
         expect.unreachable('Should have thrown');
@@ -123,9 +124,8 @@ describe('R2 Storage', () => {
     });
 
     it('should delete file successfully', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       mockSend.mockResolvedValueOnce({});
-      const { deleteFromR2 } = await import('@withwiz/storage/r2-storage');
 
       await expect(deleteFromR2('uploads/test.txt')).resolves.toBeUndefined();
       expect(mockSend).toHaveBeenCalledOnce();
@@ -134,7 +134,6 @@ describe('R2 Storage', () => {
 
   describe('getFromR2', () => {
     it('should throw AppError.serviceUnavailable when R2 is not configured', async () => {
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
       try {
         await getFromR2('test.txt');
         expect.unreachable('Should have thrown');
@@ -145,13 +144,12 @@ describe('R2 Storage', () => {
     });
 
     it('should return file body and content type', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       const mockBody = { pipe: vi.fn() };
       mockSend.mockResolvedValueOnce({
         Body: mockBody,
         ContentType: 'image/png',
       });
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
 
       const result = await getFromR2('photo.png');
 
@@ -161,40 +159,36 @@ describe('R2 Storage', () => {
     });
 
     it('should return null when Body is empty', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       mockSend.mockResolvedValueOnce({ Body: null });
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
 
       const result = await getFromR2('missing.txt');
       expect(result).toBeNull();
     });
 
     it('should return null for NoSuchKey error', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       const noSuchKeyError = new Error('NoSuchKey');
       (noSuchKeyError as any).name = 'NoSuchKey';
       mockSend.mockRejectedValueOnce(noSuchKeyError);
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
 
       const result = await getFromR2('nonexistent.txt');
       expect(result).toBeNull();
     });
 
     it('should rethrow non-NoSuchKey errors', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       mockSend.mockRejectedValueOnce(new Error('Network error'));
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
 
       await expect(getFromR2('file.txt')).rejects.toThrow('Network error');
     });
 
     it('should default to application/octet-stream when ContentType is missing', async () => {
-      Object.assign(process.env, R2_ENV);
+      initializeStorage(R2_STORAGE_CONFIG);
       mockSend.mockResolvedValueOnce({
         Body: { pipe: vi.fn() },
         ContentType: undefined,
       });
-      const { getFromR2 } = await import('@withwiz/storage/r2-storage');
 
       const result = await getFromR2('file.bin');
       expect(result!.contentType).toBe('application/octet-stream');
