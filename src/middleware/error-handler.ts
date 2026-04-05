@@ -16,6 +16,7 @@ import { getErrorMessage } from '@withwiz/error/messages';
 import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/constants/error-codes';
 import { AuthError } from '@withwiz/auth/errors';
 import { logger } from '@withwiz/logger/logger';
+import { getCommonConfig } from '../config/common';
 
 /**
  * 에러 핸들러 미들웨어
@@ -95,7 +96,12 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
 
     logger.error('[ErrorHandler] Unexpected error:', error);
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    let isProduction = false;
+    try {
+      isProduction = getCommonConfig().nodeEnv === 'production';
+    } catch {
+      isProduction = false;
+    }
     const safeMessage = isProduction
       ? classified.message
       : (error instanceof Error ? error.message : 'Unknown error');
