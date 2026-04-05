@@ -8,6 +8,7 @@
 import type { IGeoIPApiResponse } from '@withwiz/types/geoip';
 import type { IGeoLocationData } from '@withwiz/types/database';
 import { BaseGeoIPProvider, truncateString } from './base-provider';
+import { getGeolocationConfig } from '../config';
 
 export class IPGeolocationProvider extends BaseGeoIPProvider {
   name = 'ipgeolocation.io';
@@ -15,7 +16,12 @@ export class IPGeolocationProvider extends BaseGeoIPProvider {
   protected timeout = 3000; // 3초 타임아웃
 
   url(ip: string): string {
-    const apiKey = process.env.IPGEOLOCATION_API_KEY;
+    let apiKey: string | undefined;
+    try {
+      apiKey = getGeolocationConfig().ipgeolocationApiKey;
+    } catch {
+      return '';
+    }
     if (!apiKey) return '';
     return `https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${ip}`;
   }
@@ -45,6 +51,10 @@ export class IPGeolocationProvider extends BaseGeoIPProvider {
   }
 
   isAvailable(): boolean {
-    return !!process.env.IPGEOLOCATION_API_KEY;
+    try {
+      return !!getGeolocationConfig().ipgeolocationApiKey;
+    } catch {
+      return false;
+    }
   }
 }
