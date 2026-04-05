@@ -15,6 +15,15 @@
     }
   },
   "exports": {
+    "./initialize": "./dist/initialize.js",
+    "./config/errors": "./dist/config/errors.js",
+    "./config/common": "./dist/config/common.js",
+    "./auth/config": "./dist/auth/config.js",
+    "./cache/config": "./dist/cache/config.js",
+    "./logger/config": "./dist/logger/config.js",
+    "./storage/config": "./dist/storage/config.js",
+    "./geolocation/config": "./dist/geolocation/config.js",
+    "./middleware/cors-config": "./dist/middleware/cors-config.js",
     "./auth": "./dist/auth/index.js",
     "./auth/core/jwt": "./dist/auth/core/jwt/index.js",
     "./auth/core/jwt/client": "./dist/auth/core/jwt/client.js",
