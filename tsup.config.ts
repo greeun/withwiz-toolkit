@@ -5,6 +5,8 @@ import { defineConfig } from "tsup";
 //   dist/auth/index.js, dist/cache/index.js, etc.
 export default defineConfig({
   entry: [
+    "src/initialize.ts",
+    "src/config/**/*.ts",
     "src/auth/**/*.ts",
     "src/cache/**/*.ts",
     "src/components/**/*.tsx",
