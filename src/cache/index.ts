@@ -9,14 +9,15 @@
 // Environment Configuration
 // ============================================================================
 export {
-  initializeCache,
   isCacheEnabled,
   getEnv,
   getENV,
   getConfig,
-  getDefaultConfig,
   validateRedisEnvironment,
 } from './cache-env';
+
+// initializeCache는 config.ts에서 export (새로운 코드 기반 DI 패턴)
+export { initializeCache, getResolvedCacheConfig, resetCache } from './config';
 
 // ============================================================================
 // Redis Client Management
