@@ -1,7 +1,6 @@
+/**
+ * 모듈 초기화 시 선택 설정 누락 warn 로그 출력
+ */
 export function configWarn(module: string, message: string): void {
-  try {
-    console.warn(`[${module}] ${message}`);
-  } catch {
-    console.warn(`[${module}] ${message}`);
-  }
+  console.warn(`[${module}] ${message}`);
 }
