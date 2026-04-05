@@ -11,6 +11,7 @@ import { IServiceInfo } from './types';
 import { getPlatform } from './utils';
 import { formatRedisError, formatDatabaseError } from '@withwiz/utils/error-message-formatter';
 import { logger } from '@withwiz/logger/logger';
+import { getResolvedCacheConfig } from '../cache/config';
 
 /**
  * 서비스 헬스 체크
@@ -79,12 +80,23 @@ export async function checkServiceHealth(prismaClient?: any): Promise<IServiceIn
   try {
     const redisStart = Date.now();
 
-    // CACHE_ENABLED 환경 변수 확인 (기본값: true)
-    const cacheEnabled = process.env.CACHE_ENABLED !== 'false';
+    // cache config에서 설정 읽기
+    let cacheEnabled = false;
+    try {
+      cacheEnabled = getResolvedCacheConfig().enabled;
+    } catch {
+      cacheEnabled = false;
+    }
 
-    // Redis 연결 테스트 (환경 변수 확인)
-    const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-    const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+    let redisUrl: string | undefined;
+    let redisToken: string | undefined;
+    try {
+      const cacheConfig = getResolvedCacheConfig();
+      redisUrl = cacheConfig.redis?.url;
+      redisToken = cacheConfig.redis?.token;
+    } catch {
+      // cache가 초기화되지 않은 경우
+    }
 
     // 캐시가 비활성화되어 있으면 Redis 연결 체크 건너뛰기
     if (!cacheEnabled) {
