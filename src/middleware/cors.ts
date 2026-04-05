@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import type { TApiMiddleware } from './types';
 import { logger } from '../logger/logger';
+import { getCorsConfig } from './cors-config';
 
 /**
  * CORS 미들웨어 설정
@@ -106,9 +107,13 @@ export function createCorsMiddleware(config: CorsMiddlewareConfig): TApiMiddlewa
  * @deprecated createCorsMiddleware()를 사용하여 명시적으로 설정하세요.
  */
 export const corsMiddleware: TApiMiddleware = createCorsMiddleware({
-  allowedOrigins: process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-    : [],
+  allowedOrigins: (() => {
+    try {
+      return getCorsConfig().allowedOrigins;
+    } catch {
+      return [];
+    }
+  })(),
 });
 
 /**
@@ -131,10 +136,13 @@ export const corsMiddleware: TApiMiddleware = createCorsMiddleware({
  * ```
  */
 export function validateCorsConfiguration(config?: Pick<CorsMiddlewareConfig, 'allowedOrigins'>): void {
-  const allowedOrigins = config?.allowedOrigins
-    ?? (process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-      : []);
+  let configuredOrigins: string[] = [];
+  try {
+    configuredOrigins = getCorsConfig().allowedOrigins;
+  } catch {
+    configuredOrigins = [];
+  }
+  const allowedOrigins = config?.allowedOrigins ?? configuredOrigins;
 
   logger.info(
     `[CORS Middleware] Initialized - Allowed Origins: [${allowedOrigins.join(', ')}]`

@@ -5,6 +5,8 @@
  * - 멀티 도메인 지원: 환경 변수 기반 동적 CORS 설정
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { getCommonConfig } from '../config/common';
+import { getCorsConfig as getMiddlewareCorsConfig } from '../middleware/cors-config';
 
 /**
  * CORS 설정 옵션
@@ -21,8 +23,15 @@ export interface CorsConfig {
 /**
  * 전역 CORS 설정
  */
+let _isDevelopment = false;
+try {
+  _isDevelopment = getCommonConfig().nodeEnv === 'development';
+} catch {
+  _isDevelopment = false;
+}
+
 let globalCorsConfig: CorsConfig = {
-  isDevelopment: process.env.NODE_ENV === 'development',
+  isDevelopment: _isDevelopment,
 };
 
 /**
@@ -66,12 +75,18 @@ function extractDomainsFromUrl(url: string): string[] {
  * 기본 URL 가져오기 (환경 변수 또는 설정에서)
  */
 function getBaseUrl(): string {
-  return (
-    globalCorsConfig.baseUrl ||
-    process.env.BASE_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    'http://localhost:3000'
-  );
+  if (globalCorsConfig.baseUrl) {
+    return globalCorsConfig.baseUrl;
+  }
+  try {
+    const middlewareCorsConfig = getMiddlewareCorsConfig();
+    if (middlewareCorsConfig.baseUrl) {
+      return middlewareCorsConfig.baseUrl;
+    }
+  } catch {
+    // 초기화되지 않은 경우 기본값 사용
+  }
+  return 'http://localhost:3000';
 }
 
 /**
@@ -85,13 +100,12 @@ function getBaseUrl(): string {
 export function getAllowedOrigins(): string[] {
   const origins = new Set<string>();
 
-  // 1. ALLOWED_ORIGINS 환경 변수 파싱
-  if (process.env.ALLOWED_ORIGINS) {
-    const envOrigins = process.env.ALLOWED_ORIGINS
-      .split(',')
-      .map(origin => origin.trim())
-      .filter(Boolean);
-    envOrigins.forEach(origin => origins.add(origin));
+  // 1. cors-config에서 허용 Origins 가져오기
+  try {
+    const middlewareCorsConfig = getMiddlewareCorsConfig();
+    middlewareCorsConfig.allowedOrigins.forEach(origin => origins.add(origin));
+  } catch {
+    // 초기화되지 않은 경우 건너뜀
   }
 
   // 2. BASE_URL에서 도메인 자동 추출
@@ -107,7 +121,15 @@ export function getAllowedOrigins(): string[] {
   }
 
   // 4. 개발 환경에서는 localhost 자동 추가
-  if (globalCorsConfig.isDevelopment || process.env.NODE_ENV === 'development') {
+  let isDev = globalCorsConfig.isDevelopment ?? false;
+  if (!isDev) {
+    try {
+      isDev = getCommonConfig().nodeEnv === 'development';
+    } catch {
+      isDev = false;
+    }
+  }
+  if (isDev) {
     origins.add('http://localhost:3000');
     origins.add('http://127.0.0.1:3000');
   }
@@ -120,8 +142,15 @@ export function isOriginAllowed(origin: string | null | undefined): boolean {
   if (!origin) return true; // Same-origin 요청은 허용
 
   // 개발 환경에서는 localhost 허용
-  const isDev = globalCorsConfig.isDevelopment || process.env.NODE_ENV === 'development';
-  if (isDev && origin.includes('localhost')) {
+  let isDevEnv = globalCorsConfig.isDevelopment ?? false;
+  if (!isDevEnv) {
+    try {
+      isDevEnv = getCommonConfig().nodeEnv === 'development';
+    } catch {
+      isDevEnv = false;
+    }
+  }
+  if (isDevEnv && origin.includes('localhost')) {
     return true;
   }
 
