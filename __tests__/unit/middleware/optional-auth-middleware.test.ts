@@ -13,6 +13,7 @@ import { JWTService } from "@withwiz/auth/core/jwt";
 import type { JWTConfig } from "@withwiz/auth/types";
 import type { IApiContext } from "@withwiz/middleware/types";
 import { NextResponse } from "next/server";
+import { initializeAuth, resetAuth } from "../../../src/auth/config";
 
 // JWT 설정 (테스트용)
 const testConfig: JWTConfig = {
@@ -44,11 +45,13 @@ let validAccessToken: string;
 let expiredAccessToken: string;
 
 beforeAll(async () => {
-  // optionalAuthMiddleware가 JWT Manager를 초기화할 수 있도록 환경변수 설정
-  process.env.JWT_SECRET =
-    "test-secret-key-that-is-at-least-32-characters-long";
-  process.env.JWT_EXPIRES_IN = "15m";
-  process.env.JWT_REFRESH_TOKEN_EXPIRES_IN = "7d";
+  // optionalAuthMiddleware가 JWT Manager를 초기화할 수 있도록 Auth config 설정
+  resetAuth();
+  initializeAuth({
+    jwtSecret: "test-secret-key-that-is-at-least-32-characters-long",
+    accessTokenExpiry: "15m",
+    refreshTokenExpiry: "7d",
+  });
 
   // 유효한 Access Token 생성
   const jwtService = new JWTService(testConfig);
