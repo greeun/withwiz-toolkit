@@ -4,10 +4,11 @@
  * logger
  * - Shared
  */
-import path from 'path';
 import fs from 'fs';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
+import { getLoggerConfig } from './config';
+import { getCommonConfig } from '../config/common';
 
 // 전역 플래그로 중복 설정 방지
 declare global {
@@ -28,14 +29,20 @@ if (typeof process !== 'undefined' && process.setMaxListeners) {
 
 const { combine, timestamp, printf, colorize } = winston.format
 
-const {
-  LOG_DIR = './logs',
-  LOG_FILE = 'app.log',
-  LOG_PATH = '',
-  LOG_FILE_ENABLED = 'true',
-  LOG_CONSOLE_ENABLED = 'true',
-  LOG_LEVEL = 'info'
-} = process.env;
+function getLogConfig() {
+  try {
+    return getLoggerConfig();
+  } catch {
+    // logger가 initialize() 이전에 사용될 수 있으므로 폴백 반환
+    return {
+      level: 'info',
+      dir: './logs',
+      file: 'app.log',
+      fileEnabled: true,
+      consoleEnabled: true,
+    };
+  }
+}
 
 const levels = {
   error: 0,
@@ -55,17 +62,20 @@ const colors = {
 winston.addColors(colors)
 
 // 테스트 환경 및 빌드 타임에는 파일 로깅을 비활성화
-const isTestEnv = process.env.NODE_ENV === 'test'
-  || process.env.VITEST !== undefined
-  || process.env.JEST_WORKER_ID !== undefined;
+const isTestEnv = (() => {
+  try { return getCommonConfig().nodeEnv === 'test'; } catch { return false; }
+})() || process.env.VITEST !== undefined || process.env.JEST_WORKER_ID !== undefined;
+
 // Next.js 빌드 타임 감지: 빌드 시 process.argv에 build 명령이 포함되거나, NEXT_PHASE 환경변수 확인
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
                     process.argv.some(arg => arg.includes('build'));
+
 // 로그 디렉토리 쓰기 가능 여부 확인
 const canWriteToLogDir = (() => {
   if (isTestEnv || isBuildTime) return false;
   try {
-    const logDir = LOG_PATH || LOG_DIR;
+    const cfg = getLogConfig();
+    const logDir = cfg.dir;
     // 디렉토리가 존재하고 쓰기 가능한지 확인
     if (fs.existsSync(logDir)) {
       fs.accessSync(logDir, fs.constants.W_OK);
@@ -78,10 +88,10 @@ const canWriteToLogDir = (() => {
     return false;
   }
 })();
-const fileLoggingEnabled = !isTestEnv && !isBuildTime && canWriteToLogDir && LOG_FILE_ENABLED === 'true';
-const consoleLoggingEnabled = LOG_CONSOLE_ENABLED === 'true';
+const fileLoggingEnabled = !isTestEnv && !isBuildTime && canWriteToLogDir && getLogConfig().fileEnabled;
+const consoleLoggingEnabled = getLogConfig().consoleEnabled;
 const datePatternString = 'YYYY-MM-DD';
-const logLevel = LOG_LEVEL;
+const logLevel = getLogConfig().level;
 
 const transports: winston.transport[] = [];
 
@@ -176,16 +186,17 @@ if (consoleLoggingEnabled) {
 }
 
 if (fileLoggingEnabled) {
+  const cfg = getLogConfig();
   transports.push(
     new DailyRotateFile({
-      filename: LOG_PATH || `${LOG_DIR}/${LOG_FILE.replace(/\.log$/, '')}-%DATE%.log`,
+      filename: `${cfg.dir}/${cfg.file.replace(/\.log$/, '')}-%DATE%.log`,
       zippedArchive: true,
       maxFiles: '14d', // Keep for 14 days
       datePattern: datePatternString,
       level: logLevel,
       handleExceptions: true,
       json: false,
-      dirname: LOG_PATH ? undefined : LOG_DIR,
+      dirname: cfg.dir,
     })
   );
 }
