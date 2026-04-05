@@ -1,214 +1,146 @@
 /**
  * Cache Environment Configuration
  *
- * 캐시 모듈의 환경 설정 주입 및 관리
- * - 외부에서 initializeCache()를 통해 환경 설정 주입
- * - 기본값은 process.env에서 직접 읽음
+ * 캐시 모듈의 환경 설정 관리
+ * - getResolvedCacheConfig()에서 설정을 읽어 ISharedEnvConfig 호환 레이어 제공
+ * - process.env 의존성 없음
  */
-import { logger } from '@withwiz/logger/logger';
 import type { ISharedEnvConfig, IRawEnv } from '@withwiz/types/env';
-import {
-  INMEMORY_CACHE_DEFAULTS,
-  CACHE_TTL_DEFAULTS,
-  CACHE_DURATION_DEFAULTS,
-  CACHE_FALLBACK_DEFAULTS,
-  CACHE_HEALTH_DEFAULTS,
-} from './cache-defaults';
+import { getResolvedCacheConfig } from './config';
+import { getCommonConfig } from '../config/common';
 
 // ============================================================================
-// 환경 변수 체크 헬퍼 함수
+// 내부 헬퍼
 // ============================================================================
 
-/**
- * Redis 캐시 활성화 여부 확인 (CACHE_REDIS_ENABLED)
- * @returns CACHE_REDIS_ENABLED 환경변수가 'false'가 아니면 true
- */
-function _isRedisCacheEnabled(): boolean {
-  return process.env.CACHE_REDIS_ENABLED !== 'false';
-}
-
-/**
- * 인메모리 캐시 활성화 여부 확인 (CACHE_INMEMORY_ENABLED)
- * @returns CACHE_INMEMORY_ENABLED 환경변수가 'false'가 아니면 true
- */
-function _isInmemoryCacheEnabled(): boolean {
-  return process.env.CACHE_INMEMORY_ENABLED !== 'false';
-}
-
-/**
- * Redis 환경변수 설정 여부 확인
- * @returns Redis URL/Token이 설정되어 있는지 여부
- */
-function _isRedisConfigured(): boolean {
-  return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-}
-
-/**
- * Redis 사용 가능 여부 확인 (활성화 + 환경변수 설정)
- * @returns CACHE_REDIS_ENABLED=true이고 Redis 환경변수가 설정되어 있으면 true
- */
-function _isRedisAvailable(): boolean {
-  return _isRedisCacheEnabled() && _isRedisConfigured();
+function _getNodeEnv(): 'development' | 'production' | 'test' {
+  try {
+    return getCommonConfig().nodeEnv;
+  } catch {
+    return 'development';
+  }
 }
 
 // ============================================================================
-// 환경 설정 주입 관리
+// Public API
 // ============================================================================
 
 /**
- * 주입된 환경 설정 (초기화 전까지 null)
+ * 현재 캐시 설정을 ISharedEnvConfig 형태로 반환 (하위 호환 레이어)
  */
-let _injectedConfig: ISharedEnvConfig | null = null;
-
-/**
- * 기본 환경 설정 (fallback용)
- * process.env에서 직접 읽되, 타입 안전하게 처리
- */
-export function getDefaultConfig(): ISharedEnvConfig {
-  const nodeEnv = (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development';
-  const cacheEnabled = process.env.CACHE_ENABLED !== 'false';
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  const redisEnabled = _isRedisCacheEnabled();
-  const inmemoryEnabled = _isInmemoryCacheEnabled();
-  const redisAvailable = _isRedisAvailable();
-
-  const defaultCategoryConfig = (enabled: boolean, duration: number) => ({
-    ENABLED: enabled,
-    DURATION: duration,
-  });
+export function getConfig(): ISharedEnvConfig {
+  const cc = getResolvedCacheConfig();
+  const nodeEnv = _getNodeEnv();
 
   return {
     env: {
       NODE_ENV: nodeEnv,
-      UPSTASH_REDIS_REST_URL: redisUrl,
-      UPSTASH_REDIS_REST_TOKEN: redisToken,
-      CACHE_ENABLED: cacheEnabled,
+      UPSTASH_REDIS_REST_URL: cc.redis?.url,
+      UPSTASH_REDIS_REST_TOKEN: cc.redis?.token,
+      CACHE_ENABLED: cc.enabled,
     },
     ENV: {
       REDIS: {
-        URL: redisUrl,
-        TOKEN: redisToken,
-        IS_AVAILABLE: redisAvailable,
-        ENABLED: redisEnabled,
+        URL: cc.redis?.url,
+        TOKEN: cc.redis?.token,
+        IS_AVAILABLE: !!cc.redis?.url && !!cc.redis?.token,
+        ENABLED: cc.redis?.enabled ?? false,
       },
       CACHE: {
-        ENABLED: cacheEnabled,
-        REDIS: {
-          ENABLED: redisEnabled,
-        },
+        ENABLED: cc.enabled,
+        REDIS: { ENABLED: cc.redis?.enabled ?? false },
         INMEMORY: {
-          ENABLED: inmemoryEnabled,
-          MAX_SIZE: parseInt(process.env.CACHE_INMEMORY_MAX_SIZE || String(INMEMORY_CACHE_DEFAULTS.MAX_SIZE), 10),
-          MAX_MB: parseInt(process.env.CACHE_INMEMORY_MAX_MB || String(INMEMORY_CACHE_DEFAULTS.MAX_MB), 10),
-          EVICTION: (process.env.CACHE_INMEMORY_EVICTION as 'lru' | 'fifo' | 'ttl') || INMEMORY_CACHE_DEFAULTS.EVICTION,
-          CLEANUP_INTERVAL: parseInt(process.env.CACHE_INMEMORY_CLEANUP_INTERVAL || String(INMEMORY_CACHE_DEFAULTS.CLEANUP_INTERVAL), 10),
+          ENABLED: cc.inmemory.enabled,
+          MAX_SIZE: cc.inmemory.maxSize,
+          MAX_MB: cc.inmemory.maxMb,
+          EVICTION: cc.inmemory.eviction,
+          CLEANUP_INTERVAL: cc.inmemory.cleanupInterval,
         },
-        TTL: {
-          DEFAULT: parseInt(process.env.CACHE_TTL_DEFAULT || String(CACHE_TTL_DEFAULTS.DEFAULT), 10),
-          SHORT: parseInt(process.env.CACHE_TTL_SHORT || String(CACHE_TTL_DEFAULTS.SHORT), 10),
-          LONG: parseInt(process.env.CACHE_TTL_LONG || String(CACHE_TTL_DEFAULTS.LONG), 10),
-          GEOIP: parseInt(process.env.CACHE_TTL_GEOIP || String(CACHE_TTL_DEFAULTS.GEOIP), 10),
-          SETTINGS: parseInt(process.env.CACHE_TTL_SETTINGS || String(CACHE_TTL_DEFAULTS.SETTINGS), 10),
-          ANALYTICS: parseInt(process.env.CACHE_TTL_ANALYTICS || String(CACHE_TTL_DEFAULTS.ANALYTICS), 10),
-          USER: parseInt(process.env.CACHE_TTL_USER || String(CACHE_TTL_DEFAULTS.USER), 10),
-          LINK: parseInt(process.env.CACHE_TTL_LINK || String(CACHE_TTL_DEFAULTS.LINK), 10),
-          ALIAS: parseInt(process.env.CACHE_TTL_ALIAS || String(CACHE_TTL_DEFAULTS.ALIAS), 10),
-          COMMUNITY: parseInt(process.env.CACHE_TTL_COMMUNITY || String(CACHE_TTL_DEFAULTS.COMMUNITY), 10),
-          RESERVED_WORDS: parseInt(process.env.CACHE_TTL_RESERVED_WORDS || String(CACHE_TTL_DEFAULTS.RESERVED_WORDS), 10),
+        TTL: cc.ttl,
+        ANALYTICS: {
+          ENABLED: cc.categories.ANALYTICS?.enabled ?? true,
+          DURATION: cc.categories.ANALYTICS?.duration ?? 1800,
         },
-        ANALYTICS: defaultCategoryConfig(process.env.CACHE_ANALYTICS_ENABLED !== 'false', parseInt(process.env.CACHE_ANALYTICS_DURATION || String(CACHE_DURATION_DEFAULTS.ANALYTICS), 10)),
-        USER: defaultCategoryConfig(process.env.CACHE_USER_ENABLED !== 'false', parseInt(process.env.CACHE_USER_DURATION || String(CACHE_DURATION_DEFAULTS.USER), 10)),
-        GEOIP: defaultCategoryConfig(process.env.CACHE_GEOIP_ENABLED !== 'false', parseInt(process.env.CACHE_GEOIP_DURATION || String(CACHE_DURATION_DEFAULTS.GEOIP), 10)),
-        SETTINGS: defaultCategoryConfig(process.env.CACHE_SETTINGS_ENABLED !== 'false', parseInt(process.env.CACHE_SETTINGS_DURATION || String(CACHE_DURATION_DEFAULTS.SETTINGS), 10)),
-        RESERVED_WORDS: defaultCategoryConfig(process.env.CACHE_RESERVED_WORDS_ENABLED !== 'false', parseInt(process.env.CACHE_RESERVED_WORDS_DURATION || String(CACHE_DURATION_DEFAULTS.RESERVED_WORDS), 10)),
-        ALIAS: defaultCategoryConfig(process.env.CACHE_ALIAS_ENABLED !== 'false', parseInt(process.env.CACHE_ALIAS_DURATION || String(CACHE_DURATION_DEFAULTS.ALIAS), 10)),
-        COMMUNITY: defaultCategoryConfig(process.env.CACHE_COMMUNITY_ENABLED !== 'false', parseInt(process.env.CACHE_COMMUNITY_DURATION || String(CACHE_DURATION_DEFAULTS.COMMUNITY), 10)),
-        LINK: defaultCategoryConfig(process.env.CACHE_LINK_ENABLED !== 'false', parseInt(process.env.CACHE_LINK_DURATION || process.env.CACHE_TTL_LINK || String(CACHE_DURATION_DEFAULTS.LINK), 10)),
-        // RATE_LIMIT: ENABLED 제거됨 - Rate Limiting은 RATE_LIMIT_ENABLED로 제어, CACHE_ENABLED로 Redis 사용 여부 결정
-        RATE_LIMIT: defaultCategoryConfig(true, parseInt(process.env.CACHE_RATE_LIMIT_DURATION || String(CACHE_DURATION_DEFAULTS.RATE_LIMIT), 10)),
-        URL_TOKEN: defaultCategoryConfig(process.env.CACHE_URL_TOKEN_ENABLED !== 'false', parseInt(process.env.CACHE_URL_TOKEN_DURATION || String(CACHE_DURATION_DEFAULTS.URL_TOKEN), 10)),
-        API_KEY: defaultCategoryConfig(process.env.CACHE_API_KEY_ENABLED !== 'false', parseInt(process.env.CACHE_API_KEY_DURATION || String(CACHE_DURATION_DEFAULTS.API_KEY), 10)),
-        API_CONFIG: defaultCategoryConfig(process.env.CACHE_API_CONFIG_ENABLED !== 'false', parseInt(process.env.CACHE_API_CONFIG_DURATION || String(CACHE_DURATION_DEFAULTS.API_CONFIG), 10)),
+        USER: {
+          ENABLED: cc.categories.USER?.enabled ?? true,
+          DURATION: cc.categories.USER?.duration ?? 600,
+        },
+        GEOIP: {
+          ENABLED: cc.categories.GEOIP?.enabled ?? true,
+          DURATION: cc.categories.GEOIP?.duration ?? 2592000,
+        },
+        SETTINGS: {
+          ENABLED: cc.categories.SETTINGS?.enabled ?? true,
+          DURATION: cc.categories.SETTINGS?.duration ?? 1800,
+        },
+        RESERVED_WORDS: {
+          ENABLED: cc.categories.RESERVED_WORDS?.enabled ?? true,
+          DURATION: cc.categories.RESERVED_WORDS?.duration ?? 1800,
+        },
+        ALIAS: {
+          ENABLED: cc.categories.ALIAS?.enabled ?? true,
+          DURATION: cc.categories.ALIAS?.duration ?? 300,
+        },
+        COMMUNITY: {
+          ENABLED: cc.categories.COMMUNITY?.enabled ?? true,
+          DURATION: cc.categories.COMMUNITY?.duration ?? 900,
+        },
+        LINK: {
+          ENABLED: cc.categories.LINK?.enabled ?? true,
+          DURATION: cc.categories.LINK?.duration ?? 1800,
+        },
+        RATE_LIMIT: {
+          ENABLED: true,
+          DURATION: cc.categories.RATE_LIMIT?.duration ?? 60,
+        },
+        URL_TOKEN: {
+          ENABLED: cc.categories.URL_TOKEN?.enabled ?? true,
+          DURATION: cc.categories.URL_TOKEN?.duration ?? 300,
+        },
+        API_KEY: {
+          ENABLED: cc.categories.API_KEY?.enabled ?? true,
+          DURATION: cc.categories.API_KEY?.duration ?? 300,
+        },
+        API_CONFIG: {
+          ENABLED: cc.categories.API_CONFIG?.enabled ?? true,
+          DURATION: cc.categories.API_CONFIG?.duration ?? 600,
+        },
       },
     },
-    isCacheEnabled: () => cacheEnabled,
-    isRedisAvailable: () => redisAvailable,
+    isCacheEnabled: () => cc.enabled,
+    isRedisAvailable: () => !!cc.redis?.url && !!cc.redis?.token,
   };
-}
-
-/**
- * 현재 환경 설정 가져오기 (주입된 설정 또는 기본값)
- */
-export function getConfig(): ISharedEnvConfig {
-  if (_injectedConfig) {
-    return _injectedConfig;
-  }
-  return getDefaultConfig();
 }
 
 // 편의를 위한 getter 함수들
 export const getEnv = (): IRawEnv => getConfig().env;
 export const getENV = () => getConfig().ENV;
 
-// Next.js 개발 모드(Turbopack 포함)에서 중복 초기화 방지를 위한 전역 플래그
-declare global {
-  // eslint-disable-next-line no-var
-  var __cacheInitialized: boolean | undefined;
-}
-
-/**
- * 캐시 모듈 초기화 (외부에서 환경 설정 주입)
- *
- * @example
- * ```typescript
- * import { initializeCache } from '@withwiz/cache/cache';
- * import { env, ENV, isCacheEnabled, isRedisAvailable } from '<your-project>/env';
- *
- * initializeCache({ env, ENV, isCacheEnabled, isRedisAvailable });
- * ```
- */
-export function initializeCache(config: ISharedEnvConfig): void {
-  // 이미 초기화된 경우 건너뛰기 (Next.js 개발 모드에서 중복 로그 방지)
-  if (global.__cacheInitialized) {
-    return;
-  }
-
-  _injectedConfig = config;
-  global.__cacheInitialized = true;
-
-  // 프로덕션 런타임에서만 로그 출력 (빌드 시 및 개발 모드 HMR 시 로그 방지)
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_BUILD_TIME !== 'true') {
-    logger.info('[Cache] Environment configuration injection complete', {
-      cacheEnabled: config.isCacheEnabled(),
-      redisAvailable: config.isRedisAvailable(),
-    });
-  }
-}
-
 // 캐시 활성화 여부 확인 함수
-export const isCacheEnabled = (): boolean => getConfig().isCacheEnabled();
+export const isCacheEnabled = (): boolean => getResolvedCacheConfig().enabled;
 
 // 환경 변수 검증 함수
 export function validateRedisEnvironment(): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
-  const env = getEnv();
+  const cc = getResolvedCacheConfig();
+  const redisUrl = cc.redis?.url;
+  const redisToken = cc.redis?.token;
 
-  if (!env.UPSTASH_REDIS_REST_URL) {
+  if (!redisUrl) {
     errors.push('UPSTASH_REDIS_REST_URL is not configured.');
-  } else if (env.UPSTASH_REDIS_REST_URL.trim() === '') {
+  } else if (redisUrl.trim() === '') {
     errors.push('UPSTASH_REDIS_REST_URL is an empty string.');
   }
 
-  if (!env.UPSTASH_REDIS_REST_TOKEN) {
+  if (!redisToken) {
     errors.push('UPSTASH_REDIS_REST_TOKEN is not configured.');
-  } else if (env.UPSTASH_REDIS_REST_TOKEN.trim() === '') {
+  } else if (redisToken.trim() === '') {
     errors.push('UPSTASH_REDIS_REST_TOKEN is an empty string.');
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -236,26 +168,13 @@ export interface CacheFallbackConfig {
  * 캐시 폴백 설정 가져오기
  */
 export function getCacheFallbackConfig(): CacheFallbackConfig {
+  const fallback = getResolvedCacheConfig().fallback;
   return {
-    redisErrorThresholdGlobal: parseInt(
-      process.env.CACHE_REDIS_ERROR_THRESHOLD_GLOBAL ||
-      String(CACHE_FALLBACK_DEFAULTS.REDIS_ERROR_THRESHOLD_GLOBAL),
-      10
-    ),
-    redisErrorThresholdLocal: parseInt(
-      process.env.CACHE_REDIS_ERROR_THRESHOLD_LOCAL ||
-      String(CACHE_FALLBACK_DEFAULTS.REDIS_ERROR_THRESHOLD_LOCAL),
-      10
-    ),
-    redisReconnectInterval: parseInt(
-      process.env.CACHE_REDIS_RECONNECT_INTERVAL ||
-      String(CACHE_FALLBACK_DEFAULTS.REDIS_RECONNECT_INTERVAL),
-      10
-    ),
-    fallbackOnRedisError:
-      process.env.CACHE_FALLBACK_ON_REDIS_ERROR !== 'false',
-    writeToMemory:
-      process.env.CACHE_WRITE_TO_MEMORY !== 'false',
+    redisErrorThresholdGlobal: fallback.redisErrorThresholdGlobal,
+    redisErrorThresholdLocal: fallback.redisErrorThresholdLocal,
+    redisReconnectInterval: fallback.redisReconnectInterval,
+    fallbackOnRedisError: fallback.fallbackOnRedisError,
+    writeToMemory: fallback.writeToMemory,
   };
 }
 
@@ -285,36 +204,24 @@ export interface CacheHealthConfig {
  * 캐시 건강상태 설정 가져오기
  */
 export function getCacheHealthConfig(): CacheHealthConfig {
+  const health = getResolvedCacheConfig().health;
   return {
-    errorRateThreshold: parseInt(
-      process.env.CACHE_HEALTH_ERROR_RATE_THRESHOLD ||
-      String(CACHE_HEALTH_DEFAULTS.ERROR_RATE_THRESHOLD),
-      10
-    ),
-    hitRateThreshold: parseInt(
-      process.env.CACHE_HEALTH_HIT_RATE_THRESHOLD ||
-      String(CACHE_HEALTH_DEFAULTS.HIT_RATE_THRESHOLD),
-      10
-    ),
-    reportHitRateThreshold: parseInt(
-      process.env.CACHE_REPORT_HIT_RATE_THRESHOLD ||
-      String(CACHE_HEALTH_DEFAULTS.REPORT_HIT_RATE_THRESHOLD),
-      10
-    ),
-    reportResponseTimeThreshold: parseInt(
-      process.env.CACHE_REPORT_RESPONSE_TIME_THRESHOLD ||
-      String(CACHE_HEALTH_DEFAULTS.REPORT_RESPONSE_TIME_THRESHOLD),
-      10
-    ),
-    reportInvalidationThreshold: parseInt(
-      process.env.CACHE_REPORT_INVALIDATION_THRESHOLD ||
-      String(CACHE_HEALTH_DEFAULTS.REPORT_INVALIDATION_THRESHOLD),
-      10
-    ),
-    reportMinRequests: parseInt(
-      process.env.CACHE_REPORT_MIN_REQUESTS ||
-      String(CACHE_HEALTH_DEFAULTS.REPORT_MIN_REQUESTS),
-      10
-    ),
+    errorRateThreshold: health.errorRateThreshold,
+    hitRateThreshold: health.hitRateThreshold,
+    reportHitRateThreshold: health.reportHitRateThreshold,
+    reportResponseTimeThreshold: health.reportResponseTimeThreshold,
+    reportInvalidationThreshold: health.reportInvalidationThreshold,
+    reportMinRequests: health.reportMinRequests,
   };
 }
+
+/**
+ * 캐시 리포트 설정 인터페이스 (CacheHealthConfig의 리포트 관련 항목)
+ */
+export type CacheReportConfig = Pick<
+  CacheHealthConfig,
+  | 'reportHitRateThreshold'
+  | 'reportResponseTimeThreshold'
+  | 'reportInvalidationThreshold'
+  | 'reportMinRequests'
+>;
