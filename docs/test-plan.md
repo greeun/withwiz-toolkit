@@ -1,7 +1,7 @@
 # @withwiz/toolkit 도메인별 테스트 계획
 
-> **작성일**: 2026-03-14
-> **대상 버전**: 0.2.0
+> **작성일**: 2026-03-14 (Config DI 반영: 2026-04-05)
+> **대상 버전**: 0.3.0
 > **목표 커버리지**: >80% (전 모듈)
 > **테스트 프레임워크**: Vitest (node environment)
 
@@ -62,6 +62,26 @@
 
 ## 2. 도메인별 테스트 계획
 
+### 2.0 Config DI (설정 주입) — 신규 모듈
+
+> **배경**: `process.env` 직접 읽기를 제거하고 명시적 초기화 기반 DI로 전환 (설계: `docs/superpowers/specs/2026-04-05-config-di-design.md`)
+
+#### 신규 테스트
+
+| 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
+|----------|-----------|---------|-------------|
+| `unit/config/common.test.ts` | initializeCommon, getCommonConfig | 높음 | - `initializeCommon`: nodeEnv 주입 검증<br>- `getCommonConfig`: 초기화 전 호출 시 `ConfigurationError` throw<br>- nodeEnv 미제공 시 warn 로그 + 기본값 `'development'`<br>- 중복 초기화 방지 검증<br>- `resetCommon()` 후 상태 초기화 확인 |
+| `unit/config/errors.test.ts` | ConfigurationError | 중간 | - 모듈명 + 메시지 포맷 `[Module] message` 검증<br>- `name` 속성이 `'ConfigurationError'`인지 확인<br>- `instanceof Error` 확인 |
+| `unit/config/auth-config.test.ts` | initializeAuth, getAuthConfig | 높음 | - 필수값(`jwtSecret`) 누락 시 `ConfigurationError` throw<br>- 선택값(`accessTokenExpiry`) 미제공 시 warn + 기본값 `'7d'`<br>- 선택값(`refreshTokenExpiry`) 미제공 시 warn + 기본값 `'30d'`<br>- 초기화 전 `getAuthConfig()` 호출 시 에러<br>- 정상 초기화 후 설정값 정확성<br>- `resetAuth()` 동작 검증 |
+| `unit/config/cache-config.test.ts` | initializeCache, getCacheConfig | 높음 | - `process.env` 참조 완전 제거 확인<br>- `redis.url`/`redis.token` 필수값 검증 (redis 사용 시)<br>- 선택값 기본값: `enabled=true`, `inmemory.maxSize=1000` 등<br>- TTL/카테고리 기본값 적용 검증<br>- 기존 `ISharedEnvConfig` 인터페이스 → 새 `CacheConfig` 인터페이스 전환 검증 |
+| `unit/config/logger-config.test.ts` | initializeLogger, getLoggerConfig | 높음 | - 모든 필드 선택적 (필수값 없음)<br>- 기본값: `level='info'`, `dir='./logs'`, `file='app.log'`<br>- 각 선택값 미제공 시 warn 로그 출력<br>- 초기화 전 접근 시 에러 |
+| `unit/config/storage-config.test.ts` | initializeStorage, getStorageConfig | 높음 | - 4개 필수값(`accountId`, `accessKeyId`, `secretAccessKey`, `bucketName`) 각각 누락 시 에러<br>- `publicUrl` 선택값 처리<br>- 초기화 전 접근 시 에러 |
+| `unit/config/geolocation-config.test.ts` | initializeGeolocation, getGeolocationConfig | 중간 | - 모든 필드 선택적<br>- API key 미제공 시 warn<br>- 초기화 전 접근 시 에러 |
+| `unit/config/cors-config.test.ts` | initializeCors, getCorsConfig | 높음 | - `allowedOrigins` 필수값 누락 시 에러<br>- 빈 배열 `[]` 시 에러<br>- `baseUrl` 선택값 처리<br>- 초기화 전 접근 시 에러 |
+| `unit/initialize.test.ts` | initialize (통합) | 높음 | - 전체 config 주입 시 모든 모듈 초기화 검증<br>- 초기화 순서: common → logger → 나머지<br>- 일부 모듈만 포함한 config 정상 동작<br>- 특정 모듈 필수값 누락 시 해당 모듈에서 에러 throw<br>- 빈 config `{}` 전달 시 동작 (모듈 미초기화) |
+
+---
+
 ### 2.1 Auth (인증)
 
 #### 기존 테스트 (유지/수정)
@@ -101,9 +121,9 @@
 
 | 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
 |----------|-----------|---------|-------------|
-| `unit/cache/cache-factory.test.ts` | CacheFactory | 높음 | - Redis/InMemory/Hybrid/Noop 백엔드 생성<br>- 환경변수 기반 자동 선택<br>- 잘못된 타입 에러 처리<br>- 싱글톤 보장 검증 |
+| `unit/cache/cache-factory.test.ts` | CacheFactory | 높음 | - Redis/InMemory/Hybrid/Noop 백엔드 생성<br>- `initializeCache()` config 기반 자동 선택<br>- 잘못된 타입 에러 처리<br>- 싱글톤 보장 검증 |
 | `unit/cache/cache-invalidation.test.ts` | 캐시 무효화 | 중간 | - 패턴 기반 무효화<br>- 태그 기반 무효화<br>- 계층적 키 무효화<br>- 무효화 이벤트 콜백 |
-| `unit/cache/cache-defaults.test.ts` | 기본 설정 | 낮음 | - 기본 TTL 값 검증<br>- 기본 캐시 크기 검증<br>- 환경별 기본값 차이 |
+| `unit/cache/cache-defaults.test.ts` | 기본 설정 | 낮음 | - 기본 TTL 값 검증<br>- 기본 캐시 크기 검증<br>- `initializeCache()` 미호출 시 기본값 적용 확인 |
 
 ---
 
@@ -180,7 +200,7 @@
 
 | 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
 |----------|-----------|---------|-------------|
-| `unit/geolocation/provider-factory.test.ts` | GeoIPProviderFactory | 높음 | - `getAvailableProviders()`: 환경변수 기반 활성 프로바이더 목록<br>- `getProvider(name)`: 존재/미존재 프로바이더 조회<br>- `getOptimalProvider()`: 성능 기반 최적 선택<br>- `registerProvider()`: 커스텀 프로바이더 등록<br>- `unregisterProvider()`: 프로바이더 제거<br>- `getProviderStats()`: 통계 정보 정확성 |
+| `unit/geolocation/provider-factory.test.ts` | GeoIPProviderFactory | 높음 | - `getAvailableProviders()`: `initializeGeolocation()` config 기반 활성 프로바이더 목록<br>- `getProvider(name)`: 존재/미존재 프로바이더 조회<br>- `getOptimalProvider()`: 성능 기반 최적 선택<br>- `registerProvider()`: 커스텀 프로바이더 등록<br>- `unregisterProvider()`: 프로바이더 제거<br>- `getProviderStats()`: 통계 정보 정확성 |
 | `unit/geolocation/providers.test.ts` | 개별 프로바이더 | 중간 | - `IPApiProvider`: API 호출 mock, 응답 파싱, 에러 핸들링<br>- `IPApiCoProvider`: API 호출 mock, 응답 파싱<br>- `IPGeolocationProvider`: API 호출 mock<br>- `MaxMindProvider`: 데이터베이스 조회 mock<br>- 공통: 타임아웃, 네트워크 에러, 잘못된 응답 형식 |
 | `unit/geolocation/batch-processor.test.ts` | BatchProcessor | 중간 | - `processBatch`: 순차 처리, 진행률 콜백<br>- `processBatchWithRetry`: 실패 항목 재시도<br>- `processBatchConcurrent`: 병렬 처리, 동시성 제한<br>- 설정 업데이트/조회 |
 
@@ -248,7 +268,7 @@
 
 | 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
 |----------|-----------|---------|-------------|
-| `unit/storage/r2-storage.test.ts` | R2 스토리지 전체 | 높음 | - `isR2Enabled()`: 환경변수 설정/미설정 시<br>- `getConfig()`: 필수 환경변수 누락 시 에러, 정상 설정 반환<br>- `getClient()`: S3Client 싱글톤 생성 (mock)<br>- `uploadToR2()`: 정상 업로드, Content-Type 설정, 에러 (네트워크, 권한)<br>- `getFromR2()`: 정상 다운로드, 미존재 키→에러<br>- `deleteFromR2()`: 정상 삭제, 미존재 키 처리<br>- R2 비활성 시 각 함수 동작 |
+| `unit/storage/r2-storage.test.ts` | R2 스토리지 전체 | 높음 | - `isR2Enabled()`: `initializeStorage()` 호출 여부 기반<br>- `getStorageConfig()`: 초기화 전 호출 시 에러, 정상 설정 반환<br>- `getClient()`: S3Client 싱글톤 생성 (mock)<br>- `uploadToR2()`: 정상 업로드, Content-Type 설정, 에러 (네트워크, 권한)<br>- `getFromR2()`: 정상 다운로드, 미존재 키→에러<br>- `deleteFromR2()`: 정상 삭제, 미존재 키 처리<br>- Storage 미초기화 시 각 함수 동작 |
 
 > **참고**: S3Client는 `@aws-sdk/client-s3`를 vi.mock으로 처리
 
@@ -267,7 +287,7 @@
 | `unit/system/memory.test.ts` | getMemoryInfo | 중간 | - 메모리 정보 구조 (total, free, used, percent, process)<br>- process.memoryUsage() mock<br>- 퍼센트 계산 정확성 |
 | `unit/system/disk.test.ts` | getDiskInfo | 중간 | - 디스크 정보 구조 (total, used, free, percent)<br>- macOS/Linux 분기 처리 (child_process mock)<br>- 파싱 에러 핸들링 |
 | `unit/system/network.test.ts` | getNetworkInfo | 낮음 | - 네트워크 정보 구조<br>- 속도 측정 (RX/TX rates)<br>- 연결 수 카운트 |
-| `unit/system/environment.test.ts` | checkEnvironmentVariables | 중간 | - 필수 환경변수 모두 존재→성공<br>- 일부 누락→경고 목록 반환<br>- 선택적 변수 누락→정보 로그 |
+| `unit/system/environment.test.ts` | checkEnvironmentVariables | 중간 | - 각 모듈 config에서 설정 읽기 검증 (`process.env` 미사용)<br>- 초기화된 모듈 설정 존재→성공<br>- 미초기화 모듈→경고 목록 반환 |
 | `unit/system/health-check.test.ts` | checkServiceHealth | 높음 | - 모든 서비스 정상→healthy<br>- DB 연결 실패→degraded/unhealthy<br>- Redis 연결 실패→degraded<br>- Prisma client mock 처리 |
 | `unit/system/helpers.test.ts` | formatUptime, formatBytes | 낮음 | - `formatUptime`: 초→"Xd Xh Xm Xs" 변환<br>- `formatBytes`: 바이트→"X.X GB/MB/KB" 변환<br>- 경계값 (0, 음수, 매우 큰 수) |
 
@@ -334,6 +354,7 @@
 
 | 파일 경로 | 통합 대상 | 우선순위 | 테스트 케이스 |
 |----------|----------|---------|-------------|
+| `integration/config-initialization.integration.test.ts` | 통합 초기화 플로우 | 높음 | - `initialize()` 호출 후 모든 모듈 config 접근 가능<br>- 초기화 순서 검증 (common → logger → 나머지)<br>- 특정 모듈 필수값 누락 시 해당 모듈에서 에러, 이전 모듈은 정상<br>- `initialize()` 후 각 모듈의 `getXxxConfig()` 반환값 정확성<br>- logger 초기화 전 다른 모듈의 warn이 `console.warn` fallback 사용 |
 | `integration/auth-repository.integration.test.ts` | Auth Repositories + Error 시스템 | 높음 | - UserRepository CRUD 전체 플로우 (Prisma mock 사용)<br>- OAuthRepository 계정 연결/해제 플로우<br>- EmailTokenRepository 생성→조회→사용→삭제 라이프사이클<br>- 중복 생성 시 AppError 변환 검증<br>- 만료 토큰 정리 후 조회 실패 검증 |
 | `integration/auth-middleware-jwt.integration.test.ts` | Auth Middleware + JWT + Error Handler | 높음 | - JWT 발급→미들웨어 검증→요청 통과 전체 플로우<br>- JWT 만료→미들웨어 거부→에러 응답 형식 검증<br>- 블랙리스트 토큰→미들웨어 거부 플로우<br>- adminMiddleware: role 기반 접근 제어 전체 플로우 |
 | `integration/middleware-chain.integration.test.ts` | 미들웨어 체인 조합 | 중간 | - CORS→Security→Auth 순서 실행 검증<br>- CORS preflight에서 이후 미들웨어 스킵<br>- Security 차단 시 Auth 미실행 확인<br>- Rate Limit 초과 시 에러 응답 + 헤더 검증<br>- 에러 핸들러가 모든 미들웨어 에러를 포착하는지 검증 |
@@ -354,6 +375,8 @@
 
 | 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
 |----------|-----------|---------|-------------|
+| `api/exports-initialize.test.ts` | `@withwiz/toolkit/initialize` exports | 높음 | - `initialize` 함수 export 확인<br>- `ToolkitConfig` 타입 export 확인<br>- 각 모듈별 config 타입 export 확인 (`AuthConfig`, `CacheConfig` 등) |
+| `api/exports-config.test.ts` | `@withwiz/toolkit/*/config` exports | 높음 | - `@withwiz/toolkit/auth/config`: `initializeAuth`, `getAuthConfig`, `resetAuth` export 확인<br>- `@withwiz/toolkit/logger/config`: `initializeLogger`, `getLoggerConfig` export 확인<br>- `@withwiz/toolkit/storage/config`: `initializeStorage`, `getStorageConfig` export 확인<br>- `@withwiz/toolkit/geolocation/config`: `initializeGeolocation`, `getGeolocationConfig` export 확인<br>- 각 모듈별 독립 import 가능 검증 |
 | `api/exports-auth.test.ts` | `@withwiz/toolkit/auth` exports | 높음 | - `import { signToken, verifyToken } from './auth/core/jwt'` 존재 확인<br>- `import { hashPassword, comparePassword } from './auth/core/password'` 존재 확인<br>- `import { getOAuthUrl, handleOAuthCallback } from './auth/core/oauth'` 존재 확인<br>- 7개 subpath 전체 import 가능 검증<br>- 각 export가 function/class 타입인지 검증 |
 | `api/exports-cache.test.ts` | `@withwiz/toolkit/cache` exports | 높음 | - CacheFactory, InMemoryCacheManager 등 핵심 클래스 export 확인<br>- 5개 subpath import 검증<br>- factory 패턴 API 시그니처 안정성 |
 | `api/exports-error.test.ts` | `@withwiz/toolkit/error` exports | 높음 | - AppError 클래스, ErrorResponse 객체 export 확인<br>- static factory 메서드 시그니처 검증<br>- toJSON() 반환 구조 계약 검증 |
@@ -498,6 +521,25 @@
 
 > Phase 1~4는 섹션 2의 Unit 테스트 + 섹션 3의 횡단 테스트를 통합한 실행 계획입니다.
 
+### Phase 0: Config DI 기반 (최우선)
+
+> process.env 제거 및 DI 패턴 전환 — 다른 모든 테스트의 전제 조건
+
+| # | 테스트 파일 | 대상 모듈 | 예상 테스트 수 |
+|---|-----------|----------|-------------|
+| 0-1 | `unit/config/errors.test.ts` | ConfigurationError | ~4 |
+| 0-2 | `unit/config/common.test.ts` | 공통 설정 (nodeEnv) | ~6 |
+| 0-3 | `unit/config/auth-config.test.ts` | Auth 설정 주입 | ~8 |
+| 0-4 | `unit/config/cache-config.test.ts` | Cache 설정 주입 | ~10 |
+| 0-5 | `unit/config/logger-config.test.ts` | Logger 설정 주입 | ~6 |
+| 0-6 | `unit/config/storage-config.test.ts` | Storage 설정 주입 | ~7 |
+| 0-7 | `unit/config/geolocation-config.test.ts` | Geolocation 설정 주입 | ~5 |
+| 0-8 | `unit/config/cors-config.test.ts` | CORS 설정 주입 | ~6 |
+| 0-9 | `unit/initialize.test.ts` | 통합 initialize | ~8 |
+| 0-10 | `integration/config-initialization.integration.test.ts` | 초기화 통합 플로우 | ~6 |
+| 0-11 | `api/exports-initialize.test.ts` | initialize export 검증 | ~4 |
+| 0-12 | `api/exports-config.test.ts` | 모듈별 config export 검증 | ~6 |
+
 ### Phase 1: 핵심 인프라 (높음 우선순위)
 
 > 미테스트 모듈 중 프로덕션 영향도가 가장 큰 영역
@@ -560,13 +602,18 @@
 
 | # | 파일 | 수정 내용 |
 |---|-----|---------|
-| M1 | `security/auth/auth-jwt.test.ts` | 토큰 만료/리프레시 시나리오 추가 |
+| M1 | `security/auth/auth-jwt.test.ts` | 토큰 만료/리프레시 시나리오 추가 + `process.env.JWT_SECRET` → `initializeAuth()` 전환 |
 | M2 | `unit/error/app-error.test.ts` | static factory 메서드 테스트 추가 |
 | M3 | `unit/error/error-recovery.test.ts` | FeatureDegradation 테스트 추가 |
 | M4 | `unit/utils/type-guards.test.ts` | 누락된 타입 가드 함수 테스트 추가 |
 | M5 | `unit/utils/utils.test.ts` | 미커버 유틸 함수 추가 |
-| M6 | `integration/cache.integration.test.ts` | 하이브리드 캐시 전환 시나리오 추가 |
+| M6 | `integration/cache.integration.test.ts` | 하이브리드 캐시 전환 시나리오 추가 + `process.env.CACHE_*` → `initializeCache()` 전환 |
 | M7 | `accessibility/hooks/hooks.test.tsx` | 기능 테스트 보강 |
+| M8 | `unit/logger/logger.test.ts` | `process.env.LOG_*` 조작 → `initializeLogger()` 호출로 전환 |
+| M9 | `unit/middleware/optional-auth-middleware.test.ts` | `process.env.JWT_SECRET` → `initializeAuth()` 전환 |
+| M10 | `unit/middleware/rate-limit-is-enabled.test.ts` | `process.env.CACHE_ENABLED` → `initializeCache()` 전환 |
+| M11 | `performance/cache/*.test.ts` (4파일) | `process.env.CACHE_*` → `initializeCache()` 전환 |
+| M12 | `unit/geolocation/geolocation.test.ts` | `process.env.IPGEOLOCATION_API_KEY` → `initializeGeolocation()` 전환 |
 
 ### 삭제 대상
 
@@ -580,21 +627,21 @@
 
 | 테스트 유형 | 기존 (유지) | 기존 (수정) | 신규 | 소계 파일 수 |
 |-----------|-----------|-----------|------|-----------|
-| **Unit** | 11 | 4 (M2~M5) | 30 | 45 |
-| **Integration** | 0 | 1 (M6) | 7 | 8 |
-| **API** | 0 | 0 | 13 | 13 |
+| **Unit** | 11 | 4 (M2~M5) | 30 + 9 (config DI) | 54 |
+| **Integration** | 0 | 1 (M6) | 7 + 1 (config init) | 9 |
+| **API** | 0 | 0 | 13 + 2 (initialize, config) | 15 |
 | **E2E** | 0 | 0 | 8 | 8 |
 | **Security** | 5 | 2 (M1+oauth) | 7 | 14 |
-| **Performance** | 4 | 0 | 5 | 9 |
+| **Performance** | 4 | 5 (M11) | 5 | 14 |
 | **Accessibility** | 0 | 2 (M7+client) | 6 | 8 |
-| **합계** | **20** | **9** | **76** | **105** |
+| **합계** | **20** | **14** | **88** | **122** |
 
 | 구분 | 파일 수 | 예상 테스트 케이스 수 |
 |-----|--------|-------------------|
-| 신규 | 76 | ~550 |
-| 수정 | 9 | ~60 추가 |
+| 신규 | 88 | ~650 |
+| 수정 | 14 | ~80 추가 |
 | 삭제 | 1 | - |
-| **최종 합계** | **84 (net)** | **~610** |
+| **최종 합계** | **101 (net)** | **~730** |
 
 ### 실행 원칙
 
@@ -604,3 +651,4 @@
 4. **네이밍**: `should [동작] when [조건]` 형식
 5. **커버리지**: 각 Phase 완료 시 `npm run test:coverage`로 진행률 확인
 6. **npm scripts 추가**: `test:api`, `test:e2e` 스크립트를 package.json에 등록
+7. **Config DI 전환 원칙**: 모든 테스트에서 `process.env` 직접 조작 금지. 반드시 `initializeXxx()` 또는 `initialize()` 호출로 설정 주입. `beforeEach`에서 `resetXxx()` 호출로 상태 초기화.
