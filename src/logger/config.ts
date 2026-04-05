@@ -20,6 +20,7 @@ export interface ResolvedLoggerConfig {
 let _config: ResolvedLoggerConfig | null = null;
 
 export function initializeLogger(config: LoggerConfig): void {
+  if (_config) return;
   if (config.level === undefined) configWarn('Logger', 'level not provided, using default: info');
   if (config.dir === undefined) configWarn('Logger', 'dir not provided, using default: ./logs');
   if (config.file === undefined) configWarn('Logger', 'file not provided, using default: app.log');

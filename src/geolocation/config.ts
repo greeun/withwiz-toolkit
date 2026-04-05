@@ -14,6 +14,7 @@ export interface ResolvedGeolocationConfig {
 let _config: ResolvedGeolocationConfig | null = null;
 
 export function initializeGeolocation(config: GeolocationConfig): void {
+  if (_config) return;
   if (!config.ipgeolocationApiKey) configWarn('Geolocation', 'ipgeolocationApiKey not provided, IPGeolocation provider will be unavailable');
   if (!config.maxmindLicenseKey) configWarn('Geolocation', 'maxmindLicenseKey not provided, MaxMind provider will be unavailable');
   _config = {

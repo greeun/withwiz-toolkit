@@ -20,6 +20,7 @@ export interface ResolvedStorageConfig {
 let _config: ResolvedStorageConfig | null = null;
 
 export function initializeStorage(config: StorageConfig): void {
+  if (_config) return;
   if (!config.accountId) throw new ConfigurationError('Storage', 'accountId is required');
   if (!config.accessKeyId) throw new ConfigurationError('Storage', 'accessKeyId is required');
   if (!config.secretAccessKey) throw new ConfigurationError('Storage', 'secretAccessKey is required');

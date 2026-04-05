@@ -12,6 +12,7 @@ export interface ResolvedCommonConfig {
 let _config: ResolvedCommonConfig | null = null;
 
 export function initializeCommon(config: CommonConfig): void {
+  if (_config) return;
   if (!config.nodeEnv) {
     configWarn('Common', 'nodeEnv not provided, using default: development');
   }
