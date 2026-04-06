@@ -13,10 +13,23 @@ export interface ResolvedAuthConfig {
   refreshTokenExpiry: string;
 }
 
-let _config: ResolvedAuthConfig | null = null;
+const GLOBAL_KEY = '__withwiz_auth_config' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_auth_config: ResolvedAuthConfig | undefined;
+}
+
+function getConfig(): ResolvedAuthConfig | null {
+  return globalThis[GLOBAL_KEY] ?? null;
+}
+
+function setConfig(config: ResolvedAuthConfig): void {
+  globalThis[GLOBAL_KEY] = config;
+}
 
 export function initializeAuth(config: AuthConfig): void {
-  if (_config) return;
+  if (getConfig()) return;
   if (!config.jwtSecret) {
     throw new ConfigurationError('Auth', 'jwtSecret is required');
   }
@@ -26,20 +39,21 @@ export function initializeAuth(config: AuthConfig): void {
   if (!config.refreshTokenExpiry) {
     configWarn('Auth', 'refreshTokenExpiry not provided, using default: 30d');
   }
-  _config = {
+  setConfig({
     jwtSecret: config.jwtSecret,
     accessTokenExpiry: config.accessTokenExpiry ?? '7d',
     refreshTokenExpiry: config.refreshTokenExpiry ?? '30d',
-  };
+  });
 }
 
 export function getAuthConfig(): ResolvedAuthConfig {
-  if (!_config) {
+  const config = getConfig();
+  if (!config) {
     throw new ConfigurationError('Auth', 'Not initialized. Call initializeAuth() first.');
   }
-  return _config;
+  return config;
 }
 
 export function resetAuth(): void {
-  _config = null;
+  globalThis[GLOBAL_KEY] = undefined;
 }

@@ -11,10 +11,23 @@ export interface ResolvedCorsConfig {
   baseUrl?: string;
 }
 
-let _config: ResolvedCorsConfig | null = null;
+const GLOBAL_KEY = '__withwiz_cors_config' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_cors_config: ResolvedCorsConfig | undefined;
+}
+
+function getConfig(): ResolvedCorsConfig | null {
+  return globalThis[GLOBAL_KEY] ?? null;
+}
+
+function setConfig(config: ResolvedCorsConfig): void {
+  globalThis[GLOBAL_KEY] = config;
+}
 
 export function initializeCors(config: CorsConfig): void {
-  if (_config) return;
+  if (getConfig()) return;
   if (!config.allowedOrigins) {
     throw new ConfigurationError('CORS', 'allowedOrigins is required');
   }
@@ -24,17 +37,18 @@ export function initializeCors(config: CorsConfig): void {
   if (config.baseUrl === undefined) {
     configWarn('CORS', 'baseUrl not provided');
   }
-  _config = {
+  setConfig({
     allowedOrigins: [...config.allowedOrigins],
     baseUrl: config.baseUrl,
-  };
+  });
 }
 
 export function getCorsConfig(): ResolvedCorsConfig {
-  if (!_config) {
+  const config = getConfig();
+  if (!config) {
     throw new ConfigurationError('CORS', 'Not initialized. Call initializeCors() first.');
   }
-  return _config;
+  return config;
 }
 
-export function resetCors(): void { _config = null; }
+export function resetCors(): void { globalThis[GLOBAL_KEY] = undefined; }

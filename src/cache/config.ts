@@ -112,10 +112,23 @@ export interface ResolvedCacheConfig {
 }
 
 // ============================================================================
-// Module State
+// globalThis Singleton
 // ============================================================================
 
-let _config: ResolvedCacheConfig | null = null;
+const GLOBAL_KEY = '__withwiz_cache_config' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_cache_config: ResolvedCacheConfig | undefined;
+}
+
+function getConfig(): ResolvedCacheConfig | null {
+  return globalThis[GLOBAL_KEY] ?? null;
+}
+
+function setConfig(config: ResolvedCacheConfig): void {
+  globalThis[GLOBAL_KEY] = config;
+}
 
 // ============================================================================
 // Public API
@@ -126,7 +139,7 @@ let _config: ResolvedCacheConfig | null = null;
  * redis가 제공된 경우 url과 token 유효성을 검사합니다.
  */
 export function initializeCache(input: CacheConfigInput): void {
-  if (_config) return;
+  if (getConfig()) return;
   // Redis 유효성 검사
   if (input.redis !== undefined) {
     if (!input.redis.url) {
@@ -156,7 +169,7 @@ export function initializeCache(input: CacheConfigInput): void {
     }
   }
 
-  _config = {
+  setConfig({
     enabled: input.enabled ?? true,
     redis: input.redis
       ? {
@@ -211,7 +224,7 @@ export function initializeCache(input: CacheConfigInput): void {
       reportMinRequests:
         input.health?.reportMinRequests ?? CACHE_HEALTH_DEFAULTS.REPORT_MIN_REQUESTS,
     },
-  };
+  });
 }
 
 /**
@@ -219,15 +232,16 @@ export function initializeCache(input: CacheConfigInput): void {
  * initializeCache를 먼저 호출하지 않으면 ConfigurationError를 던집니다.
  */
 export function getResolvedCacheConfig(): ResolvedCacheConfig {
-  if (_config === null) {
+  const config = getConfig();
+  if (!config) {
     throw new ConfigurationError('cache', 'Cache config not initialized. Call initializeCache() first.');
   }
-  return _config;
+  return config;
 }
 
 /**
  * 캐시 설정을 초기화 전 상태로 리셋합니다. (테스트용)
  */
 export function resetCache(): void {
-  _config = null;
+  globalThis[GLOBAL_KEY] = undefined;
 }
