@@ -11,23 +11,37 @@ export interface ResolvedGeolocationConfig {
   maxmindLicenseKey?: string;
 }
 
-let _config: ResolvedGeolocationConfig | null = null;
+const GLOBAL_KEY = '__withwiz_geolocation_config' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_geolocation_config: ResolvedGeolocationConfig | undefined;
+}
+
+function getConfig(): ResolvedGeolocationConfig | null {
+  return globalThis[GLOBAL_KEY] ?? null;
+}
+
+function setConfig(config: ResolvedGeolocationConfig): void {
+  globalThis[GLOBAL_KEY] = config;
+}
 
 export function initializeGeolocation(config: GeolocationConfig): void {
-  if (_config) return;
+  if (getConfig()) return;
   if (!config.ipgeolocationApiKey) configWarn('Geolocation', 'ipgeolocationApiKey not provided, IPGeolocation provider will be unavailable');
   if (!config.maxmindLicenseKey) configWarn('Geolocation', 'maxmindLicenseKey not provided, MaxMind provider will be unavailable');
-  _config = {
+  setConfig({
     ipgeolocationApiKey: config.ipgeolocationApiKey,
     maxmindLicenseKey: config.maxmindLicenseKey,
-  };
+  });
 }
 
 export function getGeolocationConfig(): ResolvedGeolocationConfig {
-  if (!_config) throw new ConfigurationError('Geolocation', 'Not initialized. Call initializeGeolocation() first.');
-  return _config;
+  const config = getConfig();
+  if (!config) throw new ConfigurationError('Geolocation', 'Not initialized. Call initializeGeolocation() first.');
+  return config;
 }
 
 export function resetGeolocation(): void {
-  _config = null;
+  globalThis[GLOBAL_KEY] = undefined;
 }

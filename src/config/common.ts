@@ -9,21 +9,35 @@ export interface ResolvedCommonConfig {
   nodeEnv: 'development' | 'production' | 'test';
 }
 
-let _config: ResolvedCommonConfig | null = null;
+const GLOBAL_KEY = '__withwiz_common_config' as const;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_common_config: ResolvedCommonConfig | undefined;
+}
+
+function getConfig(): ResolvedCommonConfig | null {
+  return globalThis[GLOBAL_KEY] ?? null;
+}
+
+function setConfig(config: ResolvedCommonConfig): void {
+  globalThis[GLOBAL_KEY] = config;
+}
 
 export function initializeCommon(config: CommonConfig): void {
-  if (_config) return;
+  if (getConfig()) return;
   if (!config.nodeEnv) {
     configWarn('Common', 'nodeEnv not provided, using default: development');
   }
-  _config = { nodeEnv: config.nodeEnv ?? 'development' };
+  setConfig({ nodeEnv: config.nodeEnv ?? 'development' });
 }
 
 export function getCommonConfig(): ResolvedCommonConfig {
-  if (!_config) {
+  const config = getConfig();
+  if (!config) {
     throw new ConfigurationError('Common', 'Not initialized. Call initializeCommon() first.');
   }
-  return _config;
+  return config;
 }
 
-export function resetCommon(): void { _config = null; }
+export function resetCommon(): void { globalThis[GLOBAL_KEY] = undefined; }
