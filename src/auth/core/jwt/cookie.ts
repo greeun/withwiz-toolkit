@@ -1,8 +1,17 @@
 /**
  * JWT 토큰을 HttpOnly 쿠키로 설정/삭제하는 유틸리티
+ *
+ * NextResponse 타입을 제네릭으로 처리하여
+ * symlink 환경에서의 next 패키지 경로 충돌을 방지합니다.
  */
-import { NextResponse } from 'next/server';
 import type { TokenPair } from '@withwiz/auth/types';
+
+/** cookies.set()을 지원하는 Response 타입 */
+interface CookieSettableResponse {
+  cookies: {
+    set(name: string, value: string, options?: Record<string, unknown>): void;
+  };
+}
 
 export interface CookieOptions {
   secure?: boolean;
@@ -15,11 +24,11 @@ const DEFAULT_OPTIONS: CookieOptions = {
   sameSite: 'lax',
 };
 
-export function setTokenCookies(
-  response: NextResponse,
+export function setTokenCookies<T extends CookieSettableResponse>(
+  response: T,
   tokenPair: TokenPair,
   options: CookieOptions = {},
-): NextResponse {
+): T {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   response.cookies.set('access_token', tokenPair.accessToken, {
@@ -41,10 +50,10 @@ export function setTokenCookies(
   return response;
 }
 
-export function clearTokenCookies(
-  response: NextResponse,
+export function clearTokenCookies<T extends CookieSettableResponse>(
+  response: T,
   options: CookieOptions = {},
-): NextResponse {
+): T {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   response.cookies.set('access_token', '', {
