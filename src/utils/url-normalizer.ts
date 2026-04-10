@@ -46,6 +46,17 @@ export const SUPPORTED_SCHEMES = [
 ];
 
 /**
+ * 위험한 프로토콜 목록 (XSS, 로컬 파일 접근 등)
+ */
+const DANGEROUS_SCHEMES = [
+  'javascript:',
+  'vbscript:',
+  'data:',
+  'file:',
+  'blob:',
+];
+
+/**
  * 커스텀 앱 스키마 패턴 (예: myapp://, customscheme:// 등)
  */
 const CUSTOM_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
@@ -56,18 +67,23 @@ const CUSTOM_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 export function hasValidScheme(url: string): boolean {
   try {
     const urlObj = new URL(url);
-    const protocol = urlObj.protocol;
-    
+    const protocol = urlObj.protocol.toLowerCase();
+
+    // 위험한 프로토콜 차단
+    if (DANGEROUS_SCHEMES.includes(protocol)) {
+      return false;
+    }
+
     // 지원 목록에 있는 스키마인지 확인
     if (SUPPORTED_SCHEMES.includes(protocol)) {
       return true;
     }
-    
+
     // 커스텀 스키마 패턴에 매치되는지 확인
     if (CUSTOM_SCHEME_PATTERN.test(url)) {
       return true;
     }
-    
+
     return false;
   } catch {
     return false;
@@ -102,8 +118,12 @@ export function normalizeUrl(url: string): string {
   
   // 이미 유효한 스키마가 있는지 확인
   const scheme = extractScheme(normalized);
-  
+
   if (scheme) {
+    // 위험한 프로토콜은 빈 문자열 반환
+    if (DANGEROUS_SCHEMES.includes(scheme.toLowerCase() + ':')) {
+      return '';
+    }
     // 유효한 스키마가 있으면 그대로 반환
     return normalized;
   }
@@ -157,6 +177,16 @@ export function validateUrl(url: string, options?: { skipNormalization?: boolean
   try {
     const urlObj = new URL(normalized);
     const protocol = urlObj.protocol;
+
+    // 위험한 프로토콜 차단
+    if (DANGEROUS_SCHEMES.includes(protocol.toLowerCase())) {
+      return {
+        isValid: false,
+        message: `보안상 허용되지 않는 프로토콜입니다: ${protocol}`,
+        messageKey: 'unsupportedProtocol',
+        messageParams: { protocol },
+      };
+    }
 
     // 지원되는 스키마 확인
     const isSupported = SUPPORTED_SCHEMES.includes(protocol);

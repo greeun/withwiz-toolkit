@@ -49,6 +49,19 @@ describe("Sanitizer", () => {
         expect(sanitizeHtml("&#x27;")).toBe("'");
         expect(sanitizeHtml("&#x2F;")).toBe("/");
       });
+
+      it("should prevent numeric entity XSS bypass", () => {
+        // &#60; = <, &#62; = > — 숫자 엔티티로 인코딩된 태그 차단
+        const result = sanitizeHtml("&#60;script&#62;alert(1)&#60;/script&#62;");
+        expect(result).not.toContain("<script");
+        expect(result).toBe("alert(1)");
+      });
+
+      it("should prevent incomplete tag XSS bypass", () => {
+        // 닫는 >가 없는 불완전 태그 — HTML5 파서 우회 방지
+        const result = sanitizeHtml("&lt;img src=x onerror=alert(1)//");
+        expect(result).not.toContain("<img");
+      });
     });
 
     describe("Edge Cases", () => {

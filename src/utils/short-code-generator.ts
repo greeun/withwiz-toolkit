@@ -1,10 +1,13 @@
 /**
  * 단축 코드 생성 전용 유틸리티
- * 순수 함수로 구현하여 외부 의존성 없음
+ * 암호학적으로 안전한 난수 생성기(CSPRNG) 사용
  */
+
+import { randomBytes } from 'crypto';
 
 /**
  * 기본 단축 코드 생성 함수
+ * crypto.randomBytes를 사용하여 예측 불가능한 코드 생성
  * @param length - 생성할 코드 길이 (기본값: 8)
  * @returns 생성된 단축 코드
  */
@@ -12,14 +15,15 @@ export function generateShortCode(length: number = 8): string {
   if (!Number.isInteger(length) || length <= 0) {
     throw new Error('length must be a positive integer');
   }
-  
+
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = randomBytes(length);
   let result = '';
-  
+
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(bytes[i] % chars.length);
   }
-  
+
   return result;
 }
 

@@ -9,15 +9,16 @@
 
 /**
  * XSS 방지를 위한 HTML 태그 제거
- * - 모든 HTML 태그 제거
- * - 이스케이프된 HTML 엔티티 처리
+ * - 모든 HTML 태그 제거 (named + numeric 엔티티로 인코딩된 태그 포함)
+ * - 닫는 >가 없는 불완전 태그 제거 (HTML5 파서 우회 방지)
+ * - HTML 엔티티를 디코딩하여 원본 텍스트 반환
  * - 공백 정리
  *
  * @param input - 정제할 문자열
- * @returns 정제된 문자열
+ * @returns 태그가 제거된 순수 텍스트 (React 등 텍스트 컨텍스트에서 사용)
  *
  * @example
- * sanitizeHtml('<script>alert("xss")</script>Hello') // 'Hello'
+ * sanitizeHtml('<script>alert("xss")</script>Hello') // 'alert("xss")Hello'
  * sanitizeHtml('Hello <b>World</b>') // 'Hello World'
  */
 export function sanitizeHtml(input: string): string {
@@ -25,16 +26,38 @@ export function sanitizeHtml(input: string): string {
     return '';
   }
 
-  return input
-    .replace(/<[^>]*>/g, '') // HTML 태그 제거
-    .replace(/&lt;/gi, '<')  // 이스케이프된 태그 디코딩
-    .replace(/&gt;/gi, '>')
-    .replace(/<[^>]*>/g, '') // 디코딩 후 다시 태그 제거
-    .replace(/&amp;/gi, '&') // 앰퍼샌드 디코딩
-    .replace(/&quot;/gi, '"') // 따옴표 디코딩
-    .replace(/&#x27;/gi, "'") // 작은따옴표 디코딩
-    .replace(/&#x2F;/gi, '/') // 슬래시 디코딩
-    .trim();
+  let result = input;
+
+  // 1. 완전한 HTML 태그 제거
+  result = result.replace(/<[^>]*>/g, '');
+
+  // 2. named 엔티티 중 태그 구성 문자만 먼저 디코딩
+  result = result
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+
+  // 3. 디코딩으로 생성된 태그 제거
+  result = result.replace(/<[^>]*>/g, '');
+
+  // 4. numeric HTML 엔티티 디코딩 (&#60; &#x3C; 등 — XSS 우회 방지)
+  result = result
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+  // 5. numeric 디코딩으로 생성된 태그 제거
+  result = result.replace(/<[^>]*>/g, '');
+
+  // 6. 닫는 >가 없는 불완전 태그 제거 (HTML5 파서 우회 방지)
+  result = result.replace(/<[^>]*$/g, '');
+
+  // 7. 나머지 named 엔티티 디코딩
+  result = result
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x2F;/gi, '/');
+
+  return result.trim();
 }
 
 /**
