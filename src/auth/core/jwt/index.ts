@@ -49,7 +49,7 @@ export class JWTManager {
 
       return jwt;
     } catch (error) {
-      this.logger.error("Failed to create access token", { error, payload });
+      this.logger.error("Failed to create access token", { error, userId: payload.userId });
       throw new JWTError(
         "Access token creation failed",
         "TOKEN_CREATION_FAILED",

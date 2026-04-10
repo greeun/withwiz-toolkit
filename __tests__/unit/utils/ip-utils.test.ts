@@ -197,40 +197,39 @@ describe("IP Utils", () => {
     });
 
     describe("Standard Proxy Headers", () => {
-      it("should use X-Real-IP if Cloudflare headers are missing", () => {
+      it("should ignore X-Real-IP (spoofable)", () => {
         const headers = new Headers({
           "x-real-ip": "1.2.3.4",
-          "x-forwarded-for": "5.6.7.8",
         });
-        expect(extractClientIp(headers)).toBe("1.2.3.4");
+        expect(extractClientIp(headers)).toBeNull();
       });
 
-      it("should parse X-Forwarded-For and use first IP", () => {
+      it("should parse X-Forwarded-For and use last IP (proxy-added)", () => {
         const headers = new Headers({
           "x-forwarded-for": "1.2.3.4, 5.6.7.8, 9.10.11.12",
         });
-        expect(extractClientIp(headers)).toBe("1.2.3.4");
+        expect(extractClientIp(headers)).toBe("9.10.11.12");
       });
 
       it("should handle X-Forwarded-For with whitespace", () => {
         const headers = new Headers({
           "x-forwarded-for": "  1.2.3.4  ,  5.6.7.8  ",
         });
-        expect(extractClientIp(headers)).toBe("1.2.3.4");
+        expect(extractClientIp(headers)).toBe("5.6.7.8");
       });
 
-      it("should use X-Client-IP as fallback", () => {
+      it("should ignore X-Client-IP (spoofable)", () => {
         const headers = new Headers({
           "x-client-ip": "1.2.3.4",
         });
-        expect(extractClientIp(headers)).toBe("1.2.3.4");
+        expect(extractClientIp(headers)).toBeNull();
       });
     });
 
     describe("Invalid IPs", () => {
-      it("should skip invalid IPs in X-Forwarded-For", () => {
+      it("should return null when last IP in X-Forwarded-For is invalid", () => {
         const headers = new Headers({
-          "x-forwarded-for": "invalid, 1.2.3.4",
+          "x-forwarded-for": "1.2.3.4, invalid",
         });
         expect(extractClientIp(headers)).toBe(null);
       });
@@ -265,9 +264,9 @@ describe("IP Utils", () => {
         expect(extractClientIp(headers)).toBe("2001:4860:4860::8888");
       });
 
-      it("should extract IPv6 localhost", () => {
+      it("should extract IPv6 localhost from X-Forwarded-For", () => {
         const headers = new Headers({
-          "x-real-ip": "::1",
+          "x-forwarded-for": "::1",
         });
         expect(extractClientIp(headers)).toBe("::1");
       });

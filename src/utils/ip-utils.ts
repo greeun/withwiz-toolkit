@@ -59,15 +59,18 @@ export function normalizeIP(ip: string): string {
 /**
  * 클라이언트 IP 주소 추출 (서버에서만 사용)
  *
- * Cloudflare 환경 최적화:
- * 1. CF-Connecting-IP: Cloudflare가 설정하는 실제 클라이언트 IP (가장 신뢰)
- * 2. True-Client-IP: Cloudflare Enterprise에서 사용
- * 3. X-Real-IP: Nginx 등 신뢰할 수 있는 리버스 프록시
- * 4. X-Forwarded-For: 첫 번째 IP가 실제 클라이언트 (Cloudflare가 추가)
- * 5. X-Client-IP: 일부 프록시에서 사용
+ * 신뢰 가능한 프록시 헤더만 사용:
+ * 1. CF-Connecting-IP: Cloudflare Proxy가 강제 설정 (스푸핑 불가)
+ * 2. True-Client-IP: Cloudflare Enterprise에서 설정
+ * 3. X-Forwarded-For: 마지막 IP = 직전 프록시가 추가한 실제 클라이언트 IP
+ *
+ * 보안 참고:
+ * - X-Real-IP, X-Client-IP 등 클라이언트가 임의 설정 가능한 헤더는 사용하지 않음
+ * - X-Forwarded-For의 첫 번째 IP는 클라이언트가 조작 가능하므로 마지막 IP를 사용
+ * - Cloudflare Proxy 환경에서는 CF-Connecting-IP가 항상 설정되므로 폴백에 도달하지 않음
  */
 export function extractClientIp(headers: Headers): string | null {
-  // 1. Cloudflare 헤더 (가장 신뢰할 수 있음)
+  // 1. Cloudflare 헤더 (가장 신뢰할 수 있음 — Cloudflare가 강제 덮어씀)
   const cf = headers.get('cf-connecting-ip');
   if (cf && isValidIP(cf.trim())) return cf.trim();
 
@@ -75,24 +78,16 @@ export function extractClientIp(headers: Headers): string | null {
   const trueClientIp = headers.get('true-client-ip');
   if (trueClientIp && isValidIP(trueClientIp.trim())) return trueClientIp.trim();
 
-  // 3. X-Real-IP (Nginx 등 신뢰할 수 있는 프록시)
-  const xri = headers.get('x-real-ip');
-  if (xri && isValidIP(xri.trim())) return xri.trim();
-
-  // 4. X-Forwarded-For (첫 번째 IP = 실제 클라이언트)
-  // Cloudflare 환경에서는 첫 번째 IP가 실제 클라이언트 IP
+  // 3. X-Forwarded-For (마지막 IP = 직전 신뢰 프록시가 추가한 값)
+  // 첫 번째 IP는 클라이언트가 조작 가능하므로 사용하지 않음
   const xff = headers.get('x-forwarded-for');
   if (xff) {
     const ips = xff.split(',').map(ip => ip.trim()).filter(Boolean);
-    // 첫 번째 IP 사용 (Cloudflare가 추가한 실제 클라이언트 IP)
-    if (ips.length > 0 && isValidIP(ips[0])) {
-      return ips[0];
+    const lastIp = ips[ips.length - 1];
+    if (lastIp && isValidIP(lastIp)) {
+      return lastIp;
     }
   }
-
-  // 5. X-Client-IP (일부 프록시에서 사용)
-  const xc = headers.get('x-client-ip');
-  if (xc && isValidIP(xc.trim())) return xc.trim();
 
   return null;
 }
