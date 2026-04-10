@@ -94,7 +94,12 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       ? classifyError(error)
       : ERROR_CODES.INTERNAL_SERVER_ERROR;
 
-    logger.error('[ErrorHandler] Unexpected error:', error);
+    // 스택 트레이스는 서버 로그에만 기록 (API 응답에는 포함하지 않음)
+    logger.error('[ErrorHandler] Unexpected error:', {
+      error,
+      requestId: context.requestId,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     let isProduction = false;
     try {
@@ -111,9 +116,6 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       safeMessage,
       context.locale,
       context.requestId,
-      !isProduction && error instanceof Error
-        ? { stack: error.stack?.split('\n').slice(0, 5) }
-        : undefined
     );
   }
 };

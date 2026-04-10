@@ -496,22 +496,22 @@ describe("SC-UNIT-UTIL-003: IP Utilities (ip-utils.ts)", () => {
       expect(extractClientIp(headers)).toBe("1.2.3.4");
     });
 
-    test("x-real-ip header", () => {
+    test("x-real-ip header → ignored (spoofable)", () => {
       const headers = new Headers();
       headers.set("x-real-ip", "1.2.3.4");
-      expect(extractClientIp(headers)).toBe("1.2.3.4");
+      expect(extractClientIp(headers)).toBeNull();
     });
 
-    test("x-forwarded-for header → uses first IP", () => {
+    test("x-forwarded-for header → uses last IP (proxy-added)", () => {
       const headers = new Headers();
       headers.set("x-forwarded-for", "1.2.3.4, 5.6.7.8, 9.10.11.12");
-      expect(extractClientIp(headers)).toBe("1.2.3.4");
+      expect(extractClientIp(headers)).toBe("9.10.11.12");
     });
 
-    test("x-client-ip header", () => {
+    test("x-client-ip header → ignored (spoofable)", () => {
       const headers = new Headers();
       headers.set("x-client-ip", "1.2.3.4");
-      expect(extractClientIp(headers)).toBe("1.2.3.4");
+      expect(extractClientIp(headers)).toBeNull();
     });
 
     test("no headers → null", () => {
@@ -522,8 +522,8 @@ describe("SC-UNIT-UTIL-003: IP Utilities (ip-utils.ts)", () => {
     test("invalid IP header → attempts next header", () => {
       const headers = new Headers();
       headers.set("cf-connecting-ip", "invalid-ip");
-      headers.set("x-real-ip", "1.2.3.4");
-      expect(extractClientIp(headers)).toBe("1.2.3.4");
+      headers.set("x-forwarded-for", "5.6.7.8");
+      expect(extractClientIp(headers)).toBe("5.6.7.8");
     });
   });
 });
@@ -556,6 +556,18 @@ describe("SC-UNIT-UTIL-004: Sanitizer (sanitizer.ts)", () => {
       expect(sanitizeHtml("&lt;script&gt;")).toBe("");
       expect(sanitizeHtml("&amp;")).toBe("&");
       expect(sanitizeHtml("&quot;")).toBe('"');
+    });
+
+    test("numeric HTML entity XSS prevention", () => {
+      // &#60; = <, &#62; = > — 숫자 엔티티 우회 차단
+      expect(sanitizeHtml("&#60;script&#62;alert(1)&#60;/script&#62;")).not.toContain("<");
+      expect(sanitizeHtml("&#60;script&#62;alert(1)&#60;/script&#62;")).not.toContain(">");
+    });
+
+    test("incomplete tag XSS prevention", () => {
+      // 닫는 >가 없는 불완전 태그 — HTML5 파서 우회 방지
+      const result = sanitizeHtml("&lt;img src=x onerror=alert(1)//");
+      expect(result).not.toContain("<img");
     });
 
     test("공백 trim 처리", () => {
