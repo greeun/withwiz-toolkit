@@ -24,7 +24,7 @@ export { rateLimitMiddleware, createRateLimitMiddleware, setRateLimitAdapter } f
 export { errorHandlerMiddleware } from './error-handler';
 export { responseLoggerMiddleware } from './response-logger';
 export { corsMiddleware, validateCorsConfiguration } from './cors';
-export { securityMiddleware, validateSecurityConfiguration } from './security';
+export { securityMiddleware, validateSecurityConfiguration, setAllowedOrigins } from './security';
 
 // 래퍼 함수
 export {
