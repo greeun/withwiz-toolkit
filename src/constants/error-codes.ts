@@ -82,12 +82,6 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.BAD_REQUEST,
     message: "Password is too weak.",
   },
-  INVALID_ALIAS_FORMAT: {
-    code: 40008,
-    key: "INVALID_ALIAS_FORMAT",
-    status: HTTP_STATUS.BAD_REQUEST,
-    message: "Alias can only contain English letters, numbers, -, and _.",
-  },
 
   // ============================================
   // Authentication Related (401xx)
@@ -115,18 +109,6 @@ export const ERROR_CODES = {
     key: "INVALID_CREDENTIALS",
     status: HTTP_STATUS.UNAUTHORIZED,
     message: "Invalid email or password.",
-  },
-  LINK_PASSWORD_REQUIRED: {
-    code: 40104,
-    key: "LINK_PASSWORD_REQUIRED",
-    status: HTTP_STATUS.UNAUTHORIZED,
-    message: "Link password is required.",
-  },
-  LINK_PASSWORD_INCORRECT: {
-    code: 40105,
-    key: "LINK_PASSWORD_INCORRECT",
-    status: HTTP_STATUS.UNAUTHORIZED,
-    message: "Incorrect link password.",
   },
   SESSION_EXPIRED: {
     code: 40107,
@@ -181,30 +163,6 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.NOT_FOUND,
     message: "User not found.",
   },
-  LINK_NOT_FOUND: {
-    code: 40403,
-    key: "LINK_NOT_FOUND",
-    status: HTTP_STATUS.NOT_FOUND,
-    message: "Link not found.",
-  },
-  TAG_NOT_FOUND: {
-    code: 40408,
-    key: "TAG_NOT_FOUND",
-    status: HTTP_STATUS.NOT_FOUND,
-    message: "Tag not found.",
-  },
-  FAVORITE_NOT_FOUND: {
-    code: 40409,
-    key: "FAVORITE_NOT_FOUND",
-    status: HTTP_STATUS.NOT_FOUND,
-    message: "Favorite not found.",
-  },
-  GROUP_NOT_FOUND: {
-    code: 40410,
-    key: "GROUP_NOT_FOUND",
-    status: HTTP_STATUS.NOT_FOUND,
-    message: "Group not found.",
-  },
 
   // ============================================
   // Conflict (409xx)
@@ -228,12 +186,6 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.CONFLICT,
     message: "Email is already registered.",
   },
-  ALIAS_ALREADY_EXISTS: {
-    code: 40907,
-    key: "ALIAS_ALREADY_EXISTS",
-    status: HTTP_STATUS.CONFLICT,
-    message: "Alias is already in use.",
-  },
 
   // ============================================
   // Business Logic (422xx)
@@ -255,38 +207,6 @@ export const ERROR_CODES = {
     key: "QUOTA_EXCEEDED",
     status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
     message: "Usage quota exceeded.",
-  },
-  LINK_EXPIRED: {
-    code: 42204,
-    key: "LINK_EXPIRED",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Link has expired.",
-  },
-  LINK_INACTIVE: {
-    code: 42205,
-    key: "LINK_INACTIVE",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Link is inactive.",
-  },
-  // LINK_PASSWORD_REQUIRED: 401xx로 이동 (40104)
-  // LINK_PASSWORD_INCORRECT: 401xx로 이동 (40105)
-  RESERVED_WORD_USED: {
-    code: 42208,
-    key: "RESERVED_WORD_USED",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Reserved words cannot be used as aliases.",
-  },
-  ALREADY_FAVORITED: {
-    code: 42209,
-    key: "ALREADY_FAVORITED",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "Already added to favorites.",
-  },
-  CANNOT_DELETE_OWN_ACCOUNT: {
-    code: 42210,
-    key: "CANNOT_DELETE_OWN_ACCOUNT",
-    status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
-    message: "You cannot delete your own account.",
   },
   FILE_TOO_LARGE: {
     code: 42211,

@@ -35,7 +35,6 @@ const koMessages: Record<number, IFriendlyMessage> = {
   40005: { title: 'URL 형식을 확인해 주세요', description: 'https://로 시작하는 URL을 입력해 주세요.', action: '예: https://example.com' },
   40006: { title: '이메일 형식을 확인해 주세요', description: '올바른 이메일 주소가 아닙니다.', action: '예: user@example.com' },
   40007: { title: '더 안전한 비밀번호가 필요해요', description: '8자 이상, 영문/숫자/특수문자 포함', action: '더 복잡한 비밀번호를 설정해 주세요.' },
-  40008: { title: '별칭 형식을 확인해 주세요', description: '영문, 숫자, 하이픈(-)만 사용 가능', action: '예: my-link-123' },
   // 인증 (401xx)
   40101: { title: '로그인이 필요해요', description: '이 기능은 로그인이 필요합니다.', action: '로그인 후 다시 시도해 주세요.' },
   40102: { title: '인증 정보가 올바르지 않아요', description: '로그인 상태가 유효하지 않습니다.', action: '다시 로그인해 주세요.' },
@@ -50,27 +49,14 @@ const koMessages: Record<number, IFriendlyMessage> = {
   // 리소스 (404xx)
   40401: { title: '찾을 수 없어요', description: '요청하신 항목이 존재하지 않습니다.', action: '주소를 확인해 주세요.' },
   40402: { title: '사용자를 찾을 수 없어요', description: '해당 사용자가 존재하지 않습니다.' },
-  40403: { title: '링크를 찾을 수 없어요', description: '단축 링크가 존재하지 않습니다.', action: '링크 주소를 확인해 주세요.' },
-  40408: { title: '태그를 찾을 수 없어요', description: '태그가 존재하지 않습니다.' },
-  40409: { title: '즐겨찾기를 찾을 수 없어요', description: '항목이 존재하지 않습니다.' },
-  40410: { title: '그룹을 찾을 수 없어요', description: '그룹이 존재하지 않습니다.' },
   // 충돌 (409xx)
   40904: { title: '충돌이 발생했어요', description: '기존 데이터와 충돌합니다.', action: '잠시 후 다시 시도해 주세요.' },
   40905: { title: '이미 존재해요', description: '동일한 항목이 있습니다.', action: '다른 값을 사용해 주세요.' },
   40906: { title: '이미 등록된 이메일이에요', description: '다른 계정에서 사용 중입니다.', action: '다른 이메일을 사용해 주세요.' },
-  40907: { title: '이미 사용 중인 별칭이에요', description: '다른 링크에서 사용 중입니다.', action: '다른 별칭을 입력해 주세요.' },
   // 비즈니스 (422xx)
   42201: { title: '처리할 수 없어요', description: '현재 상태에서 처리할 수 없습니다.', action: '조건을 확인해 주세요.' },
   42202: { title: '지금은 할 수 없는 작업이에요', description: '현재 상태에서 불가능합니다.' },
   42203: { title: '사용량을 초과했어요', description: '한도를 초과했습니다.', action: '플랜 업그레이드를 고려해 주세요.' },
-  42204: { title: '만료된 링크예요', description: '유효 기간이 지났습니다.', action: '새 링크를 생성해 주세요.' },
-  42205: { title: '비활성화된 링크예요', description: '사용이 중지되었습니다.', action: '소유자에게 문의해 주세요.' },
-  // 42206, 42207: 401xx로 이동 (40104, 40105)
-  40104: { title: '비밀번호가 필요해요', description: '비밀번호를 입력해야 합니다.', action: '비밀번호를 입력해 주세요.' },
-  40105: { title: '비밀번호가 틀렸어요', description: '비밀번호가 올바르지 않습니다.', action: '다시 확인해 주세요.' },
-  42208: { title: '사용할 수 없는 별칭이에요', description: '시스템 예약어입니다.', action: '다른 별칭을 선택해 주세요.' },
-  42209: { title: '이미 즐겨찾기에 있어요', description: '이미 추가되어 있습니다.' },
-  42210: { title: '삭제할 수 없어요', description: '본인 관리자 계정은 삭제 불가합니다.' },
   42211: { title: '파일이 너무 커요', description: '최대 크기를 초과했습니다.', action: '작은 파일을 선택해 주세요.' },
   42212: { title: '지원하지 않는 파일 형식이에요', description: '업로드할 수 없습니다.', action: '지원 형식을 확인해 주세요.' },
   // Rate Limit (429xx)

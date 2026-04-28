@@ -214,14 +214,11 @@ describe('ErrorResponse utility completeness', () => {
     expect(typeof ErrorResponse.invalidUrl).toBe('function');
     expect(typeof ErrorResponse.invalidEmail).toBe('function');
     expect(typeof ErrorResponse.weakPassword).toBe('function');
-    expect(typeof ErrorResponse.invalidAlias).toBe('function');
 
     // 401xx
     expect(typeof ErrorResponse.unauthorized).toBe('function');
     expect(typeof ErrorResponse.invalidToken).toBe('function');
     expect(typeof ErrorResponse.tokenExpired).toBe('function');
-    expect(typeof ErrorResponse.linkPasswordRequired).toBe('function');
-    expect(typeof ErrorResponse.linkPasswordIncorrect).toBe('function');
     expect(typeof ErrorResponse.invalidCredentials).toBe('function');
     expect(typeof ErrorResponse.sessionExpired).toBe('function');
 
@@ -230,9 +227,7 @@ describe('ErrorResponse utility completeness', () => {
 
     // 404xx
     expect(typeof ErrorResponse.notFound).toBe('function');
-    expect(typeof ErrorResponse.tagNotFound).toBe('function');
-    expect(typeof ErrorResponse.favoriteNotFound).toBe('function');
-    expect(typeof ErrorResponse.groupNotFound).toBe('function');
+    expect(typeof ErrorResponse.userNotFound).toBe('function');
 
     // 409xx
     expect(typeof ErrorResponse.conflict).toBe('function');
@@ -241,7 +236,6 @@ describe('ErrorResponse utility completeness', () => {
     // 422xx
     expect(typeof ErrorResponse.businessRule).toBe('function');
     expect(typeof ErrorResponse.invalidOperation).toBe('function');
-    expect(typeof ErrorResponse.alreadyFavorited).toBe('function');
     expect(typeof ErrorResponse.fileTooLarge).toBe('function');
     expect(typeof ErrorResponse.unsupportedFileType).toBe('function');
 
