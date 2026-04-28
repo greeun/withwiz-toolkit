@@ -67,14 +67,6 @@ export const CACHE_TTL_DEFAULTS = {
   ANALYTICS: THIRTY_MINUTES,
   /** 사용자 데이터 TTL (30분) */
   USER: THIRTY_MINUTES,
-  /** 링크 데이터 TTL (30분) */
-  LINK: THIRTY_MINUTES,
-  /** 별칭 TTL (5분) - 자주 확인되는 데이터 */
-  ALIAS: FIVE_MINUTES,
-  /** 커뮤니티 TTL (15분) */
-  COMMUNITY: FIFTEEN_MINUTES,
-  /** 예약어 TTL (30분) */
-  RESERVED_WORDS: THIRTY_MINUTES,
 } as const;
 
 // ============================================================================
@@ -90,22 +82,8 @@ export const CACHE_DURATION_DEFAULTS = {
   GEOIP: THIRTY_DAYS,
   /** 설정 데이터 (30분) */
   SETTINGS: THIRTY_MINUTES,
-  /** 예약어 데이터 (30분) */
-  RESERVED_WORDS: THIRTY_MINUTES,
-  /** 별칭 데이터 (5분) */
-  ALIAS: FIVE_MINUTES,
-  /** 커뮤니티 데이터 (15분) */
-  COMMUNITY: FIFTEEN_MINUTES,
-  /** 링크 데이터 (30분) */
-  LINK: THIRTY_MINUTES,
   /** Rate Limit (1분) */
   RATE_LIMIT: ONE_MINUTE,
-  /** URL 토큰 (5분) */
-  URL_TOKEN: FIVE_MINUTES,
-  /** API 키 (5분) */
-  API_KEY: FIVE_MINUTES,
-  /** API 설정 (10분) */
-  API_CONFIG: TEN_MINUTES,
 } as const;
 
 // ============================================================================
@@ -176,10 +154,6 @@ export const CACHE_ENV_VARS = {
   CACHE_TTL_SETTINGS: 'CACHE_TTL_SETTINGS',
   CACHE_TTL_ANALYTICS: 'CACHE_TTL_ANALYTICS',
   CACHE_TTL_USER: 'CACHE_TTL_USER',
-  CACHE_TTL_LINK: 'CACHE_TTL_LINK',
-  CACHE_TTL_ALIAS: 'CACHE_TTL_ALIAS',
-  CACHE_TTL_COMMUNITY: 'CACHE_TTL_COMMUNITY',
-  CACHE_TTL_RESERVED_WORDS: 'CACHE_TTL_RESERVED_WORDS',
 
   // 폴백 설정
   CACHE_REDIS_ERROR_THRESHOLD_GLOBAL: 'CACHE_REDIS_ERROR_THRESHOLD_GLOBAL',

@@ -39,10 +39,6 @@ export interface CacheConfigInput {
     SETTINGS: number;
     ANALYTICS: number;
     USER: number;
-    LINK: number;
-    ALIAS: number;
-    COMMUNITY: number;
-    RESERVED_WORDS: number;
   }>;
   categories?: Partial<Record<string, { enabled?: boolean; duration?: number }>>;
   fallback?: {
@@ -88,10 +84,6 @@ export interface ResolvedCacheConfig {
     SETTINGS: number;
     ANALYTICS: number;
     USER: number;
-    LINK: number;
-    ALIAS: number;
-    COMMUNITY: number;
-    RESERVED_WORDS: number;
   };
   categories: Record<string, { enabled: boolean; duration: number }>;
   fallback: {
@@ -193,10 +185,6 @@ export function initializeCache(input: CacheConfigInput): void {
       SETTINGS: input.ttl?.SETTINGS ?? CACHE_TTL_DEFAULTS.SETTINGS,
       ANALYTICS: input.ttl?.ANALYTICS ?? CACHE_TTL_DEFAULTS.ANALYTICS,
       USER: input.ttl?.USER ?? CACHE_TTL_DEFAULTS.USER,
-      LINK: input.ttl?.LINK ?? CACHE_TTL_DEFAULTS.LINK,
-      ALIAS: input.ttl?.ALIAS ?? CACHE_TTL_DEFAULTS.ALIAS,
-      COMMUNITY: input.ttl?.COMMUNITY ?? CACHE_TTL_DEFAULTS.COMMUNITY,
-      RESERVED_WORDS: input.ttl?.RESERVED_WORDS ?? CACHE_TTL_DEFAULTS.RESERVED_WORDS,
     },
     categories: mergedCategories,
     fallback: {

@@ -45,10 +45,6 @@ export interface ICacheTTLConfig {
   SETTINGS: number;
   ANALYTICS: number;
   USER: number;
-  LINK: number;
-  ALIAS: number;
-  COMMUNITY: number;
-  RESERVED_WORDS: number;
 }
 
 /**
@@ -89,14 +85,7 @@ export interface ICacheEnv {
   USER: ICacheCategoryConfig;
   GEOIP: ICacheCategoryConfig;
   SETTINGS: ICacheCategoryConfig;
-  RESERVED_WORDS: ICacheCategoryConfig;
-  ALIAS: ICacheCategoryConfig;
-  COMMUNITY: ICacheCategoryConfig;
-  LINK: ICacheCategoryConfig;
   RATE_LIMIT: ICacheCategoryConfig;
-  URL_TOKEN: ICacheCategoryConfig;
-  API_KEY: ICacheCategoryConfig;
-  API_CONFIG: ICacheCategoryConfig;
 }
 
 /**

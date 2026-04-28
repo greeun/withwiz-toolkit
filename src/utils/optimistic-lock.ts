@@ -17,11 +17,11 @@ import { AppError } from '@withwiz/error/app-error';
  * @example
  * ```typescript
  * await withOptimisticLock(
- *   () => prisma.link.updateMany({
- *     where: { id: linkId, version: currentVersion },
- *     data: { title: newTitle, version: { increment: 1 } },
+ *   () => prisma.entity.updateMany({
+ *     where: { id, version: currentVersion },
+ *     data: { name: newName, version: { increment: 1 } },
  *   }),
- *   'Link'
+ *   'Entity'
  * );
  * ```
  */
