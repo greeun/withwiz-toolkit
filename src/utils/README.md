@@ -164,8 +164,8 @@ if (status.success) {
 IPGEO_API_KEY=your_api_key_here
 
 # Redis (캐시 사용시)
-UPSTASH_REDIS_REST_URL=your_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_redis_token
+REDIS_REST_URL=your_redis_url
+REDIS_REST_TOKEN=your_redis_token
 ```
 
 ## 🔧 설정

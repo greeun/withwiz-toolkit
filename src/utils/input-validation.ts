@@ -289,7 +289,8 @@ export function validateFilename(filename: string): {
     return { valid: false, error: 'Path traversal detected in filename' };
   }
 
-  // 위험한 확장자 체크
+  // 위험한 확장자 체크 (Windows 실행 파일 + 서버 사이드 스크립트)
+  // .com은 Windows COM 실행 파일 (도메인 접미사가 아님)
   const dangerousExtensions = [
     '.exe',
     '.bat',

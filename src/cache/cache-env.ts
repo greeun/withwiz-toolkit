@@ -35,8 +35,8 @@ export function getConfig(): ISharedEnvConfig {
   return {
     env: {
       NODE_ENV: nodeEnv,
-      UPSTASH_REDIS_REST_URL: cc.redis?.url,
-      UPSTASH_REDIS_REST_TOKEN: cc.redis?.token,
+      REDIS_REST_URL: cc.redis?.url,
+      REDIS_REST_TOKEN: cc.redis?.token,
       CACHE_ENABLED: cc.enabled,
     },
     ENV: {
@@ -99,15 +99,15 @@ export function validateRedisEnvironment(): { isValid: boolean; errors: string[]
   const redisToken = cc.redis?.token;
 
   if (!redisUrl) {
-    errors.push('UPSTASH_REDIS_REST_URL is not configured.');
+    errors.push('Redis URL is not configured.');
   } else if (redisUrl.trim() === '') {
-    errors.push('UPSTASH_REDIS_REST_URL is an empty string.');
+    errors.push('Redis URL is an empty string.');
   }
 
   if (!redisToken) {
-    errors.push('UPSTASH_REDIS_REST_TOKEN is not configured.');
+    errors.push('Redis token is not configured.');
   } else if (redisToken.trim() === '') {
-    errors.push('UPSTASH_REDIS_REST_TOKEN is an empty string.');
+    errors.push('Redis token is an empty string.');
   }
 
   return {

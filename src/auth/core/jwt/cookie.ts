@@ -5,6 +5,7 @@
  * symlink 환경에서의 next 패키지 경로 충돌을 방지합니다.
  */
 import type { TokenPair } from '@withwiz/auth/types';
+import { getCommonConfig } from '../../../config/common';
 
 /** cookies.set()을 지원하는 Response 타입 */
 interface CookieSettableResponse {
@@ -19,17 +20,30 @@ export interface CookieOptions {
   domain?: string;
 }
 
-const DEFAULT_OPTIONS: CookieOptions = {
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-};
+/**
+ * 기본 옵션 산출
+ * - secure 기본값은 initializeCommon()으로 주입된 nodeEnv에서 파생
+ * - 미초기화 시 false로 폴백 (dev/test 안전 기본값)
+ */
+function getDefaultOptions(): CookieOptions {
+  let isProduction = false;
+  try {
+    isProduction = getCommonConfig().nodeEnv === 'production';
+  } catch {
+    // common config 미초기화 시 secure=false (호출자가 명시 주입 권장)
+  }
+  return {
+    secure: isProduction,
+    sameSite: 'lax',
+  };
+}
 
 export function setTokenCookies<T extends CookieSettableResponse>(
   response: T,
   tokenPair: TokenPair,
   options: CookieOptions = {},
 ): T {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts = { ...getDefaultOptions(), ...options };
 
   response.cookies.set('access_token', tokenPair.accessToken, {
     httpOnly: true,
@@ -54,7 +68,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
   response: T,
   options: CookieOptions = {},
 ): T {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts = { ...getDefaultOptions(), ...options };
 
   response.cookies.set('access_token', '', {
     httpOnly: true,

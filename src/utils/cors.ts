@@ -72,7 +72,8 @@ function extractDomainsFromUrl(url: string): string[] {
 }
 
 /**
- * 기본 URL 가져오기 (환경 변수 또는 설정에서)
+ * 기본 URL 가져오기 (호출자 설정 또는 미들웨어 CORS 설정에서)
+ * 어느 곳에도 baseUrl이 설정되지 않은 경우 빈 문자열을 반환합니다.
  */
 function getBaseUrl(): string {
   if (globalCorsConfig.baseUrl) {
@@ -84,18 +85,20 @@ function getBaseUrl(): string {
       return middlewareCorsConfig.baseUrl;
     }
   } catch {
-    // 초기화되지 않은 경우 기본값 사용
+    // 초기화되지 않은 경우 빈 값으로 폴백
   }
-  return 'http://localhost:3000';
+  return '';
 }
 
 /**
- * 허용된 도메인 목록 (런타임 환경 변수 기반)
+ * 허용된 도메인 목록
  *
  * 우선순위:
- * 1. ALLOWED_ORIGINS 환경 변수 (쉼표로 구분)
- * 2. BASE_URL 또는 NEXT_PUBLIC_BASE_URL에서 자동 추출
- * 3. 개발 환경에서는 localhost 자동 추가
+ * 1. 미들웨어 CORS 설정의 allowedOrigins
+ * 2. baseUrl(설정/미들웨어)에서 자동 추출한 도메인
+ * 3. additionalOrigins(호출자 직접 추가)
+ *
+ * 개발 환경의 localhost 등은 호출자가 additionalOrigins로 명시 주입해야 합니다.
  */
 export function getAllowedOrigins(): string[] {
   const origins = new Set<string>();
@@ -108,30 +111,16 @@ export function getAllowedOrigins(): string[] {
     // 초기화되지 않은 경우 건너뜀
   }
 
-  // 2. BASE_URL에서 도메인 자동 추출
+  // 2. baseUrl에서 도메인 자동 추출
   const baseUrl = getBaseUrl();
-  if (baseUrl && baseUrl !== 'http://localhost:3000') {
+  if (baseUrl) {
     const extractedDomains = extractDomainsFromUrl(baseUrl);
     extractedDomains.forEach(domain => origins.add(domain));
   }
 
-  // 3. 추가 설정된 Origin
+  // 3. 추가 설정된 Origin (개발용 localhost 등은 여기로 주입)
   if (globalCorsConfig.additionalOrigins) {
     globalCorsConfig.additionalOrigins.forEach(origin => origins.add(origin));
-  }
-
-  // 4. 개발 환경에서는 localhost 자동 추가
-  let isDev = globalCorsConfig.isDevelopment ?? false;
-  if (!isDev) {
-    try {
-      isDev = getCommonConfig().nodeEnv === 'development';
-    } catch {
-      isDev = false;
-    }
-  }
-  if (isDev) {
-    origins.add('http://localhost:3000');
-    origins.add('http://127.0.0.1:3000');
   }
 
   return Array.from(origins).filter(Boolean);

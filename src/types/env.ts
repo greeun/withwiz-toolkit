@@ -93,8 +93,8 @@ export interface ICacheEnv {
  */
 export interface IRawEnv {
   NODE_ENV: 'development' | 'production' | 'test';
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
+  REDIS_REST_URL?: string;
+  REDIS_REST_TOKEN?: string;
   CACHE_ENABLED: boolean;
 }
 

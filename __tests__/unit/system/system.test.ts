@@ -277,8 +277,8 @@ describe('Health Check', () => {
     });
 
     it('should return Redis warning when env vars are missing', async () => {
-      delete process.env.UPSTASH_REDIS_REST_URL;
-      delete process.env.UPSTASH_REDIS_REST_TOKEN;
+      delete process.env.REDIS_REST_URL;
+      delete process.env.REDIS_REST_TOKEN;
       const { checkServiceHealth } = await import('@withwiz/system/health-check');
       const services = await checkServiceHealth();
 
