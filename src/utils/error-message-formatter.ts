@@ -24,23 +24,22 @@ export function formatRedisError(errorMessage: string): string {
     cleanMessage = cleanMessage.replace(/^ERR\s+/, '').trim();
   }
   
-  // Upstash 문서 링크 제거
-  cleanMessage = cleanMessage.replace(/\s*See https:\/\/upstash\.com\/[^\s]+\s*for details.*$/i, '').trim();
+  // 외부 문서 링크 제거 ("See https://... for details")
+  cleanMessage = cleanMessage.replace(/\s*See https?:\/\/\S+\s*for details.*$/i, '').trim();
 
-  // Upstash max requests limit exceeded
+  // Redis 요청 한도 초과
   if (cleanMessage.includes('max requests limit exceeded')) {
     const limitMatch = cleanMessage.match(/Limit:\s*(\d+)/);
     const usageMatch = cleanMessage.match(/Usage:\s*(\d+)/);
-    
+
     if (limitMatch && usageMatch) {
       const limit = parseInt(limitMatch[1]);
-      const usage = parseInt(usageMatch[1]);
       const limitInK = Math.floor(limit / 1000);
-      
+
       return `Redis request limit exceeded (${limitInK}K requests used). Please upgrade your plan or wait for the quota to reset.`;
     }
-    
-    return 'Redis request limit exceeded. Please check your Upstash plan.';
+
+    return 'Redis request limit exceeded. Please check your Redis provider plan.';
   }
 
   // Connection timeout

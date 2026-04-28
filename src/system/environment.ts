@@ -38,19 +38,19 @@ export function checkEnvironmentVariables(): IEnvironmentInfo[] {
     });
     if (cache.redis) {
       results.push({
-        key: 'UPSTASH_REDIS_REST_URL',
+        key: 'REDIS_REST_URL',
         ok: true,
         value: cache.redis.url.length > 20 ? cache.redis.url.substring(0, 20) + '...' : cache.redis.url
       });
-      results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: true, value: '***' });
+      results.push({ key: 'REDIS_REST_TOKEN', ok: true, value: '***' });
     } else {
-      results.push({ key: 'UPSTASH_REDIS_REST_URL', ok: false });
-      results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: false });
+      results.push({ key: 'REDIS_REST_URL', ok: false });
+      results.push({ key: 'REDIS_REST_TOKEN', ok: false });
     }
   } catch {
     results.push({ key: 'CACHE_ENABLED', ok: false });
-    results.push({ key: 'UPSTASH_REDIS_REST_URL', ok: false });
-    results.push({ key: 'UPSTASH_REDIS_REST_TOKEN', ok: false });
+    results.push({ key: 'REDIS_REST_URL', ok: false });
+    results.push({ key: 'REDIS_REST_TOKEN', ok: false });
   }
 
   // Geolocation 설정 체크

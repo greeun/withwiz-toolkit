@@ -137,8 +137,8 @@ export class RedisCacheManager implements IUnifiedCacheManager {
       redisAvailable: !!getRedisClient(),
       envVars: {
         CACHE_ENABLED: ENV.CACHE.ENABLED ? "true" : "false",
-        UPSTASH_REDIS_REST_URL: ENV.REDIS.URL ? "설정됨" : "미설정",
-        UPSTASH_REDIS_REST_TOKEN: ENV.REDIS.TOKEN ? "설정됨" : "미설정",
+        REDIS_REST_URL: ENV.REDIS.URL ? "설정됨" : "미설정",
+        REDIS_REST_TOKEN: ENV.REDIS.TOKEN ? "설정됨" : "미설정",
       },
     };
   }

@@ -129,14 +129,14 @@ async function tryReconnectRedisGlobally(): Promise<void> {
 
   try {
     const env = getEnv();
-    if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+    if (!env.REDIS_REST_URL || !env.REDIS_REST_TOKEN) {
       scheduleNextReconnect();
       return;
     }
 
     const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
+      url: env.REDIS_REST_URL,
+      token: env.REDIS_REST_TOKEN,
     });
 
     const pingResult = await redis.ping();
@@ -303,8 +303,8 @@ export async function checkRedisConnection(): Promise<{ success: boolean; error?
     });
 
     // 환경 변수 확인 - 더 엄격한 검증
-    const redisUrl = env.UPSTASH_REDIS_REST_URL;
-    const redisToken = env.UPSTASH_REDIS_REST_TOKEN;
+    const redisUrl = env.REDIS_REST_URL;
+    const redisToken = env.REDIS_REST_TOKEN;
 
     if (!redisUrl || !redisToken || redisUrl.trim() === '' || redisToken.trim() === '') {
       const error = 'Redis environment variables are not configured.';
@@ -428,14 +428,14 @@ export function getRedisClient(): Redis | null {
   }
 
   const env = getEnv();
-  if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+  if (!env.REDIS_REST_URL || !env.REDIS_REST_TOKEN) {
     _redisClient = null;
     return null;
   }
 
   _redisClient = new Redis({
-    url: env.UPSTASH_REDIS_REST_URL,
-    token: env.UPSTASH_REDIS_REST_TOKEN,
+    url: env.REDIS_REST_URL,
+    token: env.REDIS_REST_TOKEN,
   });
 
   return _redisClient;
@@ -453,24 +453,24 @@ export function logRedisInitialization(): void {
   const env = getEnv();
 
   if (isRedisAvailableNow() && redis) {
-    logger.info('[Redis:Cache] Upstash Redis cache connection initialization complete', {
+    logger.info('[Redis:Cache] Redis cache connection initialization complete', {
       purpose: 'cache',
-      url: env.UPSTASH_REDIS_REST_URL?.substring(0, 50) + '...',
+      url: env.REDIS_REST_URL?.substring(0, 50) + '...',
       cacheEnabled: isCacheEnabled()
     });
   } else if (!isCacheEnabled()) {
     logger.info('[Redis:Cache] Redis cache disabled (CACHE_ENABLED=false)', {
       purpose: 'cache',
       cacheEnabled: false,
-      redisUrlSet: !!env.UPSTASH_REDIS_REST_URL,
-      redisTokenSet: !!env.UPSTASH_REDIS_REST_TOKEN
+      redisUrlSet: !!env.REDIS_REST_URL,
+      redisTokenSet: !!env.REDIS_REST_TOKEN
     });
   } else {
     logger.warn('[Redis:Cache] Cache disabled due to missing Redis environment variables', {
       purpose: 'cache',
       cacheEnabled: isCacheEnabled(),
-      redisUrlSet: !!env.UPSTASH_REDIS_REST_URL,
-      redisTokenSet: !!env.UPSTASH_REDIS_REST_TOKEN
+      redisUrlSet: !!env.REDIS_REST_URL,
+      redisTokenSet: !!env.REDIS_REST_TOKEN
     });
   }
 
