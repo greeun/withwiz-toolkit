@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-04-28
+
+### Removed
+- **BREAKING**: 도메인 특화 에러 코드/헬퍼/메시지를 패키지에서 제거. 본 패키지는 보편적 에러만 다루며, 확장 코드는 각 프로젝트/서비스의 extension 영역에서 처리합니다.
+  - 코드 키 제거: `INVALID_ALIAS_FORMAT` (40008), `LINK_PASSWORD_REQUIRED` (40104), `LINK_PASSWORD_INCORRECT` (40105), `LINK_NOT_FOUND` (40403), `TAG_NOT_FOUND` (40408), `GROUP_NOT_FOUND` (40410), `ALIAS_ALREADY_EXISTS` (40907), `LINK_EXPIRED` (42204), `LINK_INACTIVE` (42205), `RESERVED_WORD_USED` (42208), `CANNOT_DELETE_OWN_ACCOUNT` (42210), `FAVORITE_NOT_FOUND` (40409), `ALREADY_FAVORITED` (42209)
+  - `AppError` 헬퍼 제거: `invalidAlias`, `linkPasswordRequired`, `linkPasswordIncorrect`, `linkNotFound`, `tagNotFound`, `groupNotFound`, `aliasExists`, `linkExpired`, `linkInactive`, `reservedWord`, `cannotDeleteOwnAccount`, `favoriteNotFound`, `alreadyFavorited`
+  - `ErrorResponse` 헬퍼 제거: 위 헬퍼 대응 항목 전부
+  - i18n 메시지(`messages/en.ts`, `messages/ko.ts`, `friendly-messages.ts`)에서 해당 코드 항목 제거
+
+### Migration
+- 소비 프로젝트는 `AppError`를 직접 생성하거나, 자체 확장 클래스(예: `LinkAppError`)를 정의해 사용하세요.
+- 보편 헬퍼(`notFound(message)`, `businessRule(message)`, `conflict(message)`, `unauthorized(message)`)로 대체 가능합니다.
+- 예시: `throw AppError.linkNotFound()` → `throw LinkAppError.linkNotFound()` 또는 `throw AppError.notFound('Link not found')`
+
 ## [0.2.4] - 2026-03-28
 
 ### Added

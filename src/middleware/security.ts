@@ -10,6 +10,51 @@ import { NextResponse } from 'next/server';
 import type { TApiMiddleware } from './types';
 import { logger } from '../logger/logger';
 
+// ============================================================================
+// Origin 검증 (CSRF 방어)
+// ============================================================================
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_allowed_origins: string[] | undefined;
+}
+
+export function setAllowedOrigins(origins: string[]): void {
+  globalThis.__withwiz_allowed_origins = origins;
+  logger.info(`[Security Middleware] Allowed origins configured: ${origins.join(', ')}`);
+}
+
+const STATE_CHANGING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'] as const;
+
+function verifyOrigin(request: Request): boolean {
+  const allowedOrigins = globalThis.__withwiz_allowed_origins;
+  if (!allowedOrigins || allowedOrigins.length === 0) {
+    return true; // 설정되지 않으면 검증 건너뛰기 (하위 호환)
+  }
+
+  const method = request.method.toUpperCase();
+  if (!STATE_CHANGING_METHODS.includes(method as typeof STATE_CHANGING_METHODS[number])) {
+    return true;
+  }
+
+  const origin = request.headers.get('origin');
+  if (origin) {
+    return allowedOrigins.some(allowed => origin === allowed);
+  }
+
+  const referer = request.headers.get('referer');
+  if (referer) {
+    try {
+      const refererOrigin = new URL(referer).origin;
+      return allowedOrigins.some(allowed => refererOrigin === allowed);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 /**
  * 차단할 HTTP 메서드 목록
  * TRACE/TRACK은 XST(Cross-Site Tracing) 공격에 사용될 수 있음
@@ -144,10 +189,38 @@ export const securityMiddleware: TApiMiddleware = async (context, next) => {
     }
   }
 
-  // 3. 다음 미들웨어 실행
+  // 3. Origin 검증 (CSRF 방어 - state-changing 요청만)
+  if (!verifyOrigin(request)) {
+    logger.warn('[Security] Origin verification failed', {
+      method,
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+      url: request.url,
+    });
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: 40300,
+          message: 'Origin verification failed',
+          userMessage: {
+            title: '요청 거부',
+            description: '허용되지 않은 출처에서의 요청입니다.',
+            action: '올바른 페이지에서 다시 시도해 주세요.',
+          },
+        },
+      }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  // 4. 다음 미들웨어 실행
   const response = await next();
 
-  // 4. 추가 보안 헤더 설정
+  // 5. 추가 보안 헤더 설정
   // X-Content-Type-Options: MIME 타입 스니핑 방지
   if (!response.headers.has('X-Content-Type-Options')) {
     response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -184,4 +257,6 @@ export const securityMiddleware: TApiMiddleware = async (context, next) => {
 export function validateSecurityConfiguration(): void {
   logger.info('[Security Middleware] Blocked methods: ' + BLOCKED_METHODS.join(', '));
   logger.info('[Security Middleware] Allowed Content-Types: ' + ALLOWED_CONTENT_TYPES.join(', '));
+  const origins = globalThis.__withwiz_allowed_origins;
+  logger.info('[Security Middleware] Allowed Origins: ' + (origins?.join(', ') || 'NOT CONFIGURED (origin check disabled)'));
 }

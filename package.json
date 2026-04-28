@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,

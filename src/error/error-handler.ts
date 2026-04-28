@@ -161,14 +161,11 @@ export const ErrorResponse = {
   invalidUrl: () => errorToResponse(AppError.invalidUrl()),
   invalidEmail: () => errorToResponse(AppError.invalidEmail()),
   weakPassword: () => errorToResponse(AppError.weakPassword()),
-  invalidAlias: () => errorToResponse(AppError.invalidAlias()),
 
   // 401xx
   unauthorized: (message?: string) => errorToResponse(AppError.unauthorized(message)),
   invalidToken: () => errorToResponse(AppError.invalidToken()),
   tokenExpired: () => errorToResponse(AppError.tokenExpired()),
-  linkPasswordRequired: () => errorToResponse(AppError.linkPasswordRequired()),
-  linkPasswordIncorrect: () => errorToResponse(AppError.linkPasswordIncorrect()),
   invalidCredentials: () => errorToResponse(AppError.invalidCredentials()),
   sessionExpired: () => errorToResponse(AppError.sessionExpired()),
 
@@ -181,25 +178,16 @@ export const ErrorResponse = {
   // 404xx
   notFound: (message?: string) => errorToResponse(AppError.notFound(message)),
   userNotFound: () => errorToResponse(AppError.userNotFound()),
-  linkNotFound: () => errorToResponse(AppError.linkNotFound()),
-  tagNotFound: () => errorToResponse(AppError.tagNotFound()),
-  favoriteNotFound: () => errorToResponse(AppError.favoriteNotFound()),
-  groupNotFound: () => errorToResponse(AppError.groupNotFound()),
 
   // 409xx
   conflict: (message?: string) => errorToResponse(AppError.conflict(message)),
   duplicate: (resource?: string) => errorToResponse(AppError.duplicate(resource)),
   emailExists: () => errorToResponse(AppError.emailExists()),
-  aliasExists: () => errorToResponse(AppError.aliasExists()),
 
   // 422xx
   businessRule: (message?: string) => errorToResponse(AppError.businessRule(message)),
   invalidOperation: (message?: string) => errorToResponse(AppError.invalidOperation(message)),
-  linkExpired: () => errorToResponse(AppError.linkExpired()),
-  linkInactive: () => errorToResponse(AppError.linkInactive()),
-  reservedWord: () => errorToResponse(AppError.reservedWord()),
   quotaExceeded: () => errorToResponse(AppError.quotaExceeded()),
-  alreadyFavorited: () => errorToResponse(AppError.alreadyFavorited()),
   fileTooLarge: (maxSize?: string) => errorToResponse(AppError.fileTooLarge(maxSize)),
   unsupportedFileType: (fileType?: string) => errorToResponse(AppError.unsupportedFileType(fileType)),
 
