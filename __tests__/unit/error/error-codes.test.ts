@@ -267,8 +267,6 @@ describe("Core Error Code Existence Check", () => {
     "UNAUTHORIZED",
     "INVALID_TOKEN",
     "TOKEN_EXPIRED",
-    "LINK_PASSWORD_REQUIRED",
-    "LINK_PASSWORD_INCORRECT",
     "FORBIDDEN",
     "NOT_FOUND",
     "CONFLICT",
@@ -285,34 +283,6 @@ describe("Core Error Code Existence Check", () => {
     expect(ERROR_CODES[key]).toBeDefined();
     expect(ERROR_CODES[key].code).toBeDefined();
     expect(ERROR_CODES[key].message).toBeDefined();
-  });
-});
-
-// ============================================================================
-// LINK_PASSWORD 코드 이동 확인 (422→401)
-// ============================================================================
-describe("LINK_PASSWORD code migration to 401xx", () => {
-  test("LINK_PASSWORD_REQUIRED should be 40104 with status 401", () => {
-    expect(ERROR_CODES.LINK_PASSWORD_REQUIRED.code).toBe(40104);
-    expect(ERROR_CODES.LINK_PASSWORD_REQUIRED.status).toBe(HTTP_STATUS.UNAUTHORIZED);
-  });
-
-  test("LINK_PASSWORD_INCORRECT should be 40105 with status 401", () => {
-    expect(ERROR_CODES.LINK_PASSWORD_INCORRECT.code).toBe(40105);
-    expect(ERROR_CODES.LINK_PASSWORD_INCORRECT.status).toBe(HTTP_STATUS.UNAUTHORIZED);
-  });
-
-  test("LINK_PASSWORD codes should be classified as auth category", () => {
-    expect(getErrorCategory(40104)).toBe("auth");
-    expect(getErrorCategory(40105)).toBe("auth");
-  });
-
-  test("Old 422xx codes should no longer exist in ERROR_CODES", () => {
-    const allCodes = getAllErrorCodes();
-    const codes42206 = allCodes.filter(e => e.code === 42206);
-    const codes42207 = allCodes.filter(e => e.code === 42207);
-    expect(codes42206).toHaveLength(0);
-    expect(codes42207).toHaveLength(0);
   });
 });
 

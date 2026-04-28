@@ -143,11 +143,9 @@ describe("SC-ERR-003: Factory methods", () => {
     const userNotFound = AppError.userNotFound();
     expect(userNotFound.status).toBe(404);
 
-    const linkNotFound = AppError.linkNotFound();
-    expect(linkNotFound.status).toBe(404);
-
-    const tagNotFound = AppError.tagNotFound();
-    expect(tagNotFound.status).toBe(404);
+    const notFound = AppError.notFound("Custom resource");
+    expect(notFound.status).toBe(404);
+    expect(notFound.message).toBe("Custom resource");
   });
 
   test("Business logic error factory methods", () => {
@@ -157,9 +155,6 @@ describe("SC-ERR-003: Factory methods", () => {
 
     const businessRule = AppError.businessRule("Rule violation");
     expect(businessRule.status).toBe(422);
-
-    const reservedWord = AppError.reservedWord("admin");
-    expect(reservedWord.details?.value).toBe("admin");
   });
 });
 
@@ -328,25 +323,6 @@ describe("SC-ERR-007: corsViolation factory method", () => {
   test("should include origin in details", () => {
     const error = AppError.corsViolation("https://evil.com");
     expect(error.details?.value).toBe("https://evil.com");
-  });
-});
-
-// ============================================================================
-// SC-ERR-008: LINK_PASSWORD 401 상태코드
-// ============================================================================
-describe("SC-ERR-008: LINK_PASSWORD errors in 401xx", () => {
-  test("linkPasswordRequired should return 401", () => {
-    const error = AppError.linkPasswordRequired();
-    expect(error.code).toBe(ERROR_CODES.LINK_PASSWORD_REQUIRED.code);
-    expect(error.status).toBe(401);
-    expect(error.category).toBe("auth");
-  });
-
-  test("linkPasswordIncorrect should return 401", () => {
-    const error = AppError.linkPasswordIncorrect();
-    expect(error.code).toBe(ERROR_CODES.LINK_PASSWORD_INCORRECT.code);
-    expect(error.status).toBe(401);
-    expect(error.category).toBe("auth");
   });
 });
 

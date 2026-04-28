@@ -49,13 +49,13 @@ export interface ISerializedError {
  *
  * @example
  * // 에러 코드 키로 생성
- * throw AppError.fromKey('NOT_FOUND', '링크를 찾을 수 없습니다');
+ * throw AppError.fromKey('NOT_FOUND', '리소스를 찾을 수 없습니다');
  *
  * // 직접 생성
- * throw new AppError(40403, '링크를 찾을 수 없습니다');
+ * throw new AppError(40401, '리소스를 찾을 수 없습니다');
  *
  * // 팩토리 메서드 사용
- * throw AppError.notFound('링크를 찾을 수 없습니다');
+ * throw AppError.notFound('리소스를 찾을 수 없습니다');
  */
 export class AppError extends Error {
   public readonly code: number;
@@ -249,12 +249,6 @@ export class AppError extends Error {
     return AppError.fromKey("PASSWORD_TOO_WEAK");
   }
 
-  static invalidAlias(alias?: string): AppError {
-    return AppError.fromKey("INVALID_ALIAS_FORMAT", undefined, {
-      value: alias,
-    });
-  }
-
   // ============================================
   // 인증 에러 (401xx)
   // ============================================
@@ -311,22 +305,6 @@ export class AppError extends Error {
     return AppError.fromKey("USER_NOT_FOUND");
   }
 
-  static linkNotFound(): AppError {
-    return AppError.fromKey("LINK_NOT_FOUND");
-  }
-
-  static tagNotFound(): AppError {
-    return AppError.fromKey("TAG_NOT_FOUND");
-  }
-
-  static favoriteNotFound(): AppError {
-    return AppError.fromKey("FAVORITE_NOT_FOUND");
-  }
-
-  static groupNotFound(): AppError {
-    return AppError.fromKey("GROUP_NOT_FOUND");
-  }
-
   // ============================================
   // 충돌 에러 (409xx)
   // ============================================
@@ -348,12 +326,6 @@ export class AppError extends Error {
     });
   }
 
-  static aliasExists(alias?: string): AppError {
-    return AppError.fromKey("ALIAS_ALREADY_EXISTS", undefined, {
-      value: alias,
-    });
-  }
-
   // ============================================
   // 비즈니스 로직 에러 (422xx)
   // ============================================
@@ -371,34 +343,6 @@ export class AppError extends Error {
       ? `${quotaType} 사용량을 초과했습니다.`
       : undefined;
     return AppError.fromKey("QUOTA_EXCEEDED", message);
-  }
-
-  static linkExpired(): AppError {
-    return AppError.fromKey("LINK_EXPIRED");
-  }
-
-  static linkInactive(): AppError {
-    return AppError.fromKey("LINK_INACTIVE");
-  }
-
-  static linkPasswordRequired(): AppError {
-    return AppError.fromKey("LINK_PASSWORD_REQUIRED");
-  }
-
-  static linkPasswordIncorrect(): AppError {
-    return AppError.fromKey("LINK_PASSWORD_INCORRECT");
-  }
-
-  static reservedWord(word?: string): AppError {
-    return AppError.fromKey("RESERVED_WORD_USED", undefined, { value: word });
-  }
-
-  static alreadyFavorited(): AppError {
-    return AppError.fromKey("ALREADY_FAVORITED");
-  }
-
-  static cannotDeleteOwnAccount(): AppError {
-    return AppError.fromKey("CANNOT_DELETE_OWN_ACCOUNT");
   }
 
   static fileTooLarge(maxSize?: string): AppError {
