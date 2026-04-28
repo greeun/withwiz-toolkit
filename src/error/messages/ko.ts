@@ -43,11 +43,6 @@ export const koMessages: TErrorMessages = {
     description: '8자 이상, 영문/숫자/특수문자 포함',
     action: '더 복잡한 비밀번호를 설정해 주세요.',
   },
-  40008: {
-    title: '별칭 형식을 확인해 주세요',
-    description: '영문, 숫자, 하이픈(-)만 사용 가능',
-    action: '예: my-link-123',
-  },
 
   // ============================================
   // 인증 관련 (401xx)
@@ -66,16 +61,6 @@ export const koMessages: TErrorMessages = {
     title: '로그인이 만료되었어요',
     description: '보안을 위해 세션이 만료되었습니다.',
     action: '다시 로그인해 주세요.',
-  },
-  40104: {
-    title: '비밀번호가 필요해요',
-    description: '비밀번호를 입력해야 합니다.',
-    action: '비밀번호를 입력해 주세요.',
-  },
-  40105: {
-    title: '비밀번호가 틀렸어요',
-    description: '비밀번호가 올바르지 않습니다.',
-    action: '다시 확인해 주세요.',
   },
   40106: {
     title: '로그인에 실패했어요',
@@ -124,23 +109,6 @@ export const koMessages: TErrorMessages = {
     title: '사용자를 찾을 수 없어요',
     description: '해당 사용자가 존재하지 않습니다.',
   },
-  40403: {
-    title: '링크를 찾을 수 없어요',
-    description: '단축 링크가 존재하지 않습니다.',
-    action: '링크 주소를 확인해 주세요.',
-  },
-  40408: {
-    title: '태그를 찾을 수 없어요',
-    description: '태그가 존재하지 않습니다.',
-  },
-  40409: {
-    title: '즐겨찾기를 찾을 수 없어요',
-    description: '항목이 존재하지 않습니다.',
-  },
-  40410: {
-    title: '그룹을 찾을 수 없어요',
-    description: '그룹이 존재하지 않습니다.',
-  },
 
   // ============================================
   // 충돌 (409xx)
@@ -160,11 +128,6 @@ export const koMessages: TErrorMessages = {
     description: '다른 계정에서 사용 중입니다.',
     action: '다른 이메일을 사용해 주세요.',
   },
-  40907: {
-    title: '이미 사용 중인 별칭이에요',
-    description: '다른 링크에서 사용 중입니다.',
-    action: '다른 별칭을 입력해 주세요.',
-  },
 
   // ============================================
   // 비즈니스 로직 (422xx)
@@ -182,30 +145,6 @@ export const koMessages: TErrorMessages = {
     title: '사용량을 초과했어요',
     description: '한도를 초과했습니다.',
     action: '플랜 업그레이드를 고려해 주세요.',
-  },
-  42204: {
-    title: '만료된 링크예요',
-    description: '유효 기간이 지났습니다.',
-    action: '새 링크를 생성해 주세요.',
-  },
-  42205: {
-    title: '비활성화된 링크예요',
-    description: '사용이 중지되었습니다.',
-    action: '소유자에게 문의해 주세요.',
-  },
-  // 42206, 42207: 401xx로 이동 → 아래 40104, 40105 참조
-  42208: {
-    title: '사용할 수 없는 별칭이에요',
-    description: '시스템 예약어입니다.',
-    action: '다른 별칭을 선택해 주세요.',
-  },
-  42209: {
-    title: '이미 즐겨찾기에 있어요',
-    description: '이미 추가되어 있습니다.',
-  },
-  42210: {
-    title: '삭제할 수 없어요',
-    description: '본인 관리자 계정은 삭제 불가합니다.',
   },
   42211: {
     title: '파일이 너무 커요',

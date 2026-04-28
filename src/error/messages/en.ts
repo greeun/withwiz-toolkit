@@ -43,11 +43,6 @@ export const enMessages: TErrorMessages = {
     description: '8+ characters with letters, numbers, and symbols',
     action: 'Please set a more complex password.',
   },
-  40008: {
-    title: 'Please check alias format',
-    description: 'Only letters, numbers, and hyphens (-) allowed',
-    action: 'Example: my-link-123',
-  },
 
   // ============================================
   // Authentication Errors (401xx)
@@ -66,16 +61,6 @@ export const enMessages: TErrorMessages = {
     title: 'Session expired',
     description: 'Your session has expired for security.',
     action: 'Please login again.',
-  },
-  40104: {
-    title: 'Password required',
-    description: 'You must enter a password.',
-    action: 'Please enter the password.',
-  },
-  40105: {
-    title: 'Incorrect password',
-    description: 'The password is incorrect.',
-    action: 'Please check again.',
   },
   40106: {
     title: 'Login failed',
@@ -124,23 +109,6 @@ export const enMessages: TErrorMessages = {
     title: 'User not found',
     description: 'The user does not exist.',
   },
-  40403: {
-    title: 'Link not found',
-    description: 'The shortened link does not exist.',
-    action: 'Please check the link address.',
-  },
-  40408: {
-    title: 'Tag not found',
-    description: 'The tag does not exist.',
-  },
-  40409: {
-    title: 'Favorite not found',
-    description: 'The item does not exist.',
-  },
-  40410: {
-    title: 'Group not found',
-    description: 'The group does not exist.',
-  },
 
   // ============================================
   // Conflict Errors (409xx)
@@ -160,11 +128,6 @@ export const enMessages: TErrorMessages = {
     description: 'This email is already in use by another account.',
     action: 'Please use a different email.',
   },
-  40907: {
-    title: 'Alias already in use',
-    description: 'This alias is being used by another link.',
-    action: 'Please enter a different alias.',
-  },
 
   // ============================================
   // Business Logic Errors (422xx)
@@ -182,30 +145,6 @@ export const enMessages: TErrorMessages = {
     title: 'Usage limit exceeded',
     description: 'You have exceeded the limit.',
     action: 'Please consider upgrading your plan.',
-  },
-  42204: {
-    title: 'Link expired',
-    description: 'The validity period has passed.',
-    action: 'Please create a new link.',
-  },
-  42205: {
-    title: 'Link disabled',
-    description: 'Usage has been stopped.',
-    action: 'Please contact the owner.',
-  },
-  // 42206, 42207: moved to 401xx → see 40104, 40105 below
-  42208: {
-    title: 'Alias not allowed',
-    description: 'This is a system reserved word.',
-    action: 'Please choose a different alias.',
-  },
-  42209: {
-    title: 'Already in favorites',
-    description: 'Already added.',
-  },
-  42210: {
-    title: 'Cannot delete',
-    description: 'Cannot delete your own admin account.',
   },
   42211: {
     title: 'File too large',

@@ -357,5 +357,9 @@ export class JWTService {
   }
 }
 
+// Cookie utilities
+export { setTokenCookies, clearTokenCookies } from './cookie';
+export type { CookieOptions } from './cookie';
+
 // Export types
 export type { JWTConfig, JWTPayload, TokenPair };

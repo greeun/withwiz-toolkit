@@ -81,7 +81,8 @@ beforeAll(async () => {
  * Mock NextRequest 생성 헬퍼
  */
 function createMockRequest(
-  authHeader?: string
+  authHeader?: string,
+  cookieToken?: string,
 ): IApiContext["request"] {
   const headers = new Headers();
   headers.set("content-type", "application/json");
@@ -89,8 +90,19 @@ function createMockRequest(
     headers.set("authorization", authHeader);
   }
 
+  // NextRequest.cookies 호환 mock
+  const cookies = {
+    get: (name: string) => {
+      if (name === "access_token" && cookieToken) {
+        return { name, value: cookieToken };
+      }
+      return undefined;
+    },
+  };
+
   return {
     headers,
+    cookies,
     method: "POST",
     url: "http://localhost:3000/api/a/create",
   } as unknown as IApiContext["request"];

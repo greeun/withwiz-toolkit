@@ -146,7 +146,8 @@ export function initializeAuthMiddleware(): boolean {
 /**
  * 인증 미들웨어
  *
- * Authorization 헤더에서 JWT 토큰을 추출하고 검증합니다.
+ * 쿠키(access_token) 또는 Authorization 헤더에서 JWT 토큰을 추출하고 검증합니다.
+ * 쿠키를 우선 확인하며, 없을 경우 Authorization 헤더로 폴백합니다 (OAPI 호환).
  * 검증된 사용자 정보를 context.user에 추가합니다.
  *
  * @example
@@ -170,9 +171,12 @@ export const authMiddleware: TApiMiddleware = async (context, next) => {
       );
     }
 
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = context.request.headers.get("authorization");
-    const token = jwtManager.extractTokenFromHeader(authHeader);
+    // 쿠키에서 토큰 추출 (Authorization 헤더 폴백 — OAPI 호환)
+    let token: string | null = context.request.cookies.get("access_token")?.value ?? null;
+    if (!token) {
+      const authHeader = context.request.headers.get("authorization");
+      token = jwtManager.extractTokenFromHeader(authHeader);
+    }
 
     if (!token) {
       throw new AppError(ERROR_CODES.UNAUTHORIZED.code);
@@ -227,7 +231,9 @@ export const authMiddleware: TApiMiddleware = async (context, next) => {
 /**
  * 선택적 인증 미들웨어
  *
- * Authorization 헤더가 있으면 JWT 토큰을 검증하고 context.user를 설정합니다.
+ * 쿠키(access_token) 또는 Authorization 헤더가 있으면 JWT 토큰을 검증하고
+ * context.user를 설정합니다. 쿠키를 우선 확인하며, 없을 경우 Authorization
+ * 헤더로 폴백합니다 (OAPI 호환).
  * 토큰이 없거나 유효하지 않아도 에러를 발생시키지 않고 계속 진행합니다.
  * 공개 API이지만 로그인 사용자를 선택적으로 인식해야 하는 경우에 사용합니다.
  *
@@ -243,8 +249,12 @@ export const optionalAuthMiddleware: TApiMiddleware = async (context, next) => {
     const jwtManager = getJWTManager();
 
     if (jwtManager) {
-      const authHeader = context.request.headers.get("authorization");
-      const token = jwtManager.extractTokenFromHeader(authHeader);
+      // 쿠키에서 토큰 추출 (Authorization 헤더 폴백 — OAPI 호환)
+      let token: string | null = context.request.cookies.get("access_token")?.value ?? null;
+      if (!token) {
+        const authHeader = context.request.headers.get("authorization");
+        token = jwtManager.extractTokenFromHeader(authHeader);
+      }
 
       if (token) {
         // Access Token 블랙리스트 체크
