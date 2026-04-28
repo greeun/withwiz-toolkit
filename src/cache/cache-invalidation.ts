@@ -2,9 +2,7 @@
  * Cache Invalidation - 범용 캐시 무효화 유틸리티
  *
  * 프로젝트에 독립적인 범용 캐시 무효화 헬퍼 함수들입니다.
- *
- * URL Shortener 서비스 특화 캐시 무효화는 별도 파일에서 제공됩니다:
- * @see <your-project>/extensions/url-shortener/link-cache-invalidation.ts
+ * 도메인 특화 캐시 무효화는 소비 프로젝트의 extension 영역에서 정의하세요.
  */
 import { cache, geoCache } from "./cache-factory";
 import type {

@@ -450,12 +450,3 @@ export class AppError extends Error {
 
 export default AppError;
 
-// ============================================================================
-// URL Shortener 서비스 특화 에러 사용법
-// ============================================================================
-// 순환 의존성 방지를 위해 이 파일에서 직접 re-export하지 않습니다.
-// 대신 다음과 같이 import 하세요:
-//
-// import { LinkAppError } from '@withwiz/extensions/url-shortener';
-// 또는
-// import { LinkAppError } from '@withwiz/extensions/url-shortener/link-app-error';

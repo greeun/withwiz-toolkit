@@ -47,52 +47,10 @@ export const getCacheConfig = {
     duration: () => getENV().CACHE.SETTINGS.DURATION,
   },
 
-  // Reserved Words 캐시 설정
-  reservedWords: {
-    enabled: () => getENV().CACHE.RESERVED_WORDS.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.RESERVED_WORDS.DURATION,
-  },
-
-  // Alias 캐시 설정
-  alias: {
-    enabled: () => getENV().CACHE.ALIAS.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.ALIAS.DURATION,
-  },
-
-  // Community 캐시 설정
-  community: {
-    enabled: () => getENV().CACHE.COMMUNITY.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.COMMUNITY.DURATION,
-  },
-
-  // Link 캐시 설정
-  link: {
-    enabled: () => getENV().CACHE.LINK.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.LINK.DURATION,
-  },
-
   // Rate Limiter 캐시 설정
   rateLimit: {
     enabled: () => getENV().CACHE.RATE_LIMIT.ENABLED && isCacheEnabled(),
     duration: () => getENV().CACHE.RATE_LIMIT.DURATION,
-  },
-
-  // URL Shortener Token 캐시 설정
-  urlToken: {
-    enabled: () => getENV().CACHE.URL_TOKEN.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.URL_TOKEN.DURATION,
-  },
-
-  // API Key 캐시 설정
-  apiKey: {
-    enabled: () => getENV().CACHE.API_KEY.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.API_KEY.DURATION,
-  },
-
-  // API Config 캐시 설정
-  apiConfig: {
-    enabled: () => getENV().CACHE.API_CONFIG.ENABLED && isCacheEnabled(),
-    duration: () => getENV().CACHE.API_CONFIG.DURATION,
   },
 };
 
@@ -106,12 +64,8 @@ export const getCacheConfig = {
  */
 export const getCacheTTL = {
   settings: () => getCacheConfig.settings.duration(),
-  reservedWords: () => getCacheConfig.reservedWords.duration(),
-  alias: () => getCacheConfig.alias.duration(),
   user: () => getCacheConfig.user.duration(),
   analytics: () => getCacheConfig.analytics.duration(),
   geoip: () => getCacheConfig.geoip.duration(),
-  community: () => getCacheConfig.community.duration(),
-  link: () => getCacheConfig.link.duration(),
   default: () => getCacheConfig.analytics.duration(),
 };

@@ -65,41 +65,6 @@ const local = utcToLocal(utc);
 const backToUtc = localToUTC(local);
 ```
 
-### 별칭 검증 유틸리티
-별칭(Alias) 검증을 위한 함수들입니다.
-
-```tsx
-import { 
-  validateAliasBasic,
-  checkDuplicateAliasesInArray,
-  createValidationError,
-  type IBaseAliasValidationResult
-} from '@/shared/utils/common/shared-utils';
-
-// 기본 별칭 검증
-const result: IBaseAliasValidationResult = validateAliasBasic('my-alias', {
-  minLength: 3,
-  maxLength: 20,
-  checkPattern: true
-});
-
-if (!result.isValid) {
-  console.error(result.error?.message);
-}
-
-// 배열 내 중복 체크
-const duplicates = checkDuplicateAliasesInArray([
-  { alias: 'alias1' },
-  { alias: 'alias2' },
-  { alias: 'alias1' } // 중복
-]);
-
-// 에러 메시지 생성
-const error = createValidationError('INVALID_ALIAS', 'Alias {alias} is invalid', {
-  alias: 'test'
-});
-```
-
 ### GeoIP 유틸리티
 IP 주소의 지리적 위치 정보를 가져오는 함수들입니다.
 

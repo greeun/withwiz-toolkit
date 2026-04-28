@@ -37,7 +37,7 @@ export interface IQRCodeStats {
   totalClicks: number;
   qrClicks: number;
   normalClicks: number;
-  aliasClicks: number;
+  clicks: number;
   apiClicks: number;
   qrUsageRate: number; // QR 사용률 (%)
 }

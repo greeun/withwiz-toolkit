@@ -522,11 +522,8 @@ export function classifyError(error: Error): IErrorCodeInfo {
 }
 
 // ============================================================================
-// URL Shortener Service Specific Error Code Usage
+// 도메인 특화 에러 코드 안내
 // ============================================================================
-// To prevent circular dependencies, do not re-export directly from this file.
-// Instead, import as follows:
-//
-// import { URL_SHORTENER_ERROR_CODES } from '@withwiz/extensions/url-shortener';
-// OR
-// import { URL_SHORTENER_ERROR_CODES } from '@withwiz/extensions/url-shortener/url-shortener-errors';
+// 본 모듈은 보편 에러 코드만 정의합니다. 도메인 특화 에러 코드는
+// 소비 프로젝트의 extension 영역에서 자체 정의하고, 본 패키지의 AppError
+// 또는 보편 헬퍼와 조합해 사용하세요.

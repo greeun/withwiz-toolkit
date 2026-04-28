@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-28
+
+### Removed
+- **BREAKING**: 도메인 특화 캐시 카테고리/상수/타입을 패키지에서 제거. 본 패키지는 보편 카테고리(ANALYTICS, USER, GEOIP, SETTINGS, RATE_LIMIT)만 다루며, 도메인 카테고리는 각 프로젝트의 extension에서 자체 정의하세요.
+  - `getCacheConfig` 도메인 헬퍼 제거: `link`, `alias`, `reservedWords`, `community`, `urlToken`, `apiKey`, `apiConfig`
+  - `getCacheTTL` 도메인 헬퍼 제거: `reservedWords`, `alias`, `community`, `link`
+  - `CACHE_TTL_DEFAULTS` 도메인 키 제거: `LINK`, `ALIAS`, `COMMUNITY`, `RESERVED_WORDS`
+  - `CACHE_DURATION_DEFAULTS` 도메인 키 제거: `LINK`, `ALIAS`, `RESERVED_WORDS`, `COMMUNITY`, `URL_TOKEN`, `API_KEY`, `API_CONFIG`
+  - `CACHE_ENV_VARS` 도메인 키 제거: `CACHE_TTL_LINK/ALIAS/COMMUNITY/RESERVED_WORDS`
+  - `ICacheTTLConfig`, `ICacheEnv` 타입에서 도메인 필드 제거 (LINK, ALIAS, COMMUNITY, RESERVED_WORDS, URL_TOKEN, API_KEY, API_CONFIG)
+- **BREAKING**: `cache/cache-keys-legacy.ts` 모듈 통째 제거 (기존 `@deprecated`이던 `cacheKeys` export)
+- **BREAKING**: `constants/security.ts`의 `API_KEY = { LENGTH, PREFIX: 'tlog_' }` 상수 제거 — `tlog_` prefix는 도메인 종속이므로 소비 프로젝트가 자체 정의해야 함
+- **BREAKING**: `constants/pagination.ts`의 `PAGE_SIZES`에서 도메인 키 제거: `LINKS`, `RESERVED_WORDS`, `NOTICES`, `TAGS`, `CLICK_HISTORY`. 보편 키만 유지: `USERS`, `ACTIVITY`, `SEARCH_RESULTS`
+- **BREAKING**: `types/qr-code.ts` `IQRCodeStats.aliasClicks` → `clicks`로 일반화
+
+### Changed
+- 가이드 주석에서 "URL Shortener 서비스 특화" 표현을 "도메인 특화 (소비 프로젝트의 extension에 정의)"로 일반화
+- `utils/README.md`에서 별칭(Alias) 검증 섹션 제거 (해당 코드는 본 패키지에 존재하지 않으며 도메인 특화)
+- `utils/optimistic-lock.ts`의 docstring 예시를 `prisma.link` → `prisma.entity`로 일반화
+
+### Migration
+- 도메인 캐시 카테고리는 소비 프로젝트의 extension에서 자체 정의:
+  ```ts
+  // 예시 — extensions/url-shortener/cache-config.ts
+  import { isCacheEnabled } from '@withwiz/toolkit/cache';
+  import { ENV } from '@/lib/env';
+  export const getDomainCacheConfig = {
+    link: { enabled: () => ENV.CACHE.LINK.ENABLED && isCacheEnabled(),
+            duration: () => ENV.CACHE.LINK.DURATION },
+    // ...
+  };
+  ```
+- `initializeCache({ categories })`에는 보편 카테고리만 전달하면 됩니다 (도메인 카테고리는 내부 ENV에서 자체 사용).
+- `IQRCodeStats.aliasClicks`를 사용하던 코드는 `.clicks`로 변경.
+
 ## [0.4.0] - 2026-04-28
 
 ### Removed

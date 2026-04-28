@@ -129,7 +129,7 @@ export type TRateLimitType = "api" | "auth" | "admin";
 
 /**
  * 확장 가능한 Rate Limit 타입
- * URL Shortener 서비스 특화 타입은 extensions/url-shortener/rate-limit-types.ts에 정의
+ * 도메인 특화 타입은 소비 프로젝트의 extension 영역에서 정의하세요.
  */
 export type TExtendedRateLimitType = TRateLimitType | string;
 

@@ -73,37 +73,9 @@ export function getConfig(): ISharedEnvConfig {
           ENABLED: cc.categories.SETTINGS?.enabled ?? true,
           DURATION: cc.categories.SETTINGS?.duration ?? 1800,
         },
-        RESERVED_WORDS: {
-          ENABLED: cc.categories.RESERVED_WORDS?.enabled ?? true,
-          DURATION: cc.categories.RESERVED_WORDS?.duration ?? 1800,
-        },
-        ALIAS: {
-          ENABLED: cc.categories.ALIAS?.enabled ?? true,
-          DURATION: cc.categories.ALIAS?.duration ?? 300,
-        },
-        COMMUNITY: {
-          ENABLED: cc.categories.COMMUNITY?.enabled ?? true,
-          DURATION: cc.categories.COMMUNITY?.duration ?? 900,
-        },
-        LINK: {
-          ENABLED: cc.categories.LINK?.enabled ?? true,
-          DURATION: cc.categories.LINK?.duration ?? 1800,
-        },
         RATE_LIMIT: {
           ENABLED: true,
           DURATION: cc.categories.RATE_LIMIT?.duration ?? 60,
-        },
-        URL_TOKEN: {
-          ENABLED: cc.categories.URL_TOKEN?.enabled ?? true,
-          DURATION: cc.categories.URL_TOKEN?.duration ?? 300,
-        },
-        API_KEY: {
-          ENABLED: cc.categories.API_KEY?.enabled ?? true,
-          DURATION: cc.categories.API_KEY?.duration ?? 300,
-        },
-        API_CONFIG: {
-          ENABLED: cc.categories.API_CONFIG?.enabled ?? true,
-          DURATION: cc.categories.API_CONFIG?.duration ?? 600,
         },
       },
     },

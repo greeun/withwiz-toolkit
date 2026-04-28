@@ -14,20 +14,10 @@ export const PAGINATION = {
   DEFAULT_PAGE: 1,
 } as const;
 
-// 리소스별 페이지 크기
+// 리소스별 페이지 크기 (보편 케이스만)
 export const PAGE_SIZES = {
-  // 링크 목록
-  LINKS: 10,
   // 사용자 목록
   USERS: 20,
-  // 예약어 목록
-  RESERVED_WORDS: 20,
-  // 공지사항 목록
-  NOTICES: 10,
-  // 태그 목록
-  TAGS: 50,
-  // 클릭 히스토리
-  CLICK_HISTORY: 50,
   // 활동 내역
   ACTIVITY: 20,
   // 검색 결과
