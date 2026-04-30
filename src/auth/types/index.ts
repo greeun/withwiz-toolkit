@@ -59,6 +59,7 @@ export interface JWTConfig {
 export enum OAuthProvider {
   GOOGLE = 'google',
   GITHUB = 'github',
+  KAKAO = 'kakao',
 }
 
 export interface OAuthUserInfo {
@@ -84,6 +85,11 @@ export interface OAuthConfig {
     redirectUri: string;
   };
   github?: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+  };
+  kakao?: {
     clientId: string;
     clientSecret: string;
     redirectUri: string;
