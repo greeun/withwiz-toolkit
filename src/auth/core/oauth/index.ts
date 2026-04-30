@@ -2,7 +2,7 @@
  * Shared Auth - OAuth Module
  *
  * OAuth 2.0 인증 모듈 (프레임워크 독립적)
- * Google, GitHub 지원
+ * Google, GitHub, Kakao 지원
  */
 
 import type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse, Logger } from '@withwiz/auth/types';
@@ -33,6 +33,8 @@ export class OAuthManager {
       return this.getGoogleLoginUrl(state);
     } else if (provider === OAuthProvider.GITHUB) {
       return this.getGitHubLoginUrl(state);
+    } else if (provider === OAuthProvider.KAKAO) {
+      return this.getKakaoLoginUrl(state);
     }
     throw new OAuthError(`Unsupported OAuth provider: ${provider}`, 'UNSUPPORTED_PROVIDER');
   }
@@ -84,6 +86,8 @@ export class OAuthManager {
       return this.exchangeGoogleCode(code);
     } else if (provider === OAuthProvider.GITHUB) {
       return this.exchangeGitHubCode(code);
+    } else if (provider === OAuthProvider.KAKAO) {
+      return this.exchangeKakaoCode(code);
     }
     throw new OAuthError(`Unsupported OAuth provider: ${provider}`, 'UNSUPPORTED_PROVIDER');
   }
@@ -163,6 +167,93 @@ export class OAuthManager {
   }
 
   /**
+   * Kakao OAuth 로그인 URL
+   */
+  private getKakaoLoginUrl(state: string): string {
+    if (!this.config.kakao) {
+      throw new OAuthError('Kakao OAuth not configured', 'KAKAO_NOT_CONFIGURED');
+    }
+
+    const params = new URLSearchParams({
+      client_id: this.config.kakao.clientId,
+      redirect_uri: this.config.kakao.redirectUri,
+      response_type: 'code',
+      scope: 'profile_nickname profile_image account_email',
+      state,
+    });
+
+    return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
+  }
+
+  /**
+   * Kakao 코드 교환
+   */
+  private async exchangeKakaoCode(code: string): Promise<string> {
+    if (!this.config.kakao) {
+      throw new OAuthError('Kakao OAuth not configured', 'KAKAO_NOT_CONFIGURED');
+    }
+
+    try {
+      const response = await fetch('https://kauth.kakao.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: this.config.kakao.clientId,
+          client_secret: this.config.kakao.clientSecret,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: this.config.kakao.redirectUri,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        this.logger.error('Kakao token exchange failed', { status: response.status, errorData });
+        throw new OAuthError('Failed to exchange Kakao code for token', 'TOKEN_EXCHANGE_FAILED');
+      }
+
+      const data: OAuthTokenResponse = await response.json();
+      this.logger.debug('Kakao token exchange successful');
+      return data.access_token;
+    } catch (error: any) {
+      this.logger.error('Kakao token exchange error', { error: error.message });
+      throw new OAuthError('Kakao token exchange failed', 'TOKEN_EXCHANGE_FAILED');
+    }
+  }
+
+  /**
+   * Kakao 사용자 정보
+   */
+  private async getKakaoUserInfo(accessToken: string): Promise<OAuthUserInfo> {
+    try {
+      const response = await fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!response.ok) {
+        throw new OAuthError('Failed to get Kakao user info', 'USER_INFO_FAILED');
+      }
+
+      const data = await response.json();
+      const account = data.kakao_account || {};
+      const profile = account.profile || {};
+
+      this.logger.debug('Kakao user info retrieved', { userId: data.id, email: account.email });
+
+      return {
+        id: data.id.toString(),
+        email: account.email,
+        name: profile.nickname || null,
+        image: profile.profile_image_url || null,
+        emailVerified: account.is_email_verified || false,
+      };
+    } catch (error: any) {
+      this.logger.error('Kakao user info error', { error: error.message });
+      throw new OAuthError('Failed to retrieve Kakao user info', 'USER_INFO_FAILED');
+    }
+  }
+
+  /**
    * 사용자 정보 가져오기
    */
   async getUserInfo(provider: OAuthProvider, accessToken: string): Promise<OAuthUserInfo> {
@@ -170,6 +261,8 @@ export class OAuthManager {
       return this.getGoogleUserInfo(accessToken);
     } else if (provider === OAuthProvider.GITHUB) {
       return this.getGitHubUserInfo(accessToken);
+    } else if (provider === OAuthProvider.KAKAO) {
+      return this.getKakaoUserInfo(accessToken);
     }
     throw new OAuthError(`Unsupported OAuth provider: ${provider}`, 'UNSUPPORTED_PROVIDER');
   }
