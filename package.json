@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -30,6 +30,10 @@
     "./auth/core/password": "./dist/auth/core/password/index.js",
     "./auth/core/password/client-helper": "./dist/auth/core/password/client-helper.js",
     "./auth/core/oauth": "./dist/auth/core/oauth/index.js",
+    "./auth/core/oauth/providers": "./dist/auth/core/oauth/providers/index.js",
+    "./auth/core/oauth/providers/google": "./dist/auth/core/oauth/providers/google.js",
+    "./auth/core/oauth/providers/github": "./dist/auth/core/oauth/providers/github.js",
+    "./auth/core/oauth/providers/kakao": "./dist/auth/core/oauth/providers/kakao.js",
     "./auth/adapters/prisma": "./dist/auth/adapters/prisma/index.js",
     "./cache": "./dist/cache/index.js",
     "./cache/cache": "./dist/cache/cache.js",
