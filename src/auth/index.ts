@@ -62,8 +62,7 @@ export {
 } from './core/password/client-helper';
 
 // OAuth
-export { OAuthManager } from './core/oauth';
-export type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse } from './core/oauth';
+export { OAuthManager, GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from './core/oauth';
 
 // Email
 export { TokenGenerator } from './core/email/token-generator';
@@ -72,4 +71,4 @@ export { TokenGenerator } from './core/email/token-generator';
 // Re-exports for Convenience
 // ============================================================================
 
-export { UserRole, PasswordStrength, OAuthProvider, TokenType } from './types';
+export { PasswordStrength, OAUTH_PROVIDERS, TokenType } from './types';

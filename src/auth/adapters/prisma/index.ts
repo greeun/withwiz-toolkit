@@ -22,16 +22,58 @@ import type {
   UpdateOAuthAccountData,
   EmailToken,
   TokenType,
-  UserRole,
-  OAuthProvider,
 } from '@withwiz/auth/types';
+
+export interface PrismaAdapterConfig {
+  tokenTables?: {
+    emailVerification?: string;
+    passwordReset?: string;
+    magicLink?: string;
+  };
+  userFields?: {
+    password?: string;
+    emailVerified?: string;
+    role?: string;
+    image?: string;
+  };
+}
+
+type ResolvedPrismaAdapterConfig = {
+  tokenTables: Required<NonNullable<PrismaAdapterConfig['tokenTables']>>;
+  userFields: Required<NonNullable<PrismaAdapterConfig['userFields']>>;
+};
+
+const DEFAULT_CONFIG: ResolvedPrismaAdapterConfig = {
+  tokenTables: {
+    emailVerification: 'emailVerificationToken',
+    passwordReset: 'passwordResetToken',
+    magicLink: 'magicLinkToken',
+  },
+  userFields: {
+    password: 'password',
+    emailVerified: 'emailVerified',
+    role: 'role',
+    image: 'image',
+  },
+};
+
+function mergeConfig(config?: PrismaAdapterConfig): ResolvedPrismaAdapterConfig {
+  return {
+    tokenTables: { ...DEFAULT_CONFIG.tokenTables, ...config?.tokenTables },
+    userFields: { ...DEFAULT_CONFIG.userFields, ...config?.userFields },
+  };
+}
 
 // ============================================================================
 // User Repository Implementation
 // ============================================================================
 
 export class PrismaUserRepository implements UserRepository {
-  constructor(private prisma: PrismaClientLike) {}
+  private config: ResolvedPrismaAdapterConfig;
+
+  constructor(private prisma: PrismaClientLike, config?: PrismaAdapterConfig) {
+    this.config = mergeConfig(config);
+  }
 
   async findById(id: string): Promise<BaseUser | null> {
     const user = await (this.prisma as any).user.findUnique({ where: { id } });
@@ -96,10 +138,10 @@ export class PrismaUserRepository implements UserRepository {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role as UserRole,
-      emailVerified: user.emailVerified,
+      role: user[this.config.userFields.role],
+      emailVerified: user[this.config.userFields.emailVerified],
       isActive: user.isActive,
-      image: user.image,
+      image: user[this.config.userFields.image],
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -114,13 +156,13 @@ export class PrismaOAuthAccountRepository implements OAuthAccountRepository {
   constructor(private prisma: PrismaClientLike) {}
 
   async findByProvider(
-    provider: OAuthProvider,
+    provider: string,
     providerAccountId: string
   ): Promise<OAuthAccount | null> {
     const account = await (this.prisma as any).account.findUnique({
       where: {
         provider_providerAccountId: {
-          provider: provider as string,
+          provider,
           providerAccountId,
         },
       },
@@ -147,7 +189,7 @@ export class PrismaOAuthAccountRepository implements OAuthAccountRepository {
       data: {
         userId: data.userId,
         type: 'oauth', // Account 모델의 type 필드
-        provider: data.provider as string,
+        provider: data.provider,
         providerAccountId: data.providerAccountId,
         token: data.accessToken || data.refreshToken ? {
           create: {
@@ -204,7 +246,7 @@ export class PrismaOAuthAccountRepository implements OAuthAccountRepository {
     return {
       id: account.id,
       userId: account.userId,
-      provider: account.provider as OAuthProvider,
+      provider: account.provider,
       providerAccountId: account.providerAccountId,
       accessToken: account.token?.accessToken || null,
       refreshToken: account.token?.refreshToken || null,
@@ -222,7 +264,20 @@ export class PrismaOAuthAccountRepository implements OAuthAccountRepository {
 // ============================================================================
 
 export class PrismaEmailTokenRepository implements EmailTokenRepository {
-  constructor(private prisma: PrismaClientLike) {}
+  private config: ResolvedPrismaAdapterConfig;
+
+  constructor(private prisma: PrismaClientLike, config?: PrismaAdapterConfig) {
+    this.config = mergeConfig(config);
+  }
+
+  private getTokenTable(type: TokenType): string {
+    switch (type) {
+      case 'EMAIL_VERIFICATION': return this.config.tokenTables.emailVerification;
+      case 'PASSWORD_RESET': return this.config.tokenTables.passwordReset;
+      case 'MAGIC_LINK': return this.config.tokenTables.magicLink;
+      default: throw new Error(`Unsupported token type: ${type}`);
+    }
+  }
 
   async create(
     email: string,
@@ -230,33 +285,17 @@ export class PrismaEmailTokenRepository implements EmailTokenRepository {
     type: TokenType,
     expiresAt: Date
   ): Promise<EmailToken> {
-    let result: any;
+    const tableName = this.getTokenTable(type);
+    const data: any = { email, token, expires: expiresAt };
+    if (type === 'MAGIC_LINK') data.used = false;
 
-    switch (type) {
-      case 'EMAIL_VERIFICATION':
-        result = await (this.prisma as any).emailVerificationToken.create({
-          data: { email, token, expires: expiresAt },
-        });
-        break;
-      case 'PASSWORD_RESET':
-        result = await (this.prisma as any).passwordResetToken.create({
-          data: { email, token, expires: expiresAt },
-        });
-        break;
-      case 'MAGIC_LINK':
-        result = await (this.prisma as any).magicLinkToken.create({
-          data: { email, token, expires: expiresAt, used: false },
-        });
-        break;
-      default:
-        throw new Error(`Unsupported token type: ${type}`);
-    }
+    const result = await (this.prisma as any)[tableName].create({ data });
 
     return {
       id: result.id,
       email: result.email,
       token: result.token,
-      type: type as TokenType,
+      type,
       expires: result.expires,
       used: result.used,
       createdAt: result.createdAt,
@@ -268,27 +307,10 @@ export class PrismaEmailTokenRepository implements EmailTokenRepository {
     token: string,
     type: TokenType
   ): Promise<EmailToken | null> {
-    let result: any;
-
-    switch (type) {
-      case 'EMAIL_VERIFICATION':
-        result = await (this.prisma as any).emailVerificationToken.findFirst({
-          where: { email, token },
-        });
-        break;
-      case 'PASSWORD_RESET':
-        result = await (this.prisma as any).passwordResetToken.findFirst({
-          where: { email, token },
-        });
-        break;
-      case 'MAGIC_LINK':
-        result = await (this.prisma as any).magicLinkToken.findFirst({
-          where: { email, token },
-        });
-        break;
-      default:
-        throw new Error(`Unsupported token type: ${type}`);
-    }
+    const tableName = this.getTokenTable(type);
+    const result = await (this.prisma as any)[tableName].findFirst({
+      where: { email, token },
+    });
 
     if (!result) return null;
 
@@ -304,42 +326,29 @@ export class PrismaEmailTokenRepository implements EmailTokenRepository {
   }
 
   async delete(email: string, token: string, type: TokenType): Promise<void> {
-    switch (type) {
-      case 'EMAIL_VERIFICATION':
-        await (this.prisma as any).emailVerificationToken.deleteMany({
-          where: { email, token },
-        });
-        break;
-      case 'PASSWORD_RESET':
-        await (this.prisma as any).passwordResetToken.deleteMany({
-          where: { email, token },
-        });
-        break;
-      case 'MAGIC_LINK':
-        await (this.prisma as any).magicLinkToken.deleteMany({
-          where: { email, token },
-        });
-        break;
-    }
+    const tableName = this.getTokenTable(type);
+    await (this.prisma as any)[tableName].deleteMany({
+      where: { email, token },
+    });
   }
 
   async deleteExpired(): Promise<void> {
     const now = new Date();
     await Promise.all([
-      (this.prisma as any).emailVerificationToken.deleteMany({
+      (this.prisma as any)[this.config.tokenTables.emailVerification].deleteMany({
         where: { expires: { lt: now } },
       }),
-      (this.prisma as any).passwordResetToken.deleteMany({
+      (this.prisma as any)[this.config.tokenTables.passwordReset].deleteMany({
         where: { expires: { lt: now } },
       }),
-      (this.prisma as any).magicLinkToken.deleteMany({
+      (this.prisma as any)[this.config.tokenTables.magicLink].deleteMany({
         where: { expires: { lt: now } },
       }),
     ]);
   }
 
   async markAsUsed(id: string): Promise<void> {
-    await (this.prisma as any).magicLinkToken.update({
+    await (this.prisma as any)[this.config.tokenTables.magicLink].update({
       where: { id },
       data: { used: true },
     });

@@ -9,7 +9,7 @@
  * - Error handling
  */
 
-import { OAuthManager, OAuthProvider } from "@withwiz/auth/core/oauth";
+import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/auth/core/oauth";
 
 // Mock logger
 const mockLogger = {
@@ -26,20 +26,22 @@ describe("OAuth Module", () => {
 
   describe("OAuthManager", () => {
     const config = {
-      google: {
-        clientId: "google-client-id",
-        clientSecret: "google-client-secret",
-        redirectUri: "http://localhost:3000/api/auth/callback/google",
-      },
-      github: {
-        clientId: "github-client-id",
-        clientSecret: "github-client-secret",
-        redirectUri: "http://localhost:3000/api/auth/callback/github",
-      },
-      kakao: {
-        clientId: "kakao-client-id",
-        clientSecret: "kakao-client-secret",
-        redirectUri: "http://localhost:3000/api/auth/callback/kakao",
+      providers: {
+        google: {
+          clientId: "google-client-id",
+          clientSecret: "google-client-secret",
+          redirectUri: "http://localhost:3000/api/auth/callback/google",
+        },
+        github: {
+          clientId: "github-client-id",
+          clientSecret: "github-client-secret",
+          redirectUri: "http://localhost:3000/api/auth/callback/github",
+        },
+        kakao: {
+          clientId: "kakao-client-id",
+          clientSecret: "kakao-client-secret",
+          redirectUri: "http://localhost:3000/api/auth/callback/kakao",
+        },
       },
     };
 
@@ -49,7 +51,7 @@ describe("OAuth Module", () => {
       describe("Google OAuth", () => {
         it("should generate valid Google login URL", () => {
           const state = "random-state-123";
-          const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, state);
 
           expect(url).toContain("https://accounts.google.com/o/oauth2/v2/auth");
           expect(url).toContain("client_id=google-client-id");
@@ -65,24 +67,24 @@ describe("OAuth Module", () => {
 
         it("should include state parameter for CSRF protection", () => {
           const state = "csrf-protection-token";
-          const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, state);
 
           expect(url).toContain(`state=${state}`);
         });
 
         it("should throw error if Google not configured", () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           expect(() => {
-            unconfiguredManager.getLoginUrl(OAuthProvider.GOOGLE, "state");
-          }).toThrow("Google OAuth not configured");
+            unconfiguredManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state");
+          }).toThrow("google OAuth not configured");
         });
       });
 
       describe("GitHub OAuth", () => {
         it("should generate valid GitHub login URL", () => {
           const state = "random-state-456";
-          const url = oauthManager.getLoginUrl(OAuthProvider.GITHUB, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, state);
 
           expect(url).toContain("https://github.com/login/oauth/authorize");
           expect(url).toContain("client_id=github-client-id");
@@ -95,24 +97,24 @@ describe("OAuth Module", () => {
 
         it("should include state parameter for CSRF protection", () => {
           const state = "csrf-token-github";
-          const url = oauthManager.getLoginUrl(OAuthProvider.GITHUB, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, state);
 
           expect(url).toContain(`state=${state}`);
         });
 
         it("should throw error if GitHub not configured", () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           expect(() => {
-            unconfiguredManager.getLoginUrl(OAuthProvider.GITHUB, "state");
-          }).toThrow("GitHub OAuth not configured");
+            unconfiguredManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, "state");
+          }).toThrow("github OAuth not configured");
         });
       });
 
       describe("Kakao OAuth", () => {
         it("should generate valid Kakao login URL", () => {
           const state = "random-state-789";
-          const url = oauthManager.getLoginUrl(OAuthProvider.KAKAO, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.KAKAO, state);
 
           expect(url).toContain("https://kauth.kakao.com/oauth/authorize");
           expect(url).toContain("client_id=kakao-client-id");
@@ -126,17 +128,17 @@ describe("OAuth Module", () => {
 
         it("should include state parameter for CSRF protection", () => {
           const state = "csrf-token-kakao";
-          const url = oauthManager.getLoginUrl(OAuthProvider.KAKAO, state);
+          const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.KAKAO, state);
 
           expect(url).toContain(`state=${state}`);
         });
 
         it("should throw error if Kakao not configured", () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           expect(() => {
-            unconfiguredManager.getLoginUrl(OAuthProvider.KAKAO, "state");
-          }).toThrow("Kakao OAuth not configured");
+            unconfiguredManager.getLoginUrl(OAUTH_PROVIDERS.KAKAO, "state");
+          }).toThrow("kakao OAuth not configured");
         });
       });
 
@@ -166,7 +168,7 @@ describe("OAuth Module", () => {
           );
 
           const token = await oauthManager.exchangeCodeForToken(
-            OAuthProvider.GOOGLE,
+            OAUTH_PROVIDERS.GOOGLE,
             "auth-code-123",
           );
 
@@ -179,7 +181,7 @@ describe("OAuth Module", () => {
             }),
           );
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "Google token exchange successful",
+            "google token exchange successful",
           );
         });
 
@@ -194,23 +196,23 @@ describe("OAuth Module", () => {
 
           await expect(
             oauthManager.exchangeCodeForToken(
-              OAuthProvider.GOOGLE,
+              OAUTH_PROVIDERS.GOOGLE,
               "invalid-code",
             ),
-          ).rejects.toThrow("Google token exchange failed");
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
 
         it("should throw error if Google not configured", async () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           await expect(
             unconfiguredManager.exchangeCodeForToken(
-              OAuthProvider.GOOGLE,
+              OAUTH_PROVIDERS.GOOGLE,
               "code",
             ),
-          ).rejects.toThrow("Google OAuth not configured");
+          ).rejects.toThrow("google OAuth not configured");
         });
 
         it("should handle network errors", async () => {
@@ -219,8 +221,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.exchangeCodeForToken(OAuthProvider.GOOGLE, "code"),
-          ).rejects.toThrow("Google token exchange failed");
+            oauthManager.exchangeCodeForToken(OAUTH_PROVIDERS.GOOGLE, "code"),
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -242,7 +244,7 @@ describe("OAuth Module", () => {
           );
 
           const token = await oauthManager.exchangeCodeForToken(
-            OAuthProvider.GITHUB,
+            OAUTH_PROVIDERS.GITHUB,
             "auth-code-456",
           );
 
@@ -258,7 +260,7 @@ describe("OAuth Module", () => {
             }),
           );
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "GitHub token exchange successful",
+            "github token exchange successful",
           );
         });
 
@@ -273,23 +275,23 @@ describe("OAuth Module", () => {
 
           await expect(
             oauthManager.exchangeCodeForToken(
-              OAuthProvider.GITHUB,
+              OAUTH_PROVIDERS.GITHUB,
               "invalid-code",
             ),
-          ).rejects.toThrow("GitHub token exchange failed");
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
 
         it("should throw error if GitHub not configured", async () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           await expect(
             unconfiguredManager.exchangeCodeForToken(
-              OAuthProvider.GITHUB,
+              OAUTH_PROVIDERS.GITHUB,
               "code",
             ),
-          ).rejects.toThrow("GitHub OAuth not configured");
+          ).rejects.toThrow("github OAuth not configured");
         });
 
         it("should handle network errors", async () => {
@@ -298,8 +300,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.exchangeCodeForToken(OAuthProvider.GITHUB, "code"),
-          ).rejects.toThrow("GitHub token exchange failed");
+            oauthManager.exchangeCodeForToken(OAUTH_PROVIDERS.GITHUB, "code"),
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -322,7 +324,7 @@ describe("OAuth Module", () => {
           );
 
           const token = await oauthManager.exchangeCodeForToken(
-            OAuthProvider.KAKAO,
+            OAUTH_PROVIDERS.KAKAO,
             "auth-code-789",
           );
 
@@ -335,7 +337,7 @@ describe("OAuth Module", () => {
             }),
           );
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "Kakao token exchange successful",
+            "kakao token exchange successful",
           );
         });
 
@@ -350,23 +352,23 @@ describe("OAuth Module", () => {
 
           await expect(
             oauthManager.exchangeCodeForToken(
-              OAuthProvider.KAKAO,
+              OAUTH_PROVIDERS.KAKAO,
               "invalid-code",
             ),
-          ).rejects.toThrow("Kakao token exchange failed");
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
 
         it("should throw error if Kakao not configured", async () => {
-          const unconfiguredManager = new OAuthManager({}, mockLogger);
+          const unconfiguredManager = new OAuthManager({ providers: {} }, mockLogger);
 
           await expect(
             unconfiguredManager.exchangeCodeForToken(
-              OAuthProvider.KAKAO,
+              OAUTH_PROVIDERS.KAKAO,
               "code",
             ),
-          ).rejects.toThrow("Kakao OAuth not configured");
+          ).rejects.toThrow("kakao OAuth not configured");
         });
 
         it("should handle network errors", async () => {
@@ -375,8 +377,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.exchangeCodeForToken(OAuthProvider.KAKAO, "code"),
-          ).rejects.toThrow("Kakao token exchange failed");
+            oauthManager.exchangeCodeForToken(OAUTH_PROVIDERS.KAKAO, "code"),
+          ).rejects.toThrow("token exchange failed");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -410,7 +412,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.GOOGLE,
+            OAUTH_PROVIDERS.GOOGLE,
             "google-access-token",
           );
 
@@ -430,7 +432,7 @@ describe("OAuth Module", () => {
           );
 
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "Google user info retrieved",
+            "google user info retrieved",
             expect.objectContaining({ userId: "google-user-123" }),
           );
         });
@@ -450,7 +452,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.GOOGLE,
+            OAUTH_PROVIDERS.GOOGLE,
             "token",
           );
 
@@ -468,8 +470,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.GOOGLE, "invalid-token"),
-          ).rejects.toThrow("Failed to retrieve Google user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.GOOGLE, "invalid-token"),
+          ).rejects.toThrow("user info");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -480,8 +482,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.GOOGLE, "token"),
-          ).rejects.toThrow("Failed to retrieve Google user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.GOOGLE, "token"),
+          ).rejects.toThrow("user info");
         });
       });
 
@@ -503,7 +505,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.GITHUB,
+            OAUTH_PROVIDERS.GITHUB,
             "github-access-token",
           );
 
@@ -526,8 +528,8 @@ describe("OAuth Module", () => {
           );
 
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "GitHub user info retrieved",
-            expect.objectContaining({ userId: 12345 }),
+            "github user info retrieved",
+            expect.objectContaining({ userId: "12345" }),
           );
         });
 
@@ -546,7 +548,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.GITHUB,
+            OAUTH_PROVIDERS.GITHUB,
             "token",
           );
 
@@ -568,7 +570,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.GITHUB,
+            OAUTH_PROVIDERS.GITHUB,
             "token",
           );
 
@@ -587,8 +589,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.GITHUB, "invalid-token"),
-          ).rejects.toThrow("Failed to retrieve GitHub user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.GITHUB, "invalid-token"),
+          ).rejects.toThrow("user info");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -599,8 +601,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.GITHUB, "token"),
-          ).rejects.toThrow("Failed to retrieve GitHub user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.GITHUB, "token"),
+          ).rejects.toThrow("user info");
         });
       });
 
@@ -626,7 +628,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.KAKAO,
+            OAUTH_PROVIDERS.KAKAO,
             "kakao-access-token",
           );
 
@@ -646,8 +648,8 @@ describe("OAuth Module", () => {
           );
 
           expect(mockLogger.debug).toHaveBeenCalledWith(
-            "Kakao user info retrieved",
-            expect.objectContaining({ userId: 1234567890 }),
+            "kakao user info retrieved",
+            expect.objectContaining({ userId: "1234567890" }),
           );
         });
 
@@ -665,7 +667,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.KAKAO,
+            OAUTH_PROVIDERS.KAKAO,
             "token",
           );
 
@@ -688,7 +690,7 @@ describe("OAuth Module", () => {
           );
 
           const userInfo = await oauthManager.getUserInfo(
-            OAuthProvider.KAKAO,
+            OAUTH_PROVIDERS.KAKAO,
             "token",
           );
 
@@ -707,8 +709,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.KAKAO, "invalid-token"),
-          ).rejects.toThrow("Failed to retrieve Kakao user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.KAKAO, "invalid-token"),
+          ).rejects.toThrow("user info");
 
           expect(mockLogger.error).toHaveBeenCalled();
         });
@@ -719,8 +721,8 @@ describe("OAuth Module", () => {
           );
 
           await expect(
-            oauthManager.getUserInfo(OAuthProvider.KAKAO, "token"),
-          ).rejects.toThrow("Failed to retrieve Kakao user info");
+            oauthManager.getUserInfo(OAUTH_PROVIDERS.KAKAO, "token"),
+          ).rejects.toThrow("user info");
         });
       });
 
@@ -736,20 +738,22 @@ describe("OAuth Module", () => {
 
   describe("Integration Tests", () => {
     const config = {
-      google: {
-        clientId: "test-client-id",
-        clientSecret: "test-client-secret",
-        redirectUri: "http://localhost:3000/callback",
-      },
-      github: {
-        clientId: "test-github-id",
-        clientSecret: "test-github-secret",
-        redirectUri: "http://localhost:3000/callback/github",
-      },
-      kakao: {
-        clientId: "test-kakao-id",
-        clientSecret: "test-kakao-secret",
-        redirectUri: "http://localhost:3000/callback/kakao",
+      providers: {
+        google: {
+          clientId: "test-client-id",
+          clientSecret: "test-client-secret",
+          redirectUri: "http://localhost:3000/callback",
+        },
+        github: {
+          clientId: "test-github-id",
+          clientSecret: "test-github-secret",
+          redirectUri: "http://localhost:3000/callback/github",
+        },
+        kakao: {
+          clientId: "test-kakao-id",
+          clientSecret: "test-kakao-secret",
+          redirectUri: "http://localhost:3000/callback/kakao",
+        },
       },
     };
 
@@ -757,7 +761,7 @@ describe("OAuth Module", () => {
 
     it("should complete full Google OAuth flow", async () => {
       const state = "csrf-token";
-      const loginUrl = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, state);
+      const loginUrl = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, state);
       expect(loginUrl).toContain("state=csrf-token");
 
       global.fetch = vi.fn(() =>
@@ -768,7 +772,7 @@ describe("OAuth Module", () => {
       );
 
       const token = await oauthManager.exchangeCodeForToken(
-        OAuthProvider.GOOGLE,
+        OAUTH_PROVIDERS.GOOGLE,
         "auth-code",
       );
       expect(token).toBe("test-token");
@@ -786,7 +790,7 @@ describe("OAuth Module", () => {
       );
 
       const userInfo = await oauthManager.getUserInfo(
-        OAuthProvider.GOOGLE,
+        OAUTH_PROVIDERS.GOOGLE,
         token,
       );
       expect(userInfo.id).toBe("user-123");
@@ -795,7 +799,7 @@ describe("OAuth Module", () => {
 
     it("should complete full GitHub OAuth flow", async () => {
       const state = "csrf-token-github";
-      const loginUrl = oauthManager.getLoginUrl(OAuthProvider.GITHUB, state);
+      const loginUrl = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, state);
       expect(loginUrl).toContain("state=csrf-token-github");
 
       global.fetch = vi.fn(() =>
@@ -810,7 +814,7 @@ describe("OAuth Module", () => {
       );
 
       const token = await oauthManager.exchangeCodeForToken(
-        OAuthProvider.GITHUB,
+        OAUTH_PROVIDERS.GITHUB,
         "auth-code",
       );
       expect(token).toBe("github-test-token");
@@ -830,7 +834,7 @@ describe("OAuth Module", () => {
       );
 
       const userInfo = await oauthManager.getUserInfo(
-        OAuthProvider.GITHUB,
+        OAUTH_PROVIDERS.GITHUB,
         token,
       );
       expect(userInfo.id).toBe("99999");
@@ -840,7 +844,7 @@ describe("OAuth Module", () => {
 
     it("should complete full Kakao OAuth flow", async () => {
       const state = "csrf-token-kakao";
-      const loginUrl = oauthManager.getLoginUrl(OAuthProvider.KAKAO, state);
+      const loginUrl = oauthManager.getLoginUrl(OAUTH_PROVIDERS.KAKAO, state);
       expect(loginUrl).toContain("state=csrf-token-kakao");
 
       global.fetch = vi.fn(() =>
@@ -856,7 +860,7 @@ describe("OAuth Module", () => {
       );
 
       const token = await oauthManager.exchangeCodeForToken(
-        OAuthProvider.KAKAO,
+        OAUTH_PROVIDERS.KAKAO,
         "auth-code",
       );
       expect(token).toBe("kakao-test-token");
@@ -880,7 +884,7 @@ describe("OAuth Module", () => {
       );
 
       const userInfo = await oauthManager.getUserInfo(
-        OAuthProvider.KAKAO,
+        OAUTH_PROVIDERS.KAKAO,
         token,
       );
       expect(userInfo.id).toBe("5555555");
