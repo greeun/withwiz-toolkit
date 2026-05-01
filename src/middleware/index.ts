@@ -18,7 +18,7 @@ export { MiddlewareChain } from './middleware-chain';
 
 // 개별 미들웨어
 export { initRequestMiddleware } from './init-request';
-export { authMiddleware, optionalAuthMiddleware, adminMiddleware, initializeAuthMiddleware, setAccessTokenBlacklistChecker } from './auth';
+export { authMiddleware, optionalAuthMiddleware, adminMiddleware, createRoleMiddleware, initializeAuthMiddleware, setAccessTokenBlacklistChecker } from './auth';
 export type { IAccessTokenBlacklistChecker } from './auth';
 export { rateLimitMiddleware, createRateLimitMiddleware, setRateLimitAdapter } from './rate-limit';
 export { errorHandlerMiddleware } from './error-handler';
