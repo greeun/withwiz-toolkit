@@ -14,7 +14,7 @@ export interface IQRCodeSettings {
 
 export interface IQRCodeConfig {
   id: string;
-  linkId: string;
+  entityId: string;
   settings: IQRCodeSettings;
   isActive: boolean;
   createdAt: Date;
@@ -34,32 +34,32 @@ export interface IQRTemplate {
 }
 
 export interface IQRCodeStats {
-  totalClicks: number;
-  qrClicks: number;
-  normalClicks: number;
-  clicks: number;
-  apiClicks: number;
-  qrUsageRate: number; // QR 사용률 (%)
+  totalInteractions: number;
+  scanCount: number;
+  directInteractions: number;
+  interactions: number;
+  apiInteractions: number;
+  usageRate: number; // QR 사용률 (%)
 }
 
 export interface IQRCodeAnalytics {
   dailyStats: Array<{
     date: string;
-    totalClicks: number;
-    qrClicks: number;
-    qrUsageRate: number;
+    totalInteractions: number;
+    scanCount: number;
+    usageRate: number;
   }>;
   deviceStats: Array<{
     deviceType: string;
-    totalClicks: number;
-    qrClicks: number;
-    qrUsageRate: number;
+    totalInteractions: number;
+    scanCount: number;
+    usageRate: number;
   }>;
   browserStats: Array<{
     browser: string;
-    totalClicks: number;
-    qrClicks: number;
-    qrUsageRate: number;
+    totalInteractions: number;
+    scanCount: number;
+    usageRate: number;
   }>;
 }
 
@@ -104,8 +104,8 @@ export const QR_CODE_TEMPLATES = [
     description: '브랜드 컬러 적용',
     settings: {
       ...DEFAULT_QR_SETTINGS,
-      color: '#3B82F6',
-      bgColor: '#F8FAFC',
+      color: '#4A90D9',
+      bgColor: '#F5F5F5',
       errorCorrectionLevel: 'H'
     }
   },
@@ -126,8 +126,8 @@ export const QR_CODE_TEMPLATES = [
     description: '화려한 컬러 스타일',
     settings: {
       ...DEFAULT_QR_SETTINGS,
-      color: '#EF4444',
-      bgColor: '#FEF3C7',
+      color: '#D94A4A',
+      bgColor: '#FFF8E1',
       errorCorrectionLevel: 'H'
     }
   },
