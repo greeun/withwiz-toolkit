@@ -205,7 +205,7 @@ export const authMiddleware: TApiMiddleware = async (context, next) => {
       id: payload.userId,
       email: payload.email ?? "",
       name: undefined, // 필요시 DB에서 조회
-      role: payload.role === "ADMIN" ? "ADMIN" : "USER",
+      role: payload.role ?? 'USER',
     };
   } catch (error: any) {
     // JWT 검증 실패 (만료, 유효하지 않음 등)
@@ -273,7 +273,7 @@ export const optionalAuthMiddleware: TApiMiddleware = async (context, next) => {
             id: payload.userId,
             email: payload.email ?? "",
             name: undefined,
-            role: payload.role === "ADMIN" ? "ADMIN" : "USER",
+            role: payload.role ?? 'USER',
           };
         }
       }
@@ -298,14 +298,18 @@ export const optionalAuthMiddleware: TApiMiddleware = async (context, next) => {
  *   .use(adminMiddleware);
  * ```
  */
-export const adminMiddleware: TApiMiddleware = async (context, next) => {
-  if (!context.user) {
-    throw new AppError(ERROR_CODES.UNAUTHORIZED.code);
-  }
+export function createRoleMiddleware(...allowedRoles: string[]): TApiMiddleware {
+  return async (context, next) => {
+    if (!context.user) {
+      throw new AppError(ERROR_CODES.UNAUTHORIZED.code);
+    }
 
-  if (context.user.role !== "ADMIN") {
-    throw new AppError(ERROR_CODES.FORBIDDEN.code);
-  }
+    if (!allowedRoles.includes(context.user.role)) {
+      throw new AppError(ERROR_CODES.FORBIDDEN.code);
+    }
 
-  return await next();
-};
+    return await next();
+  };
+}
+
+export const adminMiddleware: TApiMiddleware = createRoleMiddleware('ADMIN');

@@ -125,13 +125,8 @@ function getRateLimitAdapter(): IRateLimitAdapter | null {
 /**
  * 기본 Rate Limit 타입 (범용)
  */
-export type TRateLimitType = "api" | "auth" | "admin";
-
-/**
- * 확장 가능한 Rate Limit 타입
- * 도메인 특화 타입은 소비 프로젝트의 extension 영역에서 정의하세요.
- */
-export type TExtendedRateLimitType = TRateLimitType | string;
+export type TBuiltinRateLimitType = "api" | "auth" | "admin";
+export type TRateLimitType = TBuiltinRateLimitType | (string & {});
 
 // ============================================================================
 // Rate Limit 미들웨어
@@ -149,7 +144,7 @@ export type TExtendedRateLimitType = TRateLimitType | string;
  * ```
  */
 export function createRateLimitMiddleware(
-  type: TExtendedRateLimitType,
+  type: TRateLimitType,
 ): TApiMiddleware {
   return async (context, next) => {
     const adapter = getRateLimitAdapter();
