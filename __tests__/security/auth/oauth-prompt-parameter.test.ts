@@ -10,7 +10,7 @@
  * 관련 커밋: 05461ca5 - fix: Google OAuth 계정 선택 및 로그인 에러 코드 수정
  */
 
-import { OAuthManager, OAuthProvider } from "@withwiz/auth/core/oauth";
+import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/auth/core/oauth";
 
 const mockLogger = {
   debug: vi.fn(),
@@ -21,15 +21,17 @@ const mockLogger = {
 
 describe("SC-E2E-OAUTH-SEL-003: shared 레이어 OAuth prompt 설정 검증", () => {
   const config = {
-    google: {
-      clientId: "google-client-id",
-      clientSecret: "google-client-secret",
-      redirectUri: "http://localhost:3000/api/auth/oauth/google/callback",
-    },
-    github: {
-      clientId: "github-client-id",
-      clientSecret: "github-client-secret",
-      redirectUri: "http://localhost:3000/api/auth/oauth/github/callback",
+    providers: {
+      google: {
+        clientId: "google-client-id",
+        clientSecret: "google-client-secret",
+        redirectUri: "http://localhost:3000/api/auth/oauth/google/callback",
+      },
+      github: {
+        clientId: "github-client-id",
+        clientSecret: "github-client-secret",
+        redirectUri: "http://localhost:3000/api/auth/oauth/github/callback",
+      },
     },
   };
 
@@ -42,33 +44,33 @@ describe("SC-E2E-OAUTH-SEL-003: shared 레이어 OAuth prompt 설정 검증", ()
 
   describe("Google OAuth prompt 파라미터", () => {
     test("TC-E2E-OAUTH-SEL-020: Google URL에 prompt=select_account consent 포함", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, "state-123");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-123");
       const params = new URLSearchParams(new URL(url).search);
 
       expect(params.get("prompt")).toBe("select_account consent");
     });
 
     test("TC-E2E-OAUTH-SEL-020b: Google URL에 select_account 포함 확인 (계정 선택 화면)", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, "state-abc");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-abc");
 
       expect(url).toContain("select_account");
     });
 
     test("TC-E2E-OAUTH-SEL-020c: Google URL에 consent 포함 확인 (권한 동의 화면)", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, "state-abc");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-abc");
 
       expect(url).toContain("consent");
     });
 
     test("TC-E2E-OAUTH-SEL-020d: Google URL에 access_type=offline 포함", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, "state-123");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-123");
       const params = new URLSearchParams(new URL(url).search);
 
       expect(params.get("access_type")).toBe("offline");
     });
 
     test("TC-E2E-OAUTH-SEL-020e: Google URL 필수 파라미터 모두 포함", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GOOGLE, "state-xyz");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-xyz");
       const params = new URLSearchParams(new URL(url).search);
 
       expect(params.get("client_id")).toBe("google-client-id");
@@ -81,14 +83,14 @@ describe("SC-E2E-OAUTH-SEL-003: shared 레이어 OAuth prompt 설정 검증", ()
 
   describe("GitHub OAuth prompt 미포함", () => {
     test("TC-E2E-OAUTH-SEL-022: GitHub URL에 prompt 파라미터 미포함", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GITHUB, "state-123");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, "state-123");
       const params = new URLSearchParams(new URL(url).search);
 
       expect(params.get("prompt")).toBeNull();
     });
 
     test("TC-E2E-OAUTH-SEL-022b: GitHub URL scope 확인", () => {
-      const url = oauthManager.getLoginUrl(OAuthProvider.GITHUB, "state-123");
+      const url = oauthManager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, "state-123");
       const params = new URLSearchParams(new URL(url).search);
 
       expect(params.get("scope")).toBe("read:user user:email");
@@ -97,26 +99,26 @@ describe("SC-E2E-OAUTH-SEL-003: shared 레이어 OAuth prompt 설정 검증", ()
 
   describe("에러 처리", () => {
     test("TC-E2E-OAUTH-SEL-023: Google 미설정 시 OAuthError", () => {
-      const noGoogleConfig = { github: config.github };
+      const noGoogleConfig = { providers: { github: config.providers.github } };
       const manager = new OAuthManager(noGoogleConfig as any, mockLogger);
 
       expect(() => {
-        manager.getLoginUrl(OAuthProvider.GOOGLE, "state-123");
-      }).toThrow("Google OAuth not configured");
+        manager.getLoginUrl(OAUTH_PROVIDERS.GOOGLE, "state-123");
+      }).toThrow("google OAuth not configured");
     });
 
     test("TC-E2E-OAUTH-SEL-024: GitHub 미설정 시 OAuthError", () => {
-      const noGithubConfig = { google: config.google };
+      const noGithubConfig = { providers: { google: config.providers.google } };
       const manager = new OAuthManager(noGithubConfig as any, mockLogger);
 
       expect(() => {
-        manager.getLoginUrl(OAuthProvider.GITHUB, "state-123");
-      }).toThrow("GitHub OAuth not configured");
+        manager.getLoginUrl(OAUTH_PROVIDERS.GITHUB, "state-123");
+      }).toThrow("github OAuth not configured");
     });
 
     test("TC-E2E-OAUTH-SEL-025: 지원하지 않는 provider 시 OAuthError", () => {
       expect(() => {
-        oauthManager.getLoginUrl("twitter" as OAuthProvider, "state-123");
+        oauthManager.getLoginUrl("twitter", "state-123");
       }).toThrow("Unsupported OAuth provider");
     });
   });
