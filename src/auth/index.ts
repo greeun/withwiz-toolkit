@@ -72,4 +72,5 @@ export { TokenGenerator } from './core/email/token-generator';
 // Re-exports for Convenience
 // ============================================================================
 
-export { UserRole, PasswordStrength, OAuthProvider, TokenType } from './types';
+export { PasswordStrength, OAUTH_PROVIDERS, TokenType } from './types';
+export type { OAuthProviderName, OAuthProviderConfig, IOAuthProviderAdapter } from './types';

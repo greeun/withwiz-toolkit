@@ -17,15 +17,6 @@ export interface Logger {
 }
 
 // ============================================================================
-// User Types
-// ============================================================================
-
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-}
-
-// ============================================================================
 // JWT Types
 // ============================================================================
 
@@ -33,7 +24,7 @@ export interface JWTPayload {
   id: string; // User ID (기존 코드와의 호환성)
   userId: string; // Refresh token용
   email: string;
-  role: UserRole;
+  role: string;
   emailVerified?: Date | null; // 이메일 인증 여부 (기존 코드와의 호환성)
   tokenType?: 'access' | 'refresh'; // 토큰 타입
   iat?: number;
@@ -56,11 +47,13 @@ export interface JWTConfig {
 // OAuth Types
 // ============================================================================
 
-export enum OAuthProvider {
-  GOOGLE = 'google',
-  GITHUB = 'github',
-  KAKAO = 'kakao',
-}
+export const OAUTH_PROVIDERS = {
+  GOOGLE: 'google',
+  GITHUB: 'github',
+  KAKAO: 'kakao',
+} as const;
+
+export type OAuthProviderName = typeof OAUTH_PROVIDERS[keyof typeof OAUTH_PROVIDERS];
 
 export interface OAuthUserInfo {
   id: string;
@@ -78,22 +71,21 @@ export interface OAuthTokenResponse {
   scope?: string;
 }
 
+export interface OAuthProviderConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
 export interface OAuthConfig {
-  google?: {
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  };
-  github?: {
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  };
-  kakao?: {
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  };
+  providers: Record<string, OAuthProviderConfig>;
+}
+
+export interface IOAuthProviderAdapter {
+  readonly name: string;
+  getLoginUrl(config: OAuthProviderConfig, state?: string): string;
+  exchangeCodeForToken(config: OAuthProviderConfig, code: string): Promise<OAuthTokenResponse>;
+  getUserInfo(accessToken: string): Promise<OAuthUserInfo>;
 }
 
 // ============================================================================
@@ -141,13 +133,13 @@ export enum TokenType {
 export interface BaseUser {
   id: string;
   email: string;
-  name: string | null;
-  role: UserRole;
-  emailVerified: Date | null;
-  isActive: boolean;
-  image: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  name?: string | null;
+  role?: string;
+  emailVerified?: Date | null;
+  isActive?: boolean;
+  image?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // ============================================================================
@@ -168,7 +160,7 @@ export interface CreateUserData {
   email: string;
   password?: string | null;
   name?: string | null;
-  role?: UserRole;
+  role?: string;
   emailVerified?: Date | null;
   image?: string | null;
 }
@@ -177,7 +169,7 @@ export interface UpdateUserData {
   email?: string;
   password?: string;
   name?: string | null;
-  role?: UserRole;
+  role?: string;
   emailVerified?: Date | null;
   isActive?: boolean;
   image?: string | null;
@@ -186,7 +178,7 @@ export interface UpdateUserData {
 export interface OAuthAccount {
   id: string;
   userId: string;
-  provider: OAuthProvider;
+  provider: string;
   providerAccountId: string;
   accessToken: string | null;
   refreshToken: string | null;
@@ -199,7 +191,7 @@ export interface OAuthAccount {
 
 export interface OAuthAccountRepository {
   findByProvider(
-    provider: OAuthProvider,
+    provider: string,
     providerAccountId: string
   ): Promise<OAuthAccount | null>;
   findByUserId(userId: string): Promise<OAuthAccount[]>;
@@ -210,7 +202,7 @@ export interface OAuthAccountRepository {
 
 export interface CreateOAuthAccountData {
   userId: string;
-  provider: OAuthProvider;
+  provider: string;
   providerAccountId: string;
   accessToken?: string | null;
   refreshToken?: string | null;
