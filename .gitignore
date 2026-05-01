@@ -12,3 +12,4 @@ __tests__/coverage/
 .serena/
 docs/.pdca-status.json
 .claude/settings.local.json
+docs/superpowers/

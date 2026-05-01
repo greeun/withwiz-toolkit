@@ -18,6 +18,7 @@ export interface CookieOptions {
   secure?: boolean;
   sameSite?: 'lax' | 'strict' | 'none';
   domain?: string;
+  refreshTokenPath?: string;
 }
 
 /**
@@ -57,7 +58,7 @@ export function setTokenCookies<T extends CookieSettableResponse>(
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,
-    path: '/api/auth',
+    path: opts.refreshTokenPath ?? '/api/auth',
     maxAge: 7 * 24 * 60 * 60,
   });
 
@@ -82,7 +83,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,
-    path: '/api/auth',
+    path: opts.refreshTokenPath ?? '/api/auth',
     maxAge: 0,
   });
 
