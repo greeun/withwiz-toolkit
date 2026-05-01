@@ -27,8 +27,8 @@ export interface IGeoIPConfig {
 export interface IGeoIPService {
   getGeoLocation(ip: string): Promise<IGeoLocationData | null>;
   getGeoLocationBatch(ips: string[]): Promise<Map<string, IGeoLocationData>>;
-  updateClickHistoryGeoLocation(linkId: string, ip: string): Promise<void>;
-  getGeographyAnalytics(linkId: string, days?: number): Promise<IGeographyAnalytics>;
+  updateGeoLocation(entityId: string, ip: string): Promise<void>;
+  getGeographyAnalytics(entityId: string, days?: number): Promise<IGeographyAnalytics>;
   getUserGeographyAnalytics(userId: string, days?: number): Promise<IGeographyAnalytics>;
   findOrCreateGeoLocation(ip: string): Promise<string | null>;
   isGeoLocationOutdated(validFrom: Date): boolean;
@@ -74,7 +74,7 @@ export interface IGeoIPServiceFactory {
 
 export interface IGeoIPBatchProcessor {
   processMissingGeoIPData(): Promise<IBatchProcessResult>;
-  processLinkGeoIPData(linkId: string): Promise<IBatchProcessResult>;
+  processGeoIPData(entityId: string): Promise<IBatchProcessResult>;
   cleanupOldGeoIPData(daysOld?: number): Promise<number>;
   getGeoIPStats(): Promise<IGeoIPStats>;
   processUserGeoIPData(userId: string): Promise<IBatchProcessResult>;
@@ -133,7 +133,7 @@ export interface IGeoIPProvider {
 // ============================================================================
 
 export interface IGeographyAnalytics {
-  totalClicks: number;
+  totalEvents: number;
   countries: Array<{
     country: string;
     countryName: string;
