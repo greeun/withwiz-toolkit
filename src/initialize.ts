@@ -49,3 +49,7 @@ export type {
   GeolocationConfig,
   CorsConfig,
 };
+
+// Unified config registry
+export { initConfig, config, resetConfig } from './config/registry';
+export type { ConfigRegistry } from './config/registry';
