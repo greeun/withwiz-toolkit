@@ -16,6 +16,7 @@
   },
   "exports": {
     "./initialize": "./dist/initialize.js",
+    "./config": "./dist/config/registry.js",
     "./config/errors": "./dist/config/errors.js",
     "./config/common": "./dist/config/common.js",
     "./auth/config": "./dist/auth/config.js",
