@@ -5,7 +5,7 @@
  * symlink 환경에서의 next 패키지 경로 충돌을 방지합니다.
  */
 import type { TokenPair } from '@withwiz/auth/types';
-import { getCommonConfig } from '../../../config/common';
+import { getAuthConfig } from '../../config';
 
 /** cookies.set()을 지원하는 Response 타입 */
 interface CookieSettableResponse {
@@ -21,20 +21,15 @@ export interface CookieOptions {
   refreshTokenPath?: string;
 }
 
-/**
- * 기본 옵션 산출
- * - secure 기본값은 initializeCommon()으로 주입된 nodeEnv에서 파생
- * - 미초기화 시 false로 폴백 (dev/test 안전 기본값)
- */
 function getDefaultOptions(): CookieOptions {
-  let isProduction = false;
+  let secure = false;
   try {
-    isProduction = getCommonConfig().nodeEnv === 'production';
+    secure = getAuthConfig().cookieSecure;
   } catch {
-    // common config 미초기화 시 secure=false (호출자가 명시 주입 권장)
+    // auth config 미초기화 시 secure=false
   }
   return {
-    secure: isProduction,
+    secure,
     sameSite: 'lax',
   };
 }

@@ -8,7 +8,6 @@ import fs from 'fs';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import { getLoggerConfig } from './config';
-import { getCommonConfig } from '../config/common';
 
 // 전역 플래그로 중복 설정 방지
 declare global {
@@ -61,34 +60,23 @@ const colors = {
 }
 winston.addColors(colors)
 
-// 테스트 환경 및 빌드 타임에는 파일 로깅을 비활성화
-const isTestEnv = (() => {
-  try { return getCommonConfig().nodeEnv === 'test'; } catch { return false; }
-})() || process.env.VITEST !== undefined || process.env.JEST_WORKER_ID !== undefined;
-
-// Next.js 빌드 타임 감지: 빌드 시 process.argv에 build 명령이 포함되거나, NEXT_PHASE 환경변수 확인
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
-                    process.argv.some(arg => arg.includes('build'));
-
 // 로그 디렉토리 쓰기 가능 여부 확인
 const canWriteToLogDir = (() => {
-  if (isTestEnv || isBuildTime) return false;
   try {
     const cfg = getLogConfig();
+    if (!cfg.fileEnabled) return false;
     const logDir = cfg.dir;
-    // 디렉토리가 존재하고 쓰기 가능한지 확인
     if (fs.existsSync(logDir)) {
       fs.accessSync(logDir, fs.constants.W_OK);
       return true;
     }
-    // 디렉토리가 없으면 생성 시도
     fs.mkdirSync(logDir, { recursive: true });
     return true;
   } catch {
     return false;
   }
 })();
-const fileLoggingEnabled = !isTestEnv && !isBuildTime && canWriteToLogDir && getLogConfig().fileEnabled;
+const fileLoggingEnabled = canWriteToLogDir && getLogConfig().fileEnabled;
 const consoleLoggingEnabled = getLogConfig().consoleEnabled;
 const datePatternString = 'YYYY-MM-DD';
 const logLevel = getLogConfig().level;

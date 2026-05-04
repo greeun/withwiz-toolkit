@@ -101,19 +101,9 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    let isProduction = false;
-    try {
-      isProduction = getCommonConfig().nodeEnv === 'production';
-    } catch {
-      isProduction = false;
-    }
-    const safeMessage = isProduction
-      ? classified.message
-      : (error instanceof Error ? error.message : 'Unknown error');
-
     return createErrorResponse(
       classified.code,
-      safeMessage,
+      classified.message,
       context.locale,
       context.requestId,
     );
