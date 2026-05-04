@@ -5,12 +5,14 @@ export interface AuthConfig {
   jwtSecret: string;
   accessTokenExpiry?: string;
   refreshTokenExpiry?: string;
+  cookieSecure?: boolean;
 }
 
 export interface ResolvedAuthConfig {
   jwtSecret: string;
   accessTokenExpiry: string;
   refreshTokenExpiry: string;
+  cookieSecure: boolean;
 }
 
 const GLOBAL_KEY = '__withwiz_auth_config' as const;
@@ -43,6 +45,7 @@ export function initializeAuth(config: AuthConfig): void {
     jwtSecret: config.jwtSecret,
     accessTokenExpiry: config.accessTokenExpiry ?? '7d',
     refreshTokenExpiry: config.refreshTokenExpiry ?? '30d',
+    cookieSecure: config.cookieSecure ?? false,
   });
 }
 
