@@ -130,7 +130,7 @@ vi.mock("winston", async (importOriginal) => {
 });
 
 vi.mock("winston-daily-rotate-file", () => ({
-  default: vi.fn().mockImplementation(() => ({})),
+  default: vi.fn(),
 }));
 
 import {
