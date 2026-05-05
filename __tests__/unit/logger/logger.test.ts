@@ -429,4 +429,268 @@ describe("Logger Module", () => {
       expect(call).toContain("[API Req]");
     });
   });
+
+  describe("Body Truncation - Object type", () => {
+    it("should truncate long JSON object body", async () => {
+      // Create an object that serializes to more than 1024 characters
+      const largeObject: Record<string, string> = {};
+      for (let i = 0; i < 100; i++) {
+        largeObject[`key_${i}`] = "x".repeat(20);
+      }
+
+      const request = new Request("https://api.example.com/large-json", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(largeObject),
+      });
+
+      logApiRequest(request);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const call = mockDebug.mock.calls[0][0];
+      expect(call).toContain("[TRUNCATED]");
+    });
+  });
+
+  describe("Non-text Body Handling - getSafeBody branches", () => {
+    it("should return [non-text body] for non-text/non-json content type in response", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/file", {
+        method: "GET",
+      });
+
+      const response = new Response(new Blob(["binary data"]), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+      });
+
+      logApiResponse(request, response);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const resCall = calls.find((c: string) => c.includes("[API Res]"));
+      expect(resCall).toBeDefined();
+      // The response should be logged without body parsing since content-type is octet-stream
+      expect(resCall).toContain("200");
+    });
+
+    it("should handle text/plain content type in request", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/text-endpoint", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+        },
+        body: "This is plain text content",
+      });
+
+      logApiRequest(request);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const reqCall = calls.find((c: string) => c.includes("[API Req]"));
+      expect(reqCall).toBeDefined();
+      expect(reqCall).toContain("This is plain text content");
+    });
+
+    it("should handle text/html content type in response", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/page", {
+        method: "GET",
+      });
+
+      const response = new Response("<html><body>Hello</body></html>", {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html",
+        },
+      });
+
+      logApiResponse(request, response);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const resCall = calls.find((c: string) => c.includes("[API Res]"));
+      expect(resCall).toBeDefined();
+      expect(resCall).toContain("Hello");
+    });
+  });
+
+  describe("logApiResponse - additional branches", () => {
+    it("should log response with JSON body and mask sensitive data", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/auth/login", {
+        method: "POST",
+      });
+
+      const response = new Response(
+        JSON.stringify({
+          accessToken: "jwt-token-value",
+          refreshToken: "refresh-value",
+          user: { id: "123", name: "Test" },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      logApiResponse(request, response);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const resCall = calls.find((c: string) => c.includes("[API Res]"));
+      expect(resCall).toBeDefined();
+      expect(resCall).toContain("[MASKED]");
+      expect(resCall).not.toContain("jwt-token-value");
+      expect(resCall).not.toContain("refresh-value");
+    });
+
+    it("should log response without body when content-type is missing", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/no-content", {
+        method: "DELETE",
+      });
+
+      const response = new Response(null, {
+        status: 204,
+      });
+
+      logApiResponse(request, response);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const resCall = calls.find((c: string) => c.includes("[API Res]"));
+      expect(resCall).toBeDefined();
+      expect(resCall).toContain("204");
+    });
+
+    it("should handle getSafeBody error in response (clone fails)", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/error-response", {
+        method: "GET",
+      });
+
+      // Create a response where clone() will fail
+      const brokenResponse = new Response("data", {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      // Override clone to throw
+      brokenResponse.clone = () => {
+        throw new Error("Clone failed");
+      };
+
+      logApiResponse(request, brokenResponse);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const resCall = calls.find((c: string) => c.includes("[API Res]"));
+      expect(resCall).toBeDefined();
+    });
+
+    it("should handle getSafeBody error in request (clone fails)", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/error-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: "test" }),
+      });
+      // Override clone to throw
+      request.clone = () => {
+        throw new Error("Clone failed");
+      };
+
+      logApiRequest(request);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const reqCall = calls.find((c: string) => c.includes("[API Req]"));
+      expect(reqCall).toBeDefined();
+    });
+  });
+
+  describe("truncateBody edge cases", () => {
+    it("should not truncate body types that are neither string nor object", async () => {
+      mockDebug.mockClear();
+
+      // This tests the fallback return in truncateBody (line 254)
+      // When body is a number or other primitive, it should pass through
+      const request = new Request("https://api.example.com/number", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+        },
+        body: "42",
+      });
+
+      logApiRequest(request);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const reqCall = calls.find((c: string) => c.includes("[API Req]"));
+      expect(reqCall).toBeDefined();
+      expect(reqCall).toContain("42");
+    });
+  });
+
+  describe("maskSensitiveData edge cases", () => {
+    it("should not mask non-object body", async () => {
+      mockDebug.mockClear();
+
+      const request = new Request("https://api.example.com/text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+        },
+        body: "password=secret&token=abc",
+      });
+
+      logApiRequest(request);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      expect(mockDebug).toHaveBeenCalled();
+      const calls = mockDebug.mock.calls.map((c) => c[0]);
+      const reqCall = calls.find((c: string) => c.includes("[API Req]"));
+      expect(reqCall).toBeDefined();
+      // String body is not object-masked, it's kept as-is
+      expect(reqCall).toContain("password=secret");
+    });
+  });
 });
