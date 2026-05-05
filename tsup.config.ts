@@ -9,6 +9,7 @@ export default defineConfig({
     "src/config/**/*.ts",
     "src/auth/**/*.ts",
     "src/cache/**/*.ts",
+    "src/components/**/*.ts",
     "src/components/**/*.tsx",
     "src/constants/**/*.ts",
     "src/error/**/*.ts",
@@ -51,5 +52,6 @@ export default defineConfig({
     "@radix-ui/react-select",
     "@nivo/geo",
     "@nivo/core",
+    "nodemailer",
   ],
 });
