@@ -82,36 +82,42 @@ export class PrismaUserRepository implements UserRepository {
 
   async findByEmail(email: string): Promise<BaseUser | null> {
     const user = await (this.prisma as any).user.findUnique({ where: { email } });
-    return user ? this.mapToBaseUser(user) : null;
+    if (!user) return null;
+    // Include password hash on the returned object for auth handler compatibility.
+    // The login handler accesses (user as any).password for bcrypt comparison.
+    const baseUser = this.mapToBaseUser(user);
+    return Object.assign(baseUser, { password: user[this.config.userFields.password] ?? null });
   }
 
   async create(data: CreateUserData): Promise<BaseUser> {
-    const user = await (this.prisma as any).user.create({
-      data: {
-        email: data.email,
-        password: data.password || null,
-        name: data.name || null,
-        role: (data.role as any) || 'USER',
-        emailVerified: data.emailVerified || null,
-        image: data.image || null,
-      },
-    });
+    const createData: Record<string, unknown> = {
+      email: data.email,
+      name: data.name || null,
+    };
+    // Use configured field names for write operations
+    createData[this.config.userFields.password] = data.password || null;
+    if (this.config.userFields.role !== 'role' || data.role) {
+      createData[this.config.userFields.role] = (data.role as any) || 'USER';
+    }
+    createData[this.config.userFields.emailVerified] = data.emailVerified || null;
+    createData[this.config.userFields.image] = data.image || null;
+
+    const user = await (this.prisma as any).user.create({ data: createData });
     return this.mapToBaseUser(user);
   }
 
   async update(id: string, data: UpdateUserData): Promise<BaseUser> {
-    const user = await (this.prisma as any).user.update({
-      where: { id },
-      data: {
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        role: data.role as any,
-        emailVerified: data.emailVerified,
-        isActive: data.isActive,
-        image: data.image,
-      },
-    });
+    const updateData: Record<string, unknown> = {};
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    // Use configured field names for write operations
+    if (data.password !== undefined) updateData[this.config.userFields.password] = data.password;
+    if (data.role !== undefined) updateData[this.config.userFields.role] = data.role as any;
+    if (data.emailVerified !== undefined) updateData[this.config.userFields.emailVerified] = data.emailVerified;
+    if (data.image !== undefined) updateData[this.config.userFields.image] = data.image;
+
+    const user = await (this.prisma as any).user.update({ where: { id }, data: updateData });
     return this.mapToBaseUser(user);
   }
 
