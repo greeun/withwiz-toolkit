@@ -113,7 +113,7 @@
     "build:types": "tsc --emitDeclarationOnly --skipLibCheck",
     "test": "vitest run -c __tests__/vitest.config.ts",
     "test:watch": "vitest -c __tests__/vitest.config.ts",
-    "test:coverage": "vitest run -c __tests__/vitest.config.ts --project shared --coverage",
+    "test:coverage": "vitest run -c __tests__/vitest.config.ts --coverage",
     "test:unit": "vitest run -c __tests__/vitest.config.ts __tests__/unit",
     "test:integration": "vitest run -c __tests__/vitest.config.ts __tests__/integration",
     "test:security": "vitest run -c __tests__/vitest.config.ts __tests__/security",
