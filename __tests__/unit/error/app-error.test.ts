@@ -375,3 +375,244 @@ describe("SC-ERR-009: AppError.from() uses classifyError", () => {
     expect(error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
   });
 });
+
+// ============================================================================
+// SC-ERR-010: 팩토리 메서드 확장 (미커버된 메서드들)
+// ============================================================================
+describe("SC-ERR-010: AppError factory methods - extended coverage", () => {
+  // 403xx - account status
+  test("accountLocked returns 403", () => {
+    const err = AppError.accountLocked();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("accountDisabled returns 403", () => {
+    const err = AppError.accountDisabled();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  // 409xx - conflict/duplicate
+  test("duplicate without resource name", () => {
+    const err = AppError.duplicate();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(409);
+  });
+
+  test("duplicate with resource name", () => {
+    const err = AppError.duplicate("user");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(409);
+    expect(err.message).toContain("user");
+  });
+
+  test("emailExists without email", () => {
+    const err = AppError.emailExists();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(409);
+  });
+
+  test("emailExists with email", () => {
+    const err = AppError.emailExists("test@example.com");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(409);
+    expect(err.details?.value).toBe("test@example.com");
+  });
+
+  // 422xx - business logic
+  test("invalidOperation without message", () => {
+    const err = AppError.invalidOperation();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+  });
+
+  test("invalidOperation with message", () => {
+    const err = AppError.invalidOperation("cannot delete active record");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+    expect(err.message).toContain("cannot delete active record");
+  });
+
+  test("quotaExceeded without quotaType", () => {
+    const err = AppError.quotaExceeded();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+  });
+
+  test("fileTooLarge without maxSize", () => {
+    const err = AppError.fileTooLarge();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+  });
+
+  test("fileTooLarge with maxSize", () => {
+    const err = AppError.fileTooLarge("10MB");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+    expect(err.message).toContain("10MB");
+  });
+
+  test("unsupportedFileType without fileType", () => {
+    const err = AppError.unsupportedFileType();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+  });
+
+  test("unsupportedFileType with fileType", () => {
+    const err = AppError.unsupportedFileType(".exe");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(422);
+    expect(err.message).toContain(".exe");
+  });
+
+  // 429xx - rate limiting
+  test("rateLimit without retryAfter", () => {
+    const err = AppError.rateLimit();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(429);
+    expect(err.details).toBeUndefined();
+  });
+
+  test("dailyLimit", () => {
+    const err = AppError.dailyLimit();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(429);
+  });
+
+  test("apiQuotaExceeded", () => {
+    const err = AppError.apiQuotaExceeded();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(429);
+  });
+
+  // 500xx - server errors
+  test("internalError without message", () => {
+    const err = AppError.internalError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+  });
+
+  test("internalError with message", () => {
+    const err = AppError.internalError("unexpected failure");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+    expect(err.message).toContain("unexpected failure");
+  });
+
+  test("databaseError without message", () => {
+    const err = AppError.databaseError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+  });
+
+  test("databaseError with message", () => {
+    const err = AppError.databaseError("connection timeout");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+    expect(err.message).toContain("connection timeout");
+  });
+
+  test("emailSendFailed", () => {
+    const err = AppError.emailSendFailed();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+  });
+
+  test("cacheError", () => {
+    const err = AppError.cacheError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+  });
+
+  test("fileUploadFailed", () => {
+    const err = AppError.fileUploadFailed();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(500);
+  });
+
+  // 503xx - service unavailable
+  test("externalServiceError without service name", () => {
+    const err = AppError.externalServiceError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(503);
+  });
+
+  test("externalServiceError with service name", () => {
+    const err = AppError.externalServiceError("Stripe");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(503);
+    expect(err.message).toContain("Stripe");
+  });
+
+  test("serviceUnavailable without message", () => {
+    const err = AppError.serviceUnavailable();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(503);
+  });
+
+  test("serviceUnavailable with message", () => {
+    const err = AppError.serviceUnavailable("under maintenance");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(503);
+    expect(err.message).toContain("under maintenance");
+  });
+
+  // Security errors (403xx - 71~79)
+  test("accessBlocked without reason", () => {
+    const err = AppError.accessBlocked();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("accessBlocked with reason", () => {
+    const err = AppError.accessBlocked("IP banned");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+    expect(err.message).toContain("IP banned");
+  });
+
+  test("securityValidationFailed", () => {
+    const err = AppError.securityValidationFailed();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("blockedUrl without url", () => {
+    const err = AppError.blockedUrl();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("blockedUrl with url", () => {
+    const err = AppError.blockedUrl("http://evil.com");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+    expect(err.details?.value).toBe("http://evil.com");
+  });
+
+  test("suspiciousActivity", () => {
+    const err = AppError.suspiciousActivity();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("ipBlocked without ip", () => {
+    const err = AppError.ipBlocked();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+
+  test("ipBlocked with ip", () => {
+    const err = AppError.ipBlocked("192.168.1.100");
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+    expect(err.details?.value).toBe("192.168.1.100");
+  });
+
+  test("corsViolation without origin", () => {
+    const err = AppError.corsViolation();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.status).toBe(403);
+  });
+});
