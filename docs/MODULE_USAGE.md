@@ -1,6 +1,6 @@
 # @withwiz/toolkit 모듈 사용 가이드
 
-> **v0.6.0** | Next.js >= 15 | React >= 18 | TypeScript 5 (strict)
+> **v0.6.2** | Next.js >= 15 | React >= 18 | TypeScript 5 (strict)
 
 ---
 
@@ -35,12 +35,13 @@ npm install @withwiz/toolkit
 
 ### 통합 초기화
 
-앱 진입점(`app/layout.tsx` 또는 `instrumentation.ts`)에서 한 번 호출합니다.
+앱 진입점(`app/lib/toolkit.ts` 등)에서 한 번 호출합니다. `initialize()`는 `ConfigRegistry` 객체를 리턴합니다.
 
 ```typescript
+// app/lib/toolkit.ts
 import { initialize } from '@withwiz/toolkit/initialize';
 
-initialize({
+export const config = initialize({
   nodeEnv: 'production',
   auth:        { jwtSecret: process.env.JWT_SECRET! },
   logger:      { level: 'info', dir: './logs' },
@@ -65,22 +66,25 @@ initializeAuth({ jwtSecret: 'my-secret', cookieSecure: true });
 initializeLogger({ level: 'debug' });
 ```
 
-어느 방식이든 설정은 **동일한 저장소**에 저장되므로, `config.auth`와 `getAuthConfig()` 모두 같은 객체를 반환합니다.
+모든 설정은 단일 객체 `globalThis.__withwiz_config`에 저장됩니다. `config.auth`와 `getAuthConfig()` 모두 같은 객체를 반환합니다.
 
 ---
 
 ## 2. Config (통합 설정)
 
+모든 설정은 단일 객체 `globalThis.__withwiz_config`에 저장됩니다. `initialize()` 리턴값 또는 별도 import으로 접근합니다.
+
 ```typescript
+// 방법 1: initialize() 리턴값 사용 (권장)
+import { config } from '@/lib/toolkit';
+
+// 방법 2: 별도 import
 import { config } from '@withwiz/toolkit/config';
 ```
-
-`config`는 모든 모듈 설정의 읽기 전용 프록시입니다.
 
 ### 설정 읽기
 
 ```typescript
-// 프록시를 통한 접근
 config.auth.jwtSecret
 config.logger.level
 config.cache?.enabled
@@ -102,6 +106,42 @@ getAuthConfig().jwtSecret  // === config.auth.jwtSecret
 | `storage` | `ResolvedStorageConfig` | - |
 | `geolocation` | `ResolvedGeolocationConfig` | - |
 | `cors` | `ResolvedCorsConfig` | - |
+
+### 앱 고유 설정 확장
+
+앱 프로젝트에서 `config.app.*` 등 커스텀 키를 추가할 수 있습니다.
+
+```typescript
+// app/types/toolkit.d.ts — 타입 확장 선언
+import '@withwiz/toolkit/config';
+
+declare module '@withwiz/toolkit/config' {
+  interface ConfigRegistry {
+    app: {
+      siteName: string;
+      defaultLocale: string;
+    };
+  }
+}
+```
+
+```typescript
+// app/lib/toolkit.ts — 초기화 후 앱 설정 추가
+export const config = initialize({ ... });
+
+config.app = {
+  siteName: 'MyApp',
+  defaultLocale: 'ko',
+};
+```
+
+```typescript
+// app/anywhere.ts — 타입 안전하게 참조
+import { config } from '@/lib/toolkit';
+
+config.auth.jwtSecret;    // toolkit 설정
+config.app.siteName;       // 앱 설정 (자동완성 동작)
+```
 
 ### 테스트에서 리셋
 
