@@ -1,12 +1,13 @@
 /**
  * Unified Config Registry
  *
- * Single entry point for all withwiz configuration.
- * Stores resolved configs in globalThis.__withwiz_config and exposes
- * them via a read-only Proxy (`config`).
+ * Live read-only view over individual module stores
+ * (`globalThis.__withwiz_*_config`).
+ *
+ * `config.auth` and `getAuthConfig()` return the same object —
+ * there is only one source of truth per module.
  */
 
-import { ConfigurationError } from './errors';
 import type { ResolvedCommonConfig } from './common';
 import type { ResolvedAuthConfig } from '../auth/config';
 import type { ResolvedLoggerConfig } from '../logger/config';
@@ -30,40 +31,33 @@ export interface ConfigRegistry {
 }
 
 // ============================================================================
-// Global declaration
+// Module → globalThis key mapping
 // ============================================================================
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __withwiz_config: ConfigRegistry | undefined;
-}
+const MODULE_KEYS: Record<string, string> = {
+  common: '__withwiz_common_config',
+  auth: '__withwiz_auth_config',
+  logger: '__withwiz_logger_config',
+  cache: '__withwiz_cache_config',
+  storage: '__withwiz_storage_config',
+  geolocation: '__withwiz_geolocation_config',
+  cors: '__withwiz_cors_config',
+};
 
 // ============================================================================
 // Public API
 // ============================================================================
 
 /**
- * Initialise the unified config registry.
- * Idempotent — a second call is silently ignored.
- * The stored object is frozen to prevent mutation.
- */
-export function initConfig(entries: ConfigRegistry): void {
-  if (globalThis.__withwiz_config) return;
-  globalThis.__withwiz_config = Object.freeze(entries);
-}
-
-/**
- * Read-only Proxy that delegates to `globalThis.__withwiz_config`.
- * Throws `ConfigurationError` if accessed before `initConfig()`.
+ * Read-only Proxy that delegates to each module's globalThis store.
+ * Returns `undefined` for optional modules that haven't been initialized.
  * Throws `TypeError` on any setter attempt.
  */
 export const config: ConfigRegistry = new Proxy({} as ConfigRegistry, {
-  get(_target, prop, _receiver) {
-    const store = globalThis.__withwiz_config;
-    if (!store) {
-      throw new ConfigurationError('Config', 'Not initialized. Call initConfig() first.');
-    }
-    return store[prop as keyof ConfigRegistry];
+  get(_target, prop: string) {
+    const globalKey = MODULE_KEYS[prop];
+    if (!globalKey) return undefined;
+    return (globalThis as Record<string, unknown>)[globalKey];
   },
   set() {
     throw new TypeError('config is read-only');
@@ -71,8 +65,10 @@ export const config: ConfigRegistry = new Proxy({} as ConfigRegistry, {
 });
 
 /**
- * Reset the registry to uninitialised state. For test cleanup only.
+ * Reset all module stores. For test cleanup only.
  */
 export function resetConfig(): void {
-  globalThis.__withwiz_config = undefined;
+  for (const globalKey of Object.values(MODULE_KEYS)) {
+    (globalThis as Record<string, unknown>)[globalKey] = undefined;
+  }
 }
