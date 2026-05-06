@@ -1,5 +1,5 @@
-import { ConfigurationError } from './errors';
 import { configWarn } from './warn';
+import { ConfigurationError } from './errors';
 
 export interface CommonConfig {
   nodeEnv?: 'development' | 'production' | 'test';
@@ -9,35 +9,23 @@ export interface ResolvedCommonConfig {
   nodeEnv: 'development' | 'production' | 'test';
 }
 
-const GLOBAL_KEY = '__withwiz_common_config' as const;
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __withwiz_common_config: ResolvedCommonConfig | undefined;
-}
-
-function getConfig(): ResolvedCommonConfig | null {
-  return globalThis[GLOBAL_KEY] ?? null;
-}
-
-function setConfig(config: ResolvedCommonConfig): void {
-  globalThis[GLOBAL_KEY] = config;
-}
-
 export function initializeCommon(config: CommonConfig): void {
-  if (getConfig()) return;
+  globalThis.__withwiz_config ??= {};
+  if (globalThis.__withwiz_config.common) return;
   if (!config.nodeEnv) {
     configWarn('Common', 'nodeEnv not provided, using default: development');
   }
-  setConfig({ nodeEnv: config.nodeEnv ?? 'development' });
+  globalThis.__withwiz_config.common = { nodeEnv: config.nodeEnv ?? 'development' };
 }
 
 export function getCommonConfig(): ResolvedCommonConfig {
-  const config = getConfig();
-  if (!config) {
+  const common = globalThis.__withwiz_config?.common;
+  if (!common) {
     throw new ConfigurationError('Common', 'Not initialized. Call initializeCommon() first.');
   }
-  return config;
+  return common;
 }
 
-export function resetCommon(): void { globalThis[GLOBAL_KEY] = undefined; }
+export function resetCommon(): void {
+  if (globalThis.__withwiz_config) delete globalThis.__withwiz_config.common;
+}
