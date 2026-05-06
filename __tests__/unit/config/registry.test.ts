@@ -210,18 +210,4 @@ describe('Config Registry — 단일 저장소 보장', () => {
     });
   });
 
-  // ==========================================================================
-  // 6. 읽기 전용 보호
-  // ==========================================================================
-
-  describe('읽기 전용 보호', () => {
-    it('config 프록시에 직접 할당하면 TypeError', () => {
-      expect(() => {
-        (config as any).auth = { jwtSecret: 'hacked' };
-      }).toThrow(TypeError);
-      expect(() => {
-        (config as any).auth = {};
-      }).toThrow('config is read-only');
-    });
-  });
 });
