@@ -12,6 +12,8 @@ import { initializeGeolocation } from './geolocation/config';
 import type { GeolocationConfig } from './geolocation/config';
 import { initializeCors } from './middleware/cors-config';
 import type { CorsConfig } from './middleware/cors-config';
+import { config } from './config/registry';
+import type { ConfigRegistry } from './config/registry';
 
 export interface ToolkitConfig {
   nodeEnv?: CommonConfig['nodeEnv'];
@@ -23,21 +25,23 @@ export interface ToolkitConfig {
   cors?: CorsConfig;
 }
 
-export function initialize(config: ToolkitConfig): void {
+export function initialize(toolkitConfig: ToolkitConfig): ConfigRegistry {
   // 1. Common first
-  initializeCommon({ nodeEnv: config.nodeEnv });
+  initializeCommon({ nodeEnv: toolkitConfig.nodeEnv });
 
   // 2. Logger second (so other modules' warns can use it)
-  if (config.logger) {
-    initializeLogger(config.logger);
+  if (toolkitConfig.logger) {
+    initializeLogger(toolkitConfig.logger);
   }
 
   // 3. Rest
-  if (config.auth) initializeAuth(config.auth);
-  if (config.cache) initializeCache(config.cache);
-  if (config.storage) initializeStorage(config.storage);
-  if (config.geolocation) initializeGeolocation(config.geolocation);
-  if (config.cors) initializeCors(config.cors);
+  if (toolkitConfig.auth) initializeAuth(toolkitConfig.auth);
+  if (toolkitConfig.cache) initializeCache(toolkitConfig.cache);
+  if (toolkitConfig.storage) initializeStorage(toolkitConfig.storage);
+  if (toolkitConfig.geolocation) initializeGeolocation(toolkitConfig.geolocation);
+  if (toolkitConfig.cors) initializeCors(toolkitConfig.cors);
+
+  return config;
 }
 
 // Re-export types for consumer convenience

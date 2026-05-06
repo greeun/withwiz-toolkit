@@ -1,11 +1,8 @@
 /**
  * Unified Config Registry
  *
- * Live read-only view over individual module stores
- * (`globalThis.__withwiz_*_config`).
- *
- * `config.auth` and `getAuthConfig()` return the same object —
- * there is only one source of truth per module.
+ * 모든 모듈 설정을 단일 객체 `globalThis.__withwiz_config`에 저장.
+ * `config.auth`와 `getAuthConfig()` 모두 같은 객체를 반환한다.
  */
 
 import type { ResolvedCommonConfig } from './common';
@@ -15,10 +12,6 @@ import type { ResolvedCacheConfig } from '../cache/config';
 import type { ResolvedStorageConfig } from '../storage/config';
 import type { ResolvedGeolocationConfig } from '../geolocation/config';
 import type { ResolvedCorsConfig } from '../middleware/cors-config';
-
-// ============================================================================
-// Interface
-// ============================================================================
 
 export interface ConfigRegistry {
   common: ResolvedCommonConfig;
@@ -30,45 +23,17 @@ export interface ConfigRegistry {
   cors?: ResolvedCorsConfig;
 }
 
-// ============================================================================
-// Module → globalThis key mapping
-// ============================================================================
+declare global {
+  // eslint-disable-next-line no-var
+  var __withwiz_config: Partial<ConfigRegistry> | undefined;
+}
 
-const MODULE_KEYS: Record<string, string> = {
-  common: '__withwiz_common_config',
-  auth: '__withwiz_auth_config',
-  logger: '__withwiz_logger_config',
-  cache: '__withwiz_cache_config',
-  storage: '__withwiz_storage_config',
-  geolocation: '__withwiz_geolocation_config',
-  cors: '__withwiz_cors_config',
-};
+globalThis.__withwiz_config ??= {};
 
-// ============================================================================
-// Public API
-// ============================================================================
+export const config = globalThis.__withwiz_config as ConfigRegistry;
 
-/**
- * Read-only Proxy that delegates to each module's globalThis store.
- * Returns `undefined` for optional modules that haven't been initialized.
- * Throws `TypeError` on any setter attempt.
- */
-export const config: ConfigRegistry = new Proxy({} as ConfigRegistry, {
-  get(_target, prop: string) {
-    const globalKey = MODULE_KEYS[prop];
-    if (!globalKey) return undefined;
-    return (globalThis as Record<string, unknown>)[globalKey];
-  },
-  set() {
-    throw new TypeError('config is read-only');
-  },
-});
-
-/**
- * Reset all module stores. For test cleanup only.
- */
 export function resetConfig(): void {
-  for (const globalKey of Object.values(MODULE_KEYS)) {
-    (globalThis as Record<string, unknown>)[globalKey] = undefined;
+  for (const key of Object.keys(globalThis.__withwiz_config!)) {
+    delete (globalThis.__withwiz_config as Record<string, unknown>)[key];
   }
 }
