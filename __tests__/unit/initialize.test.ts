@@ -1,5 +1,5 @@
 import { initialize } from '../../src/initialize';
-import { initConfig, config, resetConfig } from '../../src/initialize';
+import { config, resetConfig } from '../../src/initialize';
 import { getCommonConfig, resetCommon } from '../../src/config/common';
 import { getAuthConfig, resetAuth } from '../../src/auth/config';
 import { getLoggerConfig, resetLogger } from '../../src/logger/config';
@@ -75,18 +75,36 @@ describe('initialize', () => {
   });
 });
 
-describe('initConfig (unified registry)', () => {
-  beforeEach(() => { resetConfig(); });
+describe('config proxy (unified registry)', () => {
+  beforeEach(() => {
+    resetConfig();
+  });
 
-  it('should be importable from initialize module and store config', () => {
-    initConfig({
-      common: { nodeEnv: 'test' },
-      auth: { jwtSecret: 'test-secret-32-chars-long-xxxxxxx', accessTokenExpiry: '7d', refreshTokenExpiry: '30d' },
-      logger: { level: 'warn', dir: './logs', file: 'app.log', fileEnabled: false, consoleEnabled: true },
+  it('should expose module configs via proxy after initialize()', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    initialize({
+      nodeEnv: 'test',
+      auth: { jwtSecret: 'test-secret-32-chars-long-xxxxxxx' },
+      logger: { level: 'warn' },
     });
 
     expect(config.common.nodeEnv).toBe('test');
     expect(config.auth.jwtSecret).toBe('test-secret-32-chars-long-xxxxxxx');
     expect(config.logger.level).toBe('warn');
+    spy.mockRestore();
+  });
+
+  it('should return the same reference as module getters', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    initialize({
+      nodeEnv: 'test',
+      auth: { jwtSecret: 'test-secret-32-chars-long-xxxxxxx' },
+      logger: { level: 'warn' },
+    });
+
+    expect(config.auth).toBe(getAuthConfig());
+    expect(config.logger).toBe(getLoggerConfig());
+    expect(config.common).toBe(getCommonConfig());
+    spy.mockRestore();
   });
 });
