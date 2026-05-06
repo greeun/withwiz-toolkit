@@ -80,31 +80,32 @@ describe('config proxy (unified registry)', () => {
     resetConfig();
   });
 
-  it('should expose module configs via proxy after initialize()', () => {
+  it('should return ConfigRegistry from initialize()', () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    initialize({
+    const result = initialize({
       nodeEnv: 'test',
       auth: { jwtSecret: 'test-secret-32-chars-long-xxxxxxx' },
       logger: { level: 'warn' },
     });
 
-    expect(config.common.nodeEnv).toBe('test');
-    expect(config.auth.jwtSecret).toBe('test-secret-32-chars-long-xxxxxxx');
-    expect(config.logger.level).toBe('warn');
+    expect(result.common.nodeEnv).toBe('test');
+    expect(result.auth.jwtSecret).toBe('test-secret-32-chars-long-xxxxxxx');
+    expect(result.logger.level).toBe('warn');
     spy.mockRestore();
   });
 
-  it('should return the same reference as module getters', () => {
+  it('should return the same proxy as imported config', () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    initialize({
+    const result = initialize({
       nodeEnv: 'test',
       auth: { jwtSecret: 'test-secret-32-chars-long-xxxxxxx' },
       logger: { level: 'warn' },
     });
 
-    expect(config.auth).toBe(getAuthConfig());
-    expect(config.logger).toBe(getLoggerConfig());
-    expect(config.common).toBe(getCommonConfig());
+    expect(result).toBe(config);
+    expect(result.auth).toBe(getAuthConfig());
+    expect(result.logger).toBe(getLoggerConfig());
+    expect(result.common).toBe(getCommonConfig());
     spy.mockRestore();
   });
 });

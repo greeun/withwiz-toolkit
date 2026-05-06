@@ -15,23 +15,9 @@ export interface ResolvedAuthConfig {
   cookieSecure: boolean;
 }
 
-const GLOBAL_KEY = '__withwiz_auth_config' as const;
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __withwiz_auth_config: ResolvedAuthConfig | undefined;
-}
-
-function getConfig(): ResolvedAuthConfig | null {
-  return globalThis[GLOBAL_KEY] ?? null;
-}
-
-function setConfig(config: ResolvedAuthConfig): void {
-  globalThis[GLOBAL_KEY] = config;
-}
-
 export function initializeAuth(config: AuthConfig): void {
-  if (getConfig()) return;
+  globalThis.__withwiz_config ??= {};
+  if (globalThis.__withwiz_config.auth) return;
   if (!config.jwtSecret) {
     throw new ConfigurationError('Auth', 'jwtSecret is required');
   }
@@ -41,22 +27,22 @@ export function initializeAuth(config: AuthConfig): void {
   if (!config.refreshTokenExpiry) {
     configWarn('Auth', 'refreshTokenExpiry not provided, using default: 30d');
   }
-  setConfig({
+  globalThis.__withwiz_config.auth = {
     jwtSecret: config.jwtSecret,
     accessTokenExpiry: config.accessTokenExpiry ?? '7d',
     refreshTokenExpiry: config.refreshTokenExpiry ?? '30d',
     cookieSecure: config.cookieSecure ?? false,
-  });
+  };
 }
 
 export function getAuthConfig(): ResolvedAuthConfig {
-  const config = getConfig();
-  if (!config) {
+  const auth = globalThis.__withwiz_config?.auth;
+  if (!auth) {
     throw new ConfigurationError('Auth', 'Not initialized. Call initializeAuth() first.');
   }
-  return config;
+  return auth;
 }
 
 export function resetAuth(): void {
-  globalThis[GLOBAL_KEY] = undefined;
+  if (globalThis.__withwiz_config) delete globalThis.__withwiz_config.auth;
 }
