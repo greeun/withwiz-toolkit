@@ -96,8 +96,8 @@ export class PrismaUserRepository implements UserRepository {
     };
     // Use configured field names for write operations
     createData[this.config.userFields.password] = data.password || null;
-    if (this.config.userFields.role !== 'role' || data.role) {
-      createData[this.config.userFields.role] = (data.role as any) || 'USER';
+    if (data.role !== undefined && data.role !== null) {
+      createData[this.config.userFields.role] = data.role as any;
     }
     createData[this.config.userFields.emailVerified] = data.emailVerified || null;
     createData[this.config.userFields.image] = data.image || null;
