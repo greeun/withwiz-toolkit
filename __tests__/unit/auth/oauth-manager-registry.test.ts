@@ -448,3 +448,58 @@ describe('OAuthManager.getUserInfo() 로깅', () => {
     );
   });
 });
+
+// ============================================================================
+// 신규 빌트인 프로바이더 (Microsoft / Meta) 자동 등록
+// ============================================================================
+
+describe('OAuthManager — Microsoft / Meta 자동 등록', () => {
+  it('microsoft 프로바이더가 자동 등록되어 getLoginUrl 호출이 UNSUPPORTED_PROVIDER 에러를 던지지 않아야 한다', () => {
+    const config: OAuthConfig = {
+      providers: {
+        microsoft: {
+          clientId: 'ms-id',
+          clientSecret: 'ms-secret',
+          redirectUri: 'http://localhost/cb/ms',
+        },
+      },
+    };
+    const manager = new OAuthManager(config, mockLogger as never);
+
+    expect(() => manager.getLoginUrl('microsoft', 'state-1')).not.toThrow();
+  });
+
+  it('meta 프로바이더가 자동 등록되어 getLoginUrl 호출이 UNSUPPORTED_PROVIDER 에러를 던지지 않아야 한다', () => {
+    const config: OAuthConfig = {
+      providers: {
+        meta: {
+          clientId: 'meta-id',
+          clientSecret: 'meta-secret',
+          redirectUri: 'http://localhost/cb/meta',
+        },
+      },
+    };
+    const manager = new OAuthManager(config, mockLogger as never);
+
+    expect(() => manager.getLoginUrl('meta', 'state-1')).not.toThrow();
+  });
+
+  it('OAUTH_PROVIDERS 상수의 모든 값이 자동 등록되어야 한다 (lint)', async () => {
+    const { OAUTH_PROVIDERS } = await import('@withwiz/auth/types');
+
+    const allProviderConfigs: Record<string, OAuthProviderConfig> = {};
+    for (const name of Object.values(OAUTH_PROVIDERS)) {
+      allProviderConfigs[name] = {
+        clientId: `${name}-id`,
+        clientSecret: `${name}-secret`,
+        redirectUri: `http://localhost/cb/${name}`,
+      };
+    }
+
+    const manager = new OAuthManager({ providers: allProviderConfigs }, mockLogger as never);
+
+    for (const name of Object.values(OAUTH_PROVIDERS)) {
+      expect(() => manager.getLoginUrl(name, 'state'), `${name} provider should be auto-registered`).not.toThrow();
+    }
+  });
+});

@@ -541,6 +541,7 @@ describe('KakaoOAuthProvider', () => {
         id: 1234567890,
         kakao_account: {
           email: 'user@kakao.com',
+          is_email_valid: true,
           is_email_verified: true,
           profile: {
             nickname: '카카오유저',
@@ -656,6 +657,121 @@ describe('KakaoOAuthProvider', () => {
 
       await expect(provider.getUserInfo('invalid-token')).rejects.toThrow(OAuthError);
       await expect(provider.getUserInfo('invalid-token')).rejects.toThrow('Failed to get Kakao user info');
+    });
+  });
+});
+
+// ============================================================================
+// Kakao OAuth Provider — error / type safety 보강
+// ============================================================================
+
+describe('KakaoOAuthProvider — error/type safety', () => {
+  const provider = new KakaoOAuthProvider();
+
+  describe('exchangeCodeForToken() — error 응답 처리', () => {
+    it('HTTP 200 + error 필드가 있으면 OAuthError에 error_description 포함', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          error: 'invalid_grant',
+          error_description: 'authorization code not found',
+        }),
+      } as Response);
+
+      await expect(
+        provider.exchangeCodeForToken(mockConfig, 'bad-code'),
+      ).rejects.toThrow('authorization code not found');
+    });
+
+    it('HTTP 200 + error 필드만 있고 error_description 없으면 OAuthError에 error 코드만 포함', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ error: 'invalid_client' }),
+      } as Response);
+
+      await expect(
+        provider.exchangeCodeForToken(mockConfig, 'bad-code'),
+      ).rejects.toThrow('Kakao token exchange failed: invalid_client');
+    });
+  });
+
+  describe('getUserInfo() — 응답 검증', () => {
+    it('is_email_valid가 false면 emailVerified: false', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 12345,
+          kakao_account: {
+            email: 'a@b.com',
+            is_email_valid: false,
+            is_email_verified: true,
+            profile: { nickname: 'N' },
+          },
+        }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('is_email_verified가 false면 emailVerified: false', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 12345,
+          kakao_account: {
+            email: 'a@b.com',
+            is_email_valid: true,
+            is_email_verified: false,
+            profile: { nickname: 'N' },
+          },
+        }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('두 플래그가 모두 undefined면 emailVerified: false', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 12345,
+          kakao_account: { email: 'a@b.com', profile: { nickname: 'N' } },
+        }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('두 플래그가 모두 true이면 emailVerified: true', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 12345,
+          kakao_account: {
+            email: 'a@b.com',
+            is_email_valid: true,
+            is_email_verified: true,
+            profile: { nickname: 'N' },
+          },
+        }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.emailVerified).toBe(true);
+    });
+
+    it('id가 누락되면 OAuthError(INVALID_RESPONSE)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          kakao_account: { email: 'a@b.com' },
+        }),
+      } as Response);
+
+      await expect(provider.getUserInfo('token')).rejects.toThrow('Invalid Kakao response');
     });
   });
 });
