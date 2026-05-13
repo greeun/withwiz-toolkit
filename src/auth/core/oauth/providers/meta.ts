@@ -48,7 +48,33 @@ export class MetaOAuthProvider implements IOAuthProviderAdapter {
     return response.json();
   }
 
-  async getUserInfo(_accessToken: string): Promise<OAuthUserInfo> {
-    throw new OAuthError('Not implemented yet', 'NOT_IMPLEMENTED');
+  async getUserInfo(accessToken: string): Promise<OAuthUserInfo> {
+    const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/me?fields=id,name,email,picture`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      throw new OAuthError('Failed to get Meta user info', 'USER_INFO_FAILED');
+    }
+
+    const data = (await response.json()) as {
+      id?: string;
+      name?: string;
+      email?: string;
+      picture?: { data?: { url?: string } };
+    };
+
+    if (!data.id) {
+      throw new OAuthError('Invalid Meta response: missing id', 'INVALID_RESPONSE');
+    }
+
+    return {
+      id: data.id,
+      email: data.email as string,
+      name: data.name ?? null,
+      image: data.picture?.data?.url ?? null,
+      emailVerified: !!data.email,
+    };
   }
 }

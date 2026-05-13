@@ -106,4 +106,94 @@ describe('MetaOAuthProvider', () => {
       ).rejects.toThrow('Meta token exchange failed');
     });
   });
+
+  describe('getUserInfo()', () => {
+    it('성공 시 매핑된 OAuthUserInfo를 반환해야 한다', async () => {
+      const mockMetaUser = {
+        id: '10001234567890',
+        name: 'Test User',
+        email: 'user@example.com',
+        picture: {
+          data: {
+            url: 'https://platform-lookaside.fbsbx.com/abc.jpg',
+            width: 50,
+            height: 50,
+            is_silhouette: false,
+          },
+        },
+      };
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockMetaUser),
+      } as Response);
+
+      const userInfo = await provider.getUserInfo('meta-token');
+
+      expect(userInfo).toEqual({
+        id: '10001234567890',
+        email: 'user@example.com',
+        name: 'Test User',
+        image: 'https://platform-lookaside.fbsbx.com/abc.jpg',
+        emailVerified: true,
+      });
+
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const calledUrl = new URL(callArgs[0]);
+      expect(calledUrl.origin + calledUrl.pathname).toBe('https://graph.facebook.com/v25.0/me');
+      expect(calledUrl.searchParams.get('fields')).toBe('id,name,email,picture');
+      expect(callArgs[1].headers).toEqual({ Authorization: 'Bearer meta-token' });
+    });
+
+    it('email이 없으면 emailVerified가 false이어야 한다', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: '777', name: 'No Email User' }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.email).toBeUndefined();
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('picture가 없으면 image: null', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: '888', email: 'a@b.com' }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.image).toBeNull();
+    });
+
+    it('name이 없으면 name: null', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id: '999', email: 'x@y.com' }),
+      } as Response);
+
+      const result = await provider.getUserInfo('token');
+      expect(result.name).toBeNull();
+    });
+
+    it('data.id가 누락되면 OAuthError(INVALID_RESPONSE)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ name: 'No ID' }),
+      } as Response);
+
+      await expect(provider.getUserInfo('token')).rejects.toThrow(OAuthError);
+      await expect(provider.getUserInfo('token')).rejects.toThrow('Invalid Meta response');
+    });
+
+    it('HTTP 오류 시 OAuthError(USER_INFO_FAILED)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      } as Response);
+
+      await expect(provider.getUserInfo('bad-token')).rejects.toThrow(OAuthError);
+      await expect(provider.getUserInfo('bad-token')).rejects.toThrow('Failed to get Meta user info');
+    });
+  });
 });
