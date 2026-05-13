@@ -11,12 +11,20 @@ import { OAuthError } from '@withwiz/auth/errors';
 import { GoogleOAuthProvider } from './providers/google';
 import { GitHubOAuthProvider } from './providers/github';
 import { KakaoOAuthProvider } from './providers/kakao';
+import { MicrosoftOAuthProvider } from './providers/microsoft';
+import { MetaOAuthProvider } from './providers/meta';
 
 // Re-export OAUTH_PROVIDERS
 export { OAUTH_PROVIDERS };
 
 // Re-export provider adapters
-export { GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from './providers';
+export {
+  GoogleOAuthProvider,
+  GitHubOAuthProvider,
+  KakaoOAuthProvider,
+  MicrosoftOAuthProvider,
+  MetaOAuthProvider,
+} from './providers';
 
 // ============================================================================
 // OAuth Manager Class
@@ -35,6 +43,8 @@ export class OAuthManager {
     this.registerProvider(new GoogleOAuthProvider());
     this.registerProvider(new GitHubOAuthProvider());
     this.registerProvider(new KakaoOAuthProvider());
+    this.registerProvider(new MicrosoftOAuthProvider());
+    this.registerProvider(new MetaOAuthProvider());
   }
 
   /**
