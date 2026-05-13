@@ -26,6 +26,7 @@ function makeIdToken(claims: Record<string, unknown>): string {
 }
 
 const FUTURE_EXP = Math.floor(Date.now() / 1000) + 3600;
+const PAST_EXP = Math.floor(Date.now() / 1000) - 3600;
 
 const mockConfig: OAuthProviderConfig = {
   clientId: 'test-ms-app-id',
@@ -168,6 +169,117 @@ describe('MicrosoftOAuthProvider', () => {
       await expect(
         provider.exchangeCodeForToken(mockConfig, 'code'),
       ).rejects.toThrow('Invalid Microsoft id_token');
+    });
+  });
+
+  describe('getUserInfo()', () => {
+    const validIss = 'https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0';
+
+    it('정상 claims를 매핑하여 OAuthUserInfo를 반환한다', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'ms-oid-12345',
+        name: 'Test MS User',
+        email: 'user@contoso.com',
+        email_verified: true,
+      });
+
+      const result = await provider.getUserInfo(token);
+
+      expect(result).toEqual({
+        id: 'ms-oid-12345',
+        email: 'user@contoso.com',
+        name: 'Test MS User',
+        image: null,
+        emailVerified: true,
+      });
+    });
+
+    it('email이 없으면 preferred_username으로 폴백', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'oid-1',
+        preferred_username: 'user@tenant.onmicrosoft.com',
+      });
+
+      const result = await provider.getUserInfo(token);
+      expect(result.email).toBe('user@tenant.onmicrosoft.com');
+    });
+
+    it('email_verified가 false면 emailVerified: false', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'oid-2',
+        email: 'a@b.com',
+        email_verified: false,
+      });
+      const result = await provider.getUserInfo(token);
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('email_verified가 누락되면 emailVerified: false', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'oid-3',
+        email: 'a@b.com',
+      });
+      const result = await provider.getUserInfo(token);
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('name이 누락되면 name: null', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'oid-4',
+        email: 'a@b.com',
+      });
+      const result = await provider.getUserInfo(token);
+      expect(result.name).toBeNull();
+    });
+
+    it('iss 형식이 Microsoft 형식이 아니면 OAuthError(INVALID_RESPONSE)', async () => {
+      const token = makeIdToken({
+        iss: 'https://accounts.google.com',
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'oid-6',
+      });
+      await expect(provider.getUserInfo(token)).rejects.toThrow('Invalid Microsoft id_token');
+    });
+
+    it('exp 만료 시 OAuthError(INVALID_RESPONSE)', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: PAST_EXP,
+        oid: 'oid-7',
+      });
+      await expect(provider.getUserInfo(token)).rejects.toThrow('Invalid Microsoft id_token');
+    });
+
+    it('oid 누락 시 OAuthError(INVALID_RESPONSE) — sub 폴백 안 함', async () => {
+      const token = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        sub: 'sub-only-no-oid',
+        email: 'a@b.com',
+      });
+      await expect(provider.getUserInfo(token)).rejects.toThrow('Invalid Microsoft id_token');
+    });
+
+    it('형식이 깨진 JWT는 OAuthError(INVALID_RESPONSE)', async () => {
+      await expect(provider.getUserInfo('not.a.jwt')).rejects.toThrow('Invalid Microsoft id_token');
     });
   });
 });
