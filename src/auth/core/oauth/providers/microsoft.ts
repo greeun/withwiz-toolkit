@@ -59,11 +59,79 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
     return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(_config: OAuthProviderConfig, _code: string): Promise<OAuthTokenResponse> {
-    throw new OAuthError('Not implemented yet', 'NOT_IMPLEMENTED');
+  async exchangeCodeForToken(config: OAuthProviderConfig, code: string): Promise<OAuthTokenResponse> {
+    const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: config.redirectUri,
+        scope: 'openid profile email',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new OAuthError(`Microsoft token exchange failed: ${errorData}`, 'TOKEN_EXCHANGE_FAILED');
+    }
+
+    const data = (await response.json()) as MicrosoftTokenResponse;
+
+    if (data.error) {
+      throw new OAuthError(
+        `Microsoft token exchange failed: ${data.error}${data.error_description ? ` - ${data.error_description}` : ''}`,
+        'TOKEN_EXCHANGE_FAILED',
+      );
+    }
+
+    if (!data.id_token) {
+      throw new OAuthError('Missing id_token in Microsoft token response', 'INVALID_RESPONSE');
+    }
+
+    // Validate id_token claims (including aud against config.clientId) before returning.
+    const claims = decodeMicrosoftClaims(data.id_token);
+    assertMicrosoftClaims(claims, config.clientId);
+
+    // Interface workaround: place id_token in the access_token field so getUserInfo can decode it.
+    return {
+      access_token: data.id_token,
+      token_type: data.token_type ?? 'Bearer',
+      expires_in: data.expires_in,
+      refresh_token: data.refresh_token,
+      scope: data.scope,
+    };
   }
 
   async getUserInfo(_token: string): Promise<OAuthUserInfo> {
     throw new OAuthError('Not implemented yet', 'NOT_IMPLEMENTED');
+  }
+}
+
+function decodeMicrosoftClaims(token: string): MicrosoftIdTokenClaims {
+  try {
+    return decodeJwt(token) as MicrosoftIdTokenClaims;
+  } catch {
+    throw new OAuthError('Invalid Microsoft id_token: malformed JWT', 'INVALID_RESPONSE');
+  }
+}
+
+function assertMicrosoftClaims(claims: MicrosoftIdTokenClaims, expectedAud?: string): void {
+  if (
+    !claims.iss ||
+    !/^https:\/\/login\.microsoftonline\.com\/(?!common\/|consumers\/|organizations\/)[\w-]+\/v2\.0$/.test(claims.iss)
+  ) {
+    throw new OAuthError('Invalid Microsoft id_token: bad iss', 'INVALID_RESPONSE');
+  }
+  if (expectedAud !== undefined && claims.aud !== expectedAud) {
+    throw new OAuthError('Invalid Microsoft id_token: aud mismatch', 'INVALID_RESPONSE');
+  }
+  if (!claims.exp || claims.exp < Math.floor(Date.now() / 1000)) {
+    throw new OAuthError('Invalid Microsoft id_token: expired', 'INVALID_RESPONSE');
+  }
+  if (!claims.oid) {
+    throw new OAuthError('Invalid Microsoft id_token: missing oid', 'INVALID_RESPONSE');
   }
 }
