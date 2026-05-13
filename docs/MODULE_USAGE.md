@@ -291,6 +291,10 @@ const userInfo = await oauth.getUserInfo('google', oauthToken);
 // → { id, email, name, image, emailVerified }
 ```
 
+### Microsoft OAuth 어댑터 주의
+
+`OAuthManager.exchangeCodeForToken('microsoft', code)`가 반환하는 값은 OAuth access token이 아니라 **id_token(JWT)** 입니다. Microsoft Graph 등 외부 API 호출에 그대로 사용할 수 없으며, 사용자 식별·이메일 검증 용도로만 `OAuthManager.getUserInfo('microsoft', token)`을 통해 소비하십시오. Graph 호출이 필요해지면 별도 spec으로 access token을 함께 노출하는 인터페이스 확장이 필요합니다.
+
 ### 3.4 Auth Route Handlers
 
 ```typescript
