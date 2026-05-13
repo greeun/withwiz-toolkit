@@ -29,8 +29,23 @@ export class MetaOAuthProvider implements IOAuthProviderAdapter {
     return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(_config: OAuthProviderConfig, _code: string): Promise<OAuthTokenResponse> {
-    throw new OAuthError('Not implemented yet', 'NOT_IMPLEMENTED');
+  async exchangeCodeForToken(config: OAuthProviderConfig, code: string): Promise<OAuthTokenResponse> {
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code,
+      redirect_uri: config.redirectUri,
+    });
+
+    const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token?${params.toString()}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new OAuthError(`Meta token exchange failed: ${errorData}`, 'TOKEN_EXCHANGE_FAILED');
+    }
+
+    return response.json();
   }
 
   async getUserInfo(_accessToken: string): Promise<OAuthUserInfo> {
