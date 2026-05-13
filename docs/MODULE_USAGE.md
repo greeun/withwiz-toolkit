@@ -272,8 +272,48 @@ const schema = z.object({
 
 빌트인 프로바이더 (5종): **`google` / `github` / `kakao` / `microsoft` / `meta`** — 모두 `OAuthManager` 생성자에서 자동 등록됩니다.
 
+> **주의**: OAuth는 통합 `initialize()` (§1) 대상에 포함되지 **않습니다**. JWT 설정과 분리되어 있으며, OAuth가 필요한 앱은 **`OAuthManager`를 별도로 인스턴스화**하여 사용합니다.
+
+#### OAuthManager 초기화 입력
+
+생성자 시그니처:
+
+```typescript
+new OAuthManager(config: OAuthConfig, logger: Logger): OAuthManager
+```
+
+**`OAuthConfig`** (from `@withwiz/toolkit/auth/types`):
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `providers` | `Record<string, OAuthProviderConfig>` | O | 사용할 프로바이더 이름을 키로 한 설정 맵. 키는 `'google'`/`'github'`/`'kakao'`/`'microsoft'`/`'meta'` 중 사용하는 것만 포함하면 됨 (전부 제공할 필요 없음) |
+
+**`OAuthProviderConfig`** (각 프로바이더 항목):
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `clientId` | `string` | O | 해당 플랫폼 dev 콘솔에서 발급한 OAuth 앱 ID (Meta는 "App ID") |
+| `clientSecret` | `string` | O | 해당 플랫폼의 OAuth 앱 시크릿 (Meta는 "App Secret") |
+| `redirectUri` | `string` | O | 콜백 라우트의 절대 URL. 플랫폼 dev 콘솔의 허용 redirect URI 목록에 등록되어 있어야 함 |
+
+**`Logger`** (from `@withwiz/toolkit/auth/types`) — 4개 메서드를 가진 minimal 인터페이스:
+
+```typescript
+interface Logger {
+  debug(message: string, meta?: unknown): void;
+  info(message: string, meta?: unknown): void;
+  warn(message: string, meta?: unknown): void;
+  error(message: string, meta?: unknown): void;
+}
+```
+
+toolkit의 Winston 로거(`@withwiz/toolkit/logger/logger`) 인스턴스가 이 인터페이스를 만족하므로 그대로 주입 가능. 테스트에서는 `console`이나 `{ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }` 같은 stub을 사용해도 됨.
+
+#### 초기화 예시
+
 ```typescript
 import { OAuthManager, OAUTH_PROVIDERS } from '@withwiz/toolkit/auth';
+import { logger } from '@withwiz/toolkit/logger/logger';
 
 const oauth = new OAuthManager({
   providers: {
@@ -294,7 +334,13 @@ const userInfo = await oauth.getUserInfo('google', accessToken);
 // → { id, email, name, image, emailVerified }
 ```
 
-`OAUTH_PROVIDERS` 상수(예: `OAUTH_PROVIDERS.MICROSOFT`)로 문자열 리터럴 대신 타입 안전한 이름을 사용할 수 있습니다. 등록되지 않은 프로바이더 호출 시 `OAuthError('UNSUPPORTED_PROVIDER')` 발생.
+**환경 변수 정리**: 실제 운영에서는 위 `process.env.*` 참조를 한 곳에 모아 검증(zod 등)하는 패턴 권장.
+
+`OAUTH_PROVIDERS` 상수(예: `OAUTH_PROVIDERS.MICROSOFT`)로 문자열 리터럴 대신 타입 안전한 이름을 사용할 수 있습니다.
+
+**런타임 에러**:
+- 등록되지 않은 프로바이더 호출 → `OAuthError('UNSUPPORTED_PROVIDER')`
+- `config.providers[name]`이 없는 프로바이더 호출 → `OAuthError('<NAME>_NOT_CONFIGURED')`
 
 #### 프로바이더별 특징
 
