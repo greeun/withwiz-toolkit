@@ -270,30 +270,89 @@ const schema = z.object({
 
 ### 3.3 OAuth
 
+빌트인 프로바이더 (5종): **`google` / `github` / `kakao` / `microsoft` / `meta`** — 모두 `OAuthManager` 생성자에서 자동 등록됩니다.
+
 ```typescript
-import { OAuthManager, GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from '@withwiz/toolkit/auth';
+import { OAuthManager, OAUTH_PROVIDERS } from '@withwiz/toolkit/auth';
 
-const oauth = new OAuthManager(oauthConfig, logger);
+const oauth = new OAuthManager({
+  providers: {
+    google:    { clientId: process.env.GOOGLE_CLIENT_ID!,    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,    redirectUri: 'https://example.com/auth/callback/google' },
+    github:    { clientId: process.env.GITHUB_CLIENT_ID!,    clientSecret: process.env.GITHUB_CLIENT_SECRET!,    redirectUri: 'https://example.com/auth/callback/github' },
+    kakao:     { clientId: process.env.KAKAO_CLIENT_ID!,     clientSecret: process.env.KAKAO_CLIENT_SECRET!,     redirectUri: 'https://example.com/auth/callback/kakao' },
+    microsoft: { clientId: process.env.MICROSOFT_CLIENT_ID!, clientSecret: process.env.MICROSOFT_CLIENT_SECRET!, redirectUri: 'https://example.com/auth/callback/microsoft' },
+    meta:      { clientId: process.env.META_APP_ID!,         clientSecret: process.env.META_APP_SECRET!,         redirectUri: 'https://example.com/auth/callback/meta' },
+  },
+}, logger);
 
-// 프로바이더 등록
-oauth.registerProvider(new GoogleOAuthProvider({
-  clientId: process.env.GOOGLE_CLIENT_ID!,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  redirectUri: 'https://example.com/auth/callback/google',
-}));
-
-// 로그인 URL 생성
+// 로그인 URL 생성 (필요한 프로바이더만)
 const loginUrl = oauth.getLoginUrl('google', state);
 
 // 콜백 처리
-const oauthToken = await oauth.exchangeCodeForToken('google', code);
-const userInfo = await oauth.getUserInfo('google', oauthToken);
+const accessToken = await oauth.exchangeCodeForToken('google', code);
+const userInfo = await oauth.getUserInfo('google', accessToken);
 // → { id, email, name, image, emailVerified }
 ```
+
+`OAUTH_PROVIDERS` 상수(예: `OAUTH_PROVIDERS.MICROSOFT`)로 문자열 리터럴 대신 타입 안전한 이름을 사용할 수 있습니다. 등록되지 않은 프로바이더 호출 시 `OAuthError('UNSUPPORTED_PROVIDER')` 발생.
+
+#### 프로바이더별 특징
+
+| Provider | Scope (고정) | 비고 |
+|---|---|---|
+| `google` | `openid email profile` | `picture` → `image`, `verified_email` → `emailVerified` |
+| `github` | `read:user user:email` | primary email 추출 |
+| `kakao` | `profile_nickname profile_image account_email` | `emailVerified`는 `is_email_valid && is_email_verified` 두 플래그가 모두 true일 때만 |
+| `microsoft` | `openid profile email` | common 테넌트, **id_token 디코딩 방식** (아래 주의 사항 참조) |
+| `meta` | `email,public_profile` | Graph API v25.0, GET token exchange |
 
 ### Microsoft OAuth 어댑터 주의
 
 `OAuthManager.exchangeCodeForToken('microsoft', code)`가 반환하는 값은 OAuth access token이 아니라 **id_token(JWT)** 입니다. Microsoft Graph 등 외부 API 호출에 그대로 사용할 수 없으며, 사용자 식별·이메일 검증 용도로만 `OAuthManager.getUserInfo('microsoft', token)`을 통해 소비하십시오. Graph 호출이 필요해지면 별도 spec으로 access token을 함께 노출하는 인터페이스 확장이 필요합니다.
+
+신뢰 모델: 어댑터는 server-side authorization code flow를 가정합니다 (`exchangeCodeForToken`이 직접 받아온 토큰만 `getUserInfo`에 넘긴다는 가정). 외부에서 받은 id_token을 직접 `getUserInfo`에 주입하지 마십시오. SPA/PKCE/implicit flow가 필요하면 별도 JWKS 기반 서명 검증 spec이 필요합니다.
+
+#### OAuth 모듈 테스트
+
+**자동화 테스트 (단위 테스트)** — 신규 추가/변경분만 빠르게:
+
+```bash
+# Google / GitHub / Kakao (기존 + Kakao 보강)
+npm test -- __tests__/unit/auth/oauth-providers.test.ts
+
+# Microsoft (신규)
+npm test -- __tests__/unit/auth/oauth-microsoft.test.ts
+
+# Meta (신규)
+npm test -- __tests__/unit/auth/oauth-meta.test.ts
+
+# OAuthManager 자동 등록 / 레지스트리
+npm test -- __tests__/unit/auth/oauth-manager-registry.test.ts
+
+# OAuth 모듈 전체
+npm test -- __tests__/unit/auth/oauth- __tests__/security/auth/oauth.test.ts
+```
+
+**자동 등록 회귀 보호**: `oauth-manager-registry.test.ts`는 `OAUTH_PROVIDERS` 상수에 등록된 모든 값이 `OAuthManager`에 자동 등록되어 있는지 lint 형태로 검증합니다 (`Object.values(OAUTH_PROVIDERS)` 순회). 미래에 새 프로바이더를 `OAUTH_PROVIDERS`에 추가하면서 매니저 등록을 누락하면 이 테스트가 실패합니다.
+
+**실제 OAuth 앱 연동 (수동 통합 테스트)** — 실제 콜백 흐름을 검증하려면 각 플랫폼에 dev 앱 등록 후 다음 환경 변수를 설정하고 콜백 라우트가 있는 Next.js 데모를 실행합니다:
+
+| Provider | dev 앱 발급처 | 필요한 환경 변수 |
+|---|---|---|
+| Google | [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| GitHub | GitHub → Settings → Developer settings → OAuth Apps | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` |
+| Kakao | [developers.kakao.com](https://developers.kakao.com) → 내 애플리케이션 | `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET` |
+| Microsoft | [entra.microsoft.com](https://entra.microsoft.com) → App registrations | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` |
+| Meta | [developers.facebook.com](https://developers.facebook.com) → My Apps → Facebook Login | `META_APP_ID`, `META_APP_SECRET` |
+
+체크포인트:
+
+1. `getLoginUrl(provider, state)`가 반환한 URL로 리다이렉트 → 동의 화면 노출
+2. 콜백 라우트가 `code` 쿼리 파라미터 수신
+3. `exchangeCodeForToken(provider, code)` 성공
+4. `getUserInfo(provider, token)`이 `{ id, email, name, image, emailVerified }` 반환 — 각 필드 null/undefined 케이스 확인
+5. Microsoft만: 반환된 "토큰"이 id_token 형식(`<header>.<payload>.<sig>`)인지 콘솔에서 확인 (DB에 access_token 컬럼이 있다면 id_token이 저장됨에 주의)
+6. Kakao: 이메일 미동의 / 미검증 사용자로도 가입해 보고 `emailVerified: false` 확인
 
 ### 3.4 Auth Route Handlers
 

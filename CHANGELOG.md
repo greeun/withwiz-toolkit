@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Microsoft OAuth Provider** (`@withwiz/toolkit/auth/core/oauth/providers/microsoft`)
+  - Microsoft Entra v2.0 `common` 테넌트 기반 server-side authorization code flow
+  - `id_token` 클레임 디코딩 방식으로 사용자 정보 추출 (Graph `/me` 호출 없음)
+  - `iss` / `aud` / `exp` / `oid` 검증 — `oid` 누락 시 INVALID_RESPONSE (sub 폴백 안 함, 식별자 안정성 보장)
+  - `email_verified === true`일 때만 `emailVerified: true` (보수적)
+  - 인터페이스 우회: `OAuthTokenResponse.access_token` 필드에 id_token 담아 반환 (`MODULE_USAGE.md` 경고 참조)
+- **Meta(Facebook) OAuth Provider** (`@withwiz/toolkit/auth/core/oauth/providers/meta`)
+  - Graph API **v25.0** (`META_GRAPH_VERSION` 모듈 상수)
+  - GET + query string 방식 token exchange (Meta 공식 권고)
+  - `/me?fields=id,name,email,picture` 응답 매핑, `picture.data.url` 폴백 처리
+- **`OAUTH_PROVIDERS`** 상수에 `MICROSOFT: 'microsoft'`, `META: 'meta'` 추가
+- **`OAuthManager`** 가 microsoft / meta 자동 등록
+- **`OAUTH_PROVIDERS` lint 테스트** — 상수에 등록된 모든 provider가 OAuthManager에 자동 등록되어 있는지 회귀 검증
+
+### Changed
+- **Kakao OAuth Provider** 응답 처리 안전성 강화 (기능 변경 없음)
+  - 토큰/사용자 응답에 file-local 타입(`KakaoTokenResponse`, `KakaoAccount`, `KakaoUserResponse`) 부여
+  - HTTP 200 + `error` 필드 응답에서 `error_description` 포함 `OAuthError(TOKEN_EXCHANGE_FAILED)` 발생
+  - `emailVerified`: `is_email_valid === true && is_email_verified === true` 둘 다 strict true일 때만 true
+  - `data.id` 누락 시 `OAuthError(INVALID_RESPONSE)` (이전엔 `TypeError`)
+- **`MODULE_USAGE.md`**에 Microsoft 어댑터의 id_token-in-access_token 시맨틱 경고 추가
+
+### Spec
+- `docs/superpowers/specs/2026-05-14-oauth-providers-design.md` (2 라운드 외부 평가자 검증 완료)
+
 ## [0.5.0] - 2026-04-28
 
 ### Removed
