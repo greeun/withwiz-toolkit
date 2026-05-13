@@ -105,8 +105,20 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
     };
   }
 
-  async getUserInfo(_token: string): Promise<OAuthUserInfo> {
-    throw new OAuthError('Not implemented yet', 'NOT_IMPLEMENTED');
+  async getUserInfo(idToken: string): Promise<OAuthUserInfo> {
+    const claims = decodeMicrosoftClaims(idToken);
+    // Defensive: re-verify iss/exp/oid here (aud was validated at exchangeCodeForToken time).
+    // This protects against the rare case where a caller invokes getUserInfo with a non-canonical
+    // token. See trust model in the file header JSDoc.
+    assertMicrosoftClaims(claims);
+
+    return {
+      id: claims.oid as string,
+      email: (claims.email ?? claims.preferred_username) as string,
+      name: claims.name ?? null,
+      image: null,
+      emailVerified: claims.email_verified === true,
+    };
   }
 }
 
