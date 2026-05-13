@@ -92,7 +92,6 @@ export class OAuthCallbackService {
       email: input.email,
       name: input.name,
       image: input.image,
-      role: 'USER',
       emailVerified: new Date(), // OAuth users are auto-verified
     });
 
