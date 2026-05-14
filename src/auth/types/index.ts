@@ -51,6 +51,8 @@ export const OAUTH_PROVIDERS = {
   GOOGLE: 'google',
   GITHUB: 'github',
   KAKAO: 'kakao',
+  MICROSOFT: 'microsoft',
+  META: 'meta',
 } as const;
 
 export type OAuthProviderName = typeof OAUTH_PROVIDERS[keyof typeof OAUTH_PROVIDERS];

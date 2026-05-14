@@ -6,6 +6,7 @@ import { JWTService } from '../core/jwt';
 import { setTokenCookies } from '../core/jwt/cookie';
 import { AuthError } from '../errors';
 import type { AuthHandlerOptions } from '../types/handler-types';
+import { JWT_DEFAULTS } from '../../constants/security';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,9 +17,9 @@ export function createLoginHandler(options: AuthHandlerOptions) {
   const { dependencies, jwt, hooks, features, cookie } = options;
   const jwtService = new JWTService({
     secret: jwt.secret,
-    accessTokenExpiry: jwt.accessTokenExpiry ?? '7d',
-    refreshTokenExpiry: jwt.refreshTokenExpiry ?? '30d',
-    algorithm: 'HS256',
+    accessTokenExpiry: jwt.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
+    refreshTokenExpiry: jwt.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
+    algorithm: JWT_DEFAULTS.ALGORITHM,
   });
 
   return async (request: NextRequest): Promise<Response> => {

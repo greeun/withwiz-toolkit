@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-05-15
+
+### Docs
+- **`docs/MODULE_USAGE.md` §3.5 "Auth Database Adapter (Prisma)" 신설**
+  - 그동안 export되어 있었지만 사용 가이드가 비어있던 `PrismaUserRepository` / `PrismaOAuthAccountRepository` / `PrismaEmailTokenRepository` 사용법을 문서화
+  - 요구 Prisma 스키마(기본값 기준) 전체를 모델 정의로 명시
+  - `PrismaAdapterConfig.userFields` / `tokenTables` 외부화 항목과 적용 범위 명확화
+  - **원칙 명문화**: `userFields`는 **Prisma 모델 필드명** 기준이며 DB 컬럼 변형은 소비 프로젝트의 `@map`으로 처리
+  - **⚠️ OAuth Account 스키마 가정 경고 섹션 추가**: `PrismaOAuthAccountRepository`가 NextAuth.js v4 Adapter 호환 스키마를 강제하는 구조적 가정(4개) 명시
+    1. `Account.type` 필드 + `String` 타입 (값 `'oauth'` 리터럴)
+    2. `Account ↔ AccountToken` 1:1 분리
+    3. `AccountToken.expiresAt`는 `Int` (epoch seconds), `DateTime` 아님
+    4. 복합 unique 인덱스명 `provider_providerAccountId` (Prisma 기본 명명 규칙)
+  - 위 가정에 맞지 않는 스키마를 쓰는 프로젝트가 `OAuthAccountRepository` 인터페이스를 자체 구현해 주입하는 우회로 예시 포함
+
+### Changed
+- **JWT 기본값 단일 진실 원천화** — `constants/security.ts`의 `JWT_DEFAULTS`를 실제로 사용하도록 통일 (동작 변경 없음)
+  - 기존: `'7d'` / `'30d'` / `'HS256'` 리터럴이 `auth/config.ts`, `auth/handlers/{login,me}.handler.ts`, `auth/services/{login,oauth-callback,token-refresh}.service.ts` 6개 파일에 inline 복사돼 있었고, `JWT_DEFAULTS` 상수는 선언만 되고 어디서도 import되지 않는 고아 상수였음
+  - 변경: 6개 파일이 `JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES` / `DEFAULT_REFRESH_TOKEN_EXPIRES` / `ALGORITHM`을 import하여 사용
+  - `auth/config.ts`의 `configWarn` 메시지도 템플릿 리터럴로 변경해 기본값 변경 시 메시지가 자동 동기화되도록 정리
+  - 효과: 향후 JWT 기본 만료/알고리즘 정책 변경 시 `JWT_DEFAULTS` 한 곳만 수정하면 됨
+
+### Fixed
+- **Prisma 어댑터 `PrismaUserRepository.verifyEmail` 자기모순 수정** (`src/auth/adapters/prisma/index.ts:138`)
+  - 동일 어댑터의 `create` / `update` / `mapToBaseUser`는 이미 `config.userFields.emailVerified`를 사용 중이었으나, `verifyEmail`만 리터럴 `emailVerified` 컬럼에 쓰고 있던 회귀를 해소
+  - 변경 전: `data: { emailVerified: new Date() }` (리터럴)
+  - 변경 후: `data: { [this.config.userFields.emailVerified]: new Date() }` (설정 기반)
+  - 회귀 테스트 추가: `__tests__/unit/auth/prisma-adapter-config.test.ts` → `describe('verifyEmail — userFields.emailVerified 일관성')` 2건 (기본값/커스텀)
+
+### Migration
+- **기본 `userFields`(`emailVerified` 컬럼명 그대로) 를 쓰는 소비 프로젝트**: 동작 차이 없음. 별도 작업 불필요.
+- **`PrismaAdapterConfig.userFields.emailVerified` 를 다른 Prisma 모델 필드명으로 오버라이드한 소비 프로젝트** (예: `'verifiedAt'`, `'isEmailVerified'` 등):
+  - 이번 버전부터 `userRepository.verifyEmail(email)` 호출이 **오버라이드한 Prisma 모델 필드**에 쓰여집니다 (이전에는 항상 `emailVerified` 리터럴에 쓰여졌음).
+  - 점검 권장 사항:
+    1. 실제 Prisma 모델에 오버라이드한 필드(`verifiedAt` 등)만 존재하는지 확인 — 만약 `emailVerified` 필드가 함께 남아있었고 이메일 인증이 의도와 다르게 그쪽에 기록돼 왔다면, 이번 업데이트 후 정상 필드에 기록되기 시작합니다.
+    2. 양쪽 필드 데이터가 어긋나 있던 경우 일회성 백필(backfill) 마이그레이션 필요 여부 검토.
+    3. 이메일 인증 상태를 읽는 화면/로직이 동일한 `userFields.emailVerified` 설정값을 사용하고 있는지 재확인.
+
+### Notes
+- 본 패키지의 `userFields` 설정은 **Prisma 모델 필드명** 기준입니다. DB 컬럼명 변형은 소비 프로젝트의 Prisma 스키마에서 `@map`으로 처리하세요 (예: `verifiedAt DateTime? @map("verified_at")`).
+
+## [0.6.3] - 2026-05-14
+
+### Added
+- **Microsoft OAuth Provider** (`@withwiz/toolkit/auth/core/oauth/providers/microsoft`)
+  - Microsoft Entra v2.0 `common` 테넌트 기반 server-side authorization code flow
+  - `id_token` 클레임 디코딩 방식으로 사용자 정보 추출 (Graph `/me` 호출 없음)
+  - `iss` / `aud` / `exp` / `oid` 검증 — `oid` 누락 시 INVALID_RESPONSE (sub 폴백 안 함, 식별자 안정성 보장)
+  - `email_verified === true`일 때만 `emailVerified: true` (보수적)
+  - 인터페이스 우회: `OAuthTokenResponse.access_token` 필드에 id_token 담아 반환 (`MODULE_USAGE.md` 경고 참조)
+- **Meta(Facebook) OAuth Provider** (`@withwiz/toolkit/auth/core/oauth/providers/meta`)
+  - Graph API **v25.0** (`META_GRAPH_VERSION` 모듈 상수)
+  - GET + query string 방식 token exchange (Meta 공식 권고)
+  - `/me?fields=id,name,email,picture` 응답 매핑, `picture.data.url` 폴백 처리
+- **`OAUTH_PROVIDERS`** 상수에 `MICROSOFT: 'microsoft'`, `META: 'meta'` 추가
+- **`OAuthManager`** 가 microsoft / meta 자동 등록
+- **`OAUTH_PROVIDERS` lint 테스트** — 상수에 등록된 모든 provider가 OAuthManager에 자동 등록되어 있는지 회귀 검증
+
+### Changed
+- **Kakao OAuth Provider** 응답 처리 안전성 강화 (기능 변경 없음)
+  - 토큰/사용자 응답에 file-local 타입(`KakaoTokenResponse`, `KakaoAccount`, `KakaoUserResponse`) 부여
+  - HTTP 200 + `error` 필드 응답에서 `error_description` 포함 `OAuthError(TOKEN_EXCHANGE_FAILED)` 발생
+  - `emailVerified`: `is_email_valid === true && is_email_verified === true` 둘 다 strict true일 때만 true
+  - `data.id` 누락 시 `OAuthError(INVALID_RESPONSE)` (이전엔 `TypeError`)
+- **`MODULE_USAGE.md`**에 Microsoft 어댑터의 id_token-in-access_token 시맨틱 경고 추가
+
+### Spec
+- `docs/superpowers/specs/2026-05-14-oauth-providers-design.md` (2 라운드 외부 평가자 검증 완료)
+
 ## [0.5.0] - 2026-04-28
 
 ### Removed

@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { JWTService } from '../core/jwt';
 import type { AuthHandlerOptions } from '../types/handler-types';
+import { JWT_DEFAULTS } from '../../constants/security';
 
 export function createMeHandler(options: AuthHandlerOptions) {
   const { dependencies, jwt, hooks } = options;
   const jwtService = new JWTService({
     secret: jwt.secret,
-    accessTokenExpiry: jwt.accessTokenExpiry ?? '7d',
-    refreshTokenExpiry: jwt.refreshTokenExpiry ?? '30d',
-    algorithm: 'HS256',
+    accessTokenExpiry: jwt.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
+    refreshTokenExpiry: jwt.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
+    algorithm: JWT_DEFAULTS.ALGORITHM,
   });
 
   return async (request: NextRequest): Promise<Response> => {

@@ -7,6 +7,32 @@
 import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/auth/types';
 import { OAuthError } from '@withwiz/auth/errors';
 
+interface KakaoTokenResponse {
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
+  refresh_token?: string;
+  refresh_token_expires_in?: number;
+  scope?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface KakaoAccount {
+  email?: string;
+  is_email_valid?: boolean;
+  is_email_verified?: boolean;
+  profile?: {
+    nickname?: string;
+    profile_image_url?: string;
+  };
+}
+
+interface KakaoUserResponse {
+  id?: number;
+  kakao_account?: KakaoAccount;
+}
+
 export class KakaoOAuthProvider implements IOAuthProviderAdapter {
   readonly name = 'kakao';
 
@@ -43,7 +69,16 @@ export class KakaoOAuthProvider implements IOAuthProviderAdapter {
       throw new OAuthError(`Kakao token exchange failed: ${errorData}`, 'TOKEN_EXCHANGE_FAILED');
     }
 
-    return response.json();
+    const data = (await response.json()) as KakaoTokenResponse;
+
+    if (data.error) {
+      throw new OAuthError(
+        `Kakao token exchange failed: ${data.error}${data.error_description ? ` - ${data.error_description}` : ''}`,
+        'TOKEN_EXCHANGE_FAILED',
+      );
+    }
+
+    return data as OAuthTokenResponse;
   }
 
   async getUserInfo(accessToken: string): Promise<OAuthUserInfo> {
@@ -55,16 +90,21 @@ export class KakaoOAuthProvider implements IOAuthProviderAdapter {
       throw new OAuthError('Failed to get Kakao user info', 'USER_INFO_FAILED');
     }
 
-    const data = await response.json();
-    const account = data.kakao_account || {};
-    const profile = account.profile || {};
+    const data = (await response.json()) as KakaoUserResponse;
+
+    if (!data.id) {
+      throw new OAuthError('Invalid Kakao response: missing id', 'INVALID_RESPONSE');
+    }
+
+    const account = data.kakao_account ?? {};
+    const profile = account.profile ?? {};
 
     return {
       id: data.id.toString(),
-      email: account.email,
-      name: profile.nickname || null,
-      image: profile.profile_image_url || null,
-      emailVerified: account.is_email_verified || false,
+      email: account.email as string,
+      name: profile.nickname ?? null,
+      image: profile.profile_image_url ?? null,
+      emailVerified: account.is_email_valid === true && account.is_email_verified === true,
     };
   }
 }
