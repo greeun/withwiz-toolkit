@@ -4,7 +4,7 @@ Shared utility library for [withwiz](https://github.com/greeun) projects — a c
 
 ## Features
 
-- **Auth** — JWT, password hashing, OAuth helpers, Prisma adapter
+- **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), Prisma adapter
 - **Cache** — Redis-backed caching with factory, invalidation, and defaults
 - **Constants** — Error codes, messages, pagination, security constants
 - **Error** — Typed `AppError`, centralized error handler and display
@@ -95,7 +95,7 @@ import { normalizeUrl }  from '@withwiz/toolkit/utils/url-normalizer'
 | `/auth` | Full auth module (JWT + password + OAuth + Prisma adapter) |
 | `/auth/core/jwt` | JWT sign / verify |
 | `/auth/core/password` | bcrypt helpers |
-| `/auth/core/oauth` | OAuth utilities |
+| `/auth/core/oauth` | OAuth utilities (Google / GitHub / Kakao / Microsoft / Meta) |
 | `/auth/adapters/prisma` | Prisma-based session adapter |
 | `/cache` | Redis cache (get / set / delete / withCache) |
 | `/cache/cache-factory` | Cache factory for multiple backends |

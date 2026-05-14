@@ -2,6 +2,7 @@ import { compare } from 'bcryptjs';
 import { JWTService } from '../core/jwt';
 import { AuthError } from '../errors';
 import type { UserRepository, BaseUser, TokenPair, Logger } from '../types';
+import { JWT_DEFAULTS } from '../../constants/security';
 
 export interface LoginServiceConfig {
   userRepository: UserRepository;
@@ -25,9 +26,9 @@ export class LoginService {
     this.userRepo = config.userRepository;
     this.jwtService = new JWTService({
       secret: config.jwtSecret,
-      accessTokenExpiry: config.accessTokenExpiry ?? '7d',
-      refreshTokenExpiry: config.refreshTokenExpiry ?? '30d',
-      algorithm: 'HS256',
+      accessTokenExpiry: config.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
+      refreshTokenExpiry: config.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
+      algorithm: JWT_DEFAULTS.ALGORITHM,
     }, config.logger);
     this.logger = config.logger ?? { debug() {}, info() {}, warn() {}, error() {} };
   }

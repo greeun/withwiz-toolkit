@@ -1,5 +1,6 @@
 import { ConfigurationError } from '../config/errors';
 import { configWarn } from '../config/warn';
+import { JWT_DEFAULTS } from '../constants/security';
 
 export interface AuthConfig {
   jwtSecret: string;
@@ -22,15 +23,15 @@ export function initializeAuth(config: AuthConfig): void {
     throw new ConfigurationError('Auth', 'jwtSecret is required');
   }
   if (!config.accessTokenExpiry) {
-    configWarn('Auth', 'accessTokenExpiry not provided, using default: 7d');
+    configWarn('Auth', `accessTokenExpiry not provided, using default: ${JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES}`);
   }
   if (!config.refreshTokenExpiry) {
-    configWarn('Auth', 'refreshTokenExpiry not provided, using default: 30d');
+    configWarn('Auth', `refreshTokenExpiry not provided, using default: ${JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES}`);
   }
   globalThis.__withwiz_config.auth = {
     jwtSecret: config.jwtSecret,
-    accessTokenExpiry: config.accessTokenExpiry ?? '7d',
-    refreshTokenExpiry: config.refreshTokenExpiry ?? '30d',
+    accessTokenExpiry: config.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
+    refreshTokenExpiry: config.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
     cookieSecure: config.cookieSecure ?? false,
   };
 }

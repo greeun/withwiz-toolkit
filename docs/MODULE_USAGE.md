@@ -270,26 +270,135 @@ const schema = z.object({
 
 ### 3.3 OAuth
 
+빌트인 프로바이더 (5종): **`google` / `github` / `kakao` / `microsoft` / `meta`** — 모두 `OAuthManager` 생성자에서 자동 등록됩니다.
+
+> **주의**: OAuth는 통합 `initialize()` (§1) 대상에 포함되지 **않습니다**. JWT 설정과 분리되어 있으며, OAuth가 필요한 앱은 **`OAuthManager`를 별도로 인스턴스화**하여 사용합니다.
+
+#### OAuthManager 초기화 입력
+
+생성자 시그니처:
+
 ```typescript
-import { OAuthManager, GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from '@withwiz/toolkit/auth';
+new OAuthManager(config: OAuthConfig, logger: Logger): OAuthManager
+```
 
-const oauth = new OAuthManager(oauthConfig, logger);
+**`OAuthConfig`** (from `@withwiz/toolkit/auth/types`):
 
-// 프로바이더 등록
-oauth.registerProvider(new GoogleOAuthProvider({
-  clientId: process.env.GOOGLE_CLIENT_ID!,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  redirectUri: 'https://example.com/auth/callback/google',
-}));
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `providers` | `Record<string, OAuthProviderConfig>` | O | 사용할 프로바이더 이름을 키로 한 설정 맵. 키는 `'google'`/`'github'`/`'kakao'`/`'microsoft'`/`'meta'` 중 사용하는 것만 포함하면 됨 (전부 제공할 필요 없음) |
 
-// 로그인 URL 생성
+**`OAuthProviderConfig`** (각 프로바이더 항목):
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `clientId` | `string` | O | 해당 플랫폼 dev 콘솔에서 발급한 OAuth 앱 ID (Meta는 "App ID") |
+| `clientSecret` | `string` | O | 해당 플랫폼의 OAuth 앱 시크릿 (Meta는 "App Secret") |
+| `redirectUri` | `string` | O | 콜백 라우트의 절대 URL. 플랫폼 dev 콘솔의 허용 redirect URI 목록에 등록되어 있어야 함 |
+
+**`Logger`** (from `@withwiz/toolkit/auth/types`) — 4개 메서드를 가진 minimal 인터페이스:
+
+```typescript
+interface Logger {
+  debug(message: string, meta?: unknown): void;
+  info(message: string, meta?: unknown): void;
+  warn(message: string, meta?: unknown): void;
+  error(message: string, meta?: unknown): void;
+}
+```
+
+toolkit의 Winston 로거(`@withwiz/toolkit/logger/logger`) 인스턴스가 이 인터페이스를 만족하므로 그대로 주입 가능. 테스트에서는 `console`이나 `{ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }` 같은 stub을 사용해도 됨.
+
+#### 초기화 예시
+
+```typescript
+import { OAuthManager, OAUTH_PROVIDERS } from '@withwiz/toolkit/auth';
+import { logger } from '@withwiz/toolkit/logger/logger';
+
+const oauth = new OAuthManager({
+  providers: {
+    google:    { clientId: process.env.GOOGLE_CLIENT_ID!,    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,    redirectUri: 'https://example.com/auth/callback/google' },
+    github:    { clientId: process.env.GITHUB_CLIENT_ID!,    clientSecret: process.env.GITHUB_CLIENT_SECRET!,    redirectUri: 'https://example.com/auth/callback/github' },
+    kakao:     { clientId: process.env.KAKAO_CLIENT_ID!,     clientSecret: process.env.KAKAO_CLIENT_SECRET!,     redirectUri: 'https://example.com/auth/callback/kakao' },
+    microsoft: { clientId: process.env.MICROSOFT_CLIENT_ID!, clientSecret: process.env.MICROSOFT_CLIENT_SECRET!, redirectUri: 'https://example.com/auth/callback/microsoft' },
+    meta:      { clientId: process.env.META_APP_ID!,         clientSecret: process.env.META_APP_SECRET!,         redirectUri: 'https://example.com/auth/callback/meta' },
+  },
+}, logger);
+
+// 로그인 URL 생성 (필요한 프로바이더만)
 const loginUrl = oauth.getLoginUrl('google', state);
 
 // 콜백 처리
-const oauthToken = await oauth.exchangeCodeForToken('google', code);
-const userInfo = await oauth.getUserInfo('google', oauthToken);
+const accessToken = await oauth.exchangeCodeForToken('google', code);
+const userInfo = await oauth.getUserInfo('google', accessToken);
 // → { id, email, name, image, emailVerified }
 ```
+
+**환경 변수 정리**: 실제 운영에서는 위 `process.env.*` 참조를 한 곳에 모아 검증(zod 등)하는 패턴 권장.
+
+`OAUTH_PROVIDERS` 상수(예: `OAUTH_PROVIDERS.MICROSOFT`)로 문자열 리터럴 대신 타입 안전한 이름을 사용할 수 있습니다.
+
+**런타임 에러**:
+- 등록되지 않은 프로바이더 호출 → `OAuthError('UNSUPPORTED_PROVIDER')`
+- `config.providers[name]`이 없는 프로바이더 호출 → `OAuthError('<NAME>_NOT_CONFIGURED')`
+
+#### 프로바이더별 특징
+
+| Provider | Scope (고정) | 비고 |
+|---|---|---|
+| `google` | `openid email profile` | `picture` → `image`, `verified_email` → `emailVerified` |
+| `github` | `read:user user:email` | primary email 추출 |
+| `kakao` | `profile_nickname profile_image account_email` | `emailVerified`는 `is_email_valid && is_email_verified` 두 플래그가 모두 true일 때만 |
+| `microsoft` | `openid profile email` | common 테넌트, **id_token 디코딩 방식** (아래 주의 사항 참조) |
+| `meta` | `email,public_profile` | Graph API v25.0, GET token exchange |
+
+### Microsoft OAuth 어댑터 주의
+
+`OAuthManager.exchangeCodeForToken('microsoft', code)`가 반환하는 값은 OAuth access token이 아니라 **id_token(JWT)** 입니다. Microsoft Graph 등 외부 API 호출에 그대로 사용할 수 없으며, 사용자 식별·이메일 검증 용도로만 `OAuthManager.getUserInfo('microsoft', token)`을 통해 소비하십시오. Graph 호출이 필요해지면 별도 spec으로 access token을 함께 노출하는 인터페이스 확장이 필요합니다.
+
+신뢰 모델: 어댑터는 server-side authorization code flow를 가정합니다 (`exchangeCodeForToken`이 직접 받아온 토큰만 `getUserInfo`에 넘긴다는 가정). 외부에서 받은 id_token을 직접 `getUserInfo`에 주입하지 마십시오. SPA/PKCE/implicit flow가 필요하면 별도 JWKS 기반 서명 검증 spec이 필요합니다.
+
+#### OAuth 모듈 테스트
+
+**자동화 테스트 (단위 테스트)** — 신규 추가/변경분만 빠르게:
+
+```bash
+# Google / GitHub / Kakao (기존 + Kakao 보강)
+npm test -- __tests__/unit/auth/oauth-providers.test.ts
+
+# Microsoft (신규)
+npm test -- __tests__/unit/auth/oauth-microsoft.test.ts
+
+# Meta (신규)
+npm test -- __tests__/unit/auth/oauth-meta.test.ts
+
+# OAuthManager 자동 등록 / 레지스트리
+npm test -- __tests__/unit/auth/oauth-manager-registry.test.ts
+
+# OAuth 모듈 전체
+npm test -- __tests__/unit/auth/oauth- __tests__/security/auth/oauth.test.ts
+```
+
+**자동 등록 회귀 보호**: `oauth-manager-registry.test.ts`는 `OAUTH_PROVIDERS` 상수에 등록된 모든 값이 `OAuthManager`에 자동 등록되어 있는지 lint 형태로 검증합니다 (`Object.values(OAUTH_PROVIDERS)` 순회). 미래에 새 프로바이더를 `OAUTH_PROVIDERS`에 추가하면서 매니저 등록을 누락하면 이 테스트가 실패합니다.
+
+**실제 OAuth 앱 연동 (수동 통합 테스트)** — 실제 콜백 흐름을 검증하려면 각 플랫폼에 dev 앱 등록 후 다음 환경 변수를 설정하고 콜백 라우트가 있는 Next.js 데모를 실행합니다:
+
+| Provider | dev 앱 발급처 | 필요한 환경 변수 |
+|---|---|---|
+| Google | [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| GitHub | GitHub → Settings → Developer settings → OAuth Apps | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` |
+| Kakao | [developers.kakao.com](https://developers.kakao.com) → 내 애플리케이션 | `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET` |
+| Microsoft | [entra.microsoft.com](https://entra.microsoft.com) → App registrations | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` |
+| Meta | [developers.facebook.com](https://developers.facebook.com) → My Apps → Facebook Login | `META_APP_ID`, `META_APP_SECRET` |
+
+체크포인트:
+
+1. `getLoginUrl(provider, state)`가 반환한 URL로 리다이렉트 → 동의 화면 노출
+2. 콜백 라우트가 `code` 쿼리 파라미터 수신
+3. `exchangeCodeForToken(provider, code)` 성공
+4. `getUserInfo(provider, token)`이 `{ id, email, name, image, emailVerified }` 반환 — 각 필드 null/undefined 케이스 확인
+5. Microsoft만: 반환된 "토큰"이 id_token 형식(`<header>.<payload>.<sig>`)인지 콘솔에서 확인 (DB에 access_token 컬럼이 있다면 id_token이 저장됨에 주의)
+6. Kakao: 이메일 미동의 / 미검증 사용자로도 가입해 보고 `emailVerified: false` 확인
 
 ### 3.4 Auth Route Handlers
 
@@ -311,6 +420,159 @@ export const POST = auth.login;     // POST /api/auth/login
 export const POST = auth.register;  // POST /api/auth/register
 export const POST = auth.refresh;   // POST /api/auth/refresh
 export const GET  = auth.me;        // GET  /api/auth/me
+```
+
+### 3.5 Auth Database Adapter (Prisma)
+
+`@withwiz/toolkit/auth/adapters/prisma`는 `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` 세 인터페이스의 Prisma 구현체를 제공합니다. 소비 프로젝트는 (1) 이 어댑터를 그대로 쓰거나, (2) 같은 인터페이스를 직접 구현해 다른 ORM/스토리지를 사용할 수 있습니다 — 핸들러는 인터페이스에만 의존하므로 구현체는 교체 가능합니다.
+
+```typescript
+import {
+  PrismaUserRepository,
+  PrismaOAuthAccountRepository,
+  PrismaEmailTokenRepository,
+} from '@withwiz/toolkit/auth/adapters/prisma';
+import { prisma } from '@/lib/prisma'; // 소비 프로젝트의 PrismaClient
+
+const userRepository = new PrismaUserRepository(prisma);
+const oauthAccountRepository = new PrismaOAuthAccountRepository(prisma);
+const emailTokenRepository = new PrismaEmailTokenRepository(prisma);
+```
+
+> **참고**: 어댑터는 `PrismaClient`를 덕 타이핑(`Record<string, any>`)으로 받습니다. Prisma 7부터 생성 경로가 프로젝트별로 달라지므로, 패키지가 특정 클라이언트 import에 종속되지 않도록 한 의도적 설계입니다.
+
+#### 요구 Prisma 스키마 (기본값 기준)
+
+다음 모델·필드·관계가 존재해야 합니다. 컬럼 단계의 변형은 Prisma `@map`으로 자유롭게 처리하세요 — 어댑터는 **Prisma 클라이언트 API**(모델 필드명)만 호출합니다.
+
+```prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?     // PrismaAdapterConfig.userFields.password 로 모델 필드명 오버라이드 가능
+  role          String?     // PrismaAdapterConfig.userFields.role 로 오버라이드 가능
+  emailVerified DateTime?   // PrismaAdapterConfig.userFields.emailVerified 로 오버라이드 가능 (Boolean 스키마 대응)
+  image         String?     // PrismaAdapterConfig.userFields.image 로 오버라이드 가능
+  isActive      Boolean?    // 컨벤션 — 다르면 자체 UserRepository 구현 권장
+  lastLoginAt   DateTime?   // 컨벤션 — 다르면 자체 UserRepository 구현 권장
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EmailVerificationToken {   // PrismaAdapterConfig.tokenTables.emailVerification 로 모델명 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {       // PrismaAdapterConfig.tokenTables.passwordReset 로 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+model MagicLinkToken {           // PrismaAdapterConfig.tokenTables.magicLink 로 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+```
+
+#### PrismaAdapterConfig — 외부화된 항목
+
+```typescript
+new PrismaUserRepository(prisma, {
+  tokenTables: {
+    emailVerification: 'email_verification_tokens',  // 모델명 (Prisma client API)
+    passwordReset: 'password_reset_tokens',
+    magicLink: 'magic_link_tokens',
+  },
+  userFields: {
+    password: 'hashedPassword',     // Prisma 모델 필드명 (DB 컬럼은 @map 으로 별도 처리)
+    role: 'userRole',
+    emailVerified: 'verifiedAt',
+    image: 'avatarUrl',
+  },
+});
+```
+
+**원칙**:
+- `userFields` 는 **Prisma 모델 필드명** 기준입니다. DB 컬럼명 변형은 소비 프로젝트의 Prisma 스키마에서 `@map("column_name")` 으로 처리하세요.
+  ```prisma
+  model User {
+    verifiedAt DateTime? @map("verified_at")  // Prisma 측 필드: verifiedAt, DB 컬럼: verified_at
+  }
+  ```
+- 외부화 대상이 아닌 필드(`id` / `email` / `name` / `createdAt` / `updatedAt` / `isActive` / `lastLoginAt`)는 Prisma 컨벤션 필드명이며, 다르면 자체 `UserRepository` 구현을 권장합니다.
+
+#### ⚠️ OAuth Account 스키마 가정 (NextAuth.js v4 호환)
+
+`PrismaOAuthAccountRepository`는 **NextAuth.js v4 Adapter Account 스키마와 호환되는 구조를 강제**합니다. `@map` 으로 해결되지 않는 **구조적 가정**이므로 별도 외부화 진입로가 없습니다:
+
+```prisma
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String   // 어댑터가 'oauth' 리터럴을 씀 — 필드 자체와 String 타입 필수
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token AccountToken? // 1:1 관계, 어댑터가 `account.token` 으로 접근
+
+  @@unique([provider, providerAccountId])  // Prisma 기본 인덱스 이름 'provider_providerAccountId' 사용 — 어댑터 리터럴
+}
+
+model AccountToken {
+  id           String  @id @default(cuid())
+  accountId    String  @unique
+  accessToken  String? @db.Text
+  refreshToken String? @db.Text
+  expiresAt    Int?    // ← DateTime 아님. epoch seconds (Int). 어댑터가 Math.floor(date/1000) 로 변환 저장
+  tokenType    String?
+  scope        String?
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+```
+
+**제약 요약**:
+1. `Account` 모델명, `Account.type` 필드 존재 + `String` 타입 (값 `'oauth'`)
+2. `Account ↔ AccountToken` 분리 (단일 Account에 토큰 컬럼 합친 스키마 불가)
+3. `AccountToken.expiresAt` 타입은 `Int` (epoch seconds). `DateTime` 컬럼을 쓰는 스키마는 비호환.
+4. 복합 unique 인덱스 명은 Prisma 기본 명명 규칙 `provider_providerAccountId` (`@@unique` 외에 `name` 옵션을 주면 깨짐)
+
+**위 가정에 맞지 않는 스키마를 쓰는 프로젝트**는 `OAuthAccountRepository` 인터페이스를 자체 구현하고 `dependencies.oauthAccountRepository` 자리에 주입하세요:
+
+```typescript
+import type { OAuthAccountRepository } from '@withwiz/toolkit/auth/types';
+
+class MyOAuthAccountRepository implements OAuthAccountRepository {
+  async findByProvider(provider, providerAccountId) { /* 자체 구현 */ }
+  async findByUserId(userId) { /* ... */ }
+  async create(data) { /* ... */ }
+  async update(id, data) { /* ... */ }
+  async delete(id) { /* ... */ }
+}
+
+const auth = createAuthHandlers({
+  dependencies: {
+    userRepository: new PrismaUserRepository(prisma),
+    oauthAccountRepository: new MyOAuthAccountRepository(),  // ← 교체
+    emailTokenRepository: new PrismaEmailTokenRepository(prisma),
+  },
+  // ...
+});
 ```
 
 ---

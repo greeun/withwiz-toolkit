@@ -53,7 +53,6 @@ export class RegisterService {
       email: input.email,
       password: hashedPassword,
       name: input.name ?? null,
-      role: 'USER',
       emailVerified: this.emailVerificationRequired ? null : new Date(),
     });
 

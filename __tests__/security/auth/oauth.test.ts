@@ -612,6 +612,7 @@ describe("OAuth Module", () => {
             id: 1234567890,
             kakao_account: {
               email: "user@kakao.com",
+              is_email_valid: true,
               is_email_verified: true,
               profile: {
                 nickname: "카카오유저",
