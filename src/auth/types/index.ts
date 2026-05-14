@@ -294,4 +294,3 @@ export interface AuthConfig {
   logger?: Logger;
 }
 
-export * from './handler-types';
