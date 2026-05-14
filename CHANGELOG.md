@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.4] - 2026-05-15
 
+### Changed
+- **JWT 기본값 단일 진실 원천화** — `constants/security.ts`의 `JWT_DEFAULTS`를 실제로 사용하도록 통일 (동작 변경 없음)
+  - 기존: `'7d'` / `'30d'` / `'HS256'` 리터럴이 `auth/config.ts`, `auth/handlers/{login,me}.handler.ts`, `auth/services/{login,oauth-callback,token-refresh}.service.ts` 6개 파일에 inline 복사돼 있었고, `JWT_DEFAULTS` 상수는 선언만 되고 어디서도 import되지 않는 고아 상수였음
+  - 변경: 6개 파일이 `JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES` / `DEFAULT_REFRESH_TOKEN_EXPIRES` / `ALGORITHM`을 import하여 사용
+  - `auth/config.ts`의 `configWarn` 메시지도 템플릿 리터럴로 변경해 기본값 변경 시 메시지가 자동 동기화되도록 정리
+  - 효과: 향후 JWT 기본 만료/알고리즘 정책 변경 시 `JWT_DEFAULTS` 한 곳만 수정하면 됨
+
 ### Fixed
 - **Prisma 어댑터 `PrismaUserRepository.verifyEmail` 자기모순 수정** (`src/auth/adapters/prisma/index.ts:138`)
   - 동일 어댑터의 `create` / `update` / `mapToBaseUser`는 이미 `config.userFields.emailVerified`를 사용 중이었으나, `verifyEmail`만 리터럴 `emailVerified` 컬럼에 쓰고 있던 회귀를 해소
