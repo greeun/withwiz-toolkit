@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-05-15
+
+### Fixed
+- **Prisma 어댑터 `PrismaUserRepository.verifyEmail` 자기모순 수정** (`src/auth/adapters/prisma/index.ts:138`)
+  - 동일 어댑터의 `create` / `update` / `mapToBaseUser`는 이미 `config.userFields.emailVerified`를 사용 중이었으나, `verifyEmail`만 리터럴 `emailVerified` 컬럼에 쓰고 있던 회귀를 해소
+  - 변경 전: `data: { emailVerified: new Date() }` (리터럴)
+  - 변경 후: `data: { [this.config.userFields.emailVerified]: new Date() }` (설정 기반)
+  - 회귀 테스트 추가: `__tests__/unit/auth/prisma-adapter-config.test.ts` → `describe('verifyEmail — userFields.emailVerified 일관성')` 2건 (기본값/커스텀)
+
+### Migration
+- **기본 `userFields`(`emailVerified` 컬럼명 그대로) 를 쓰는 소비 프로젝트**: 동작 차이 없음. 별도 작업 불필요.
+- **`PrismaAdapterConfig.userFields.emailVerified` 를 다른 Prisma 모델 필드명으로 오버라이드한 소비 프로젝트** (예: `'verifiedAt'`, `'isEmailVerified'` 등):
+  - 이번 버전부터 `userRepository.verifyEmail(email)` 호출이 **오버라이드한 Prisma 모델 필드**에 쓰여집니다 (이전에는 항상 `emailVerified` 리터럴에 쓰여졌음).
+  - 점검 권장 사항:
+    1. 실제 Prisma 모델에 오버라이드한 필드(`verifiedAt` 등)만 존재하는지 확인 — 만약 `emailVerified` 필드가 함께 남아있었고 이메일 인증이 의도와 다르게 그쪽에 기록돼 왔다면, 이번 업데이트 후 정상 필드에 기록되기 시작합니다.
+    2. 양쪽 필드 데이터가 어긋나 있던 경우 일회성 백필(backfill) 마이그레이션 필요 여부 검토.
+    3. 이메일 인증 상태를 읽는 화면/로직이 동일한 `userFields.emailVerified` 설정값을 사용하고 있는지 재확인.
+
 ## [0.6.3] - 2026-05-14
 
 ### Added
