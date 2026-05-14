@@ -189,6 +189,35 @@ describe('PrismaUserRepository', () => {
     });
   });
 
+  describe('verifyEmail — userFields.emailVerified 일관성', () => {
+    it('기본 설정에서는 emailVerified 컬럼에 시간을 써야 한다', async () => {
+      const repo = new PrismaUserRepository(mockPrisma);
+      mockPrisma.user.update.mockResolvedValue({});
+
+      await repo.verifyEmail('verify@test.com');
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { email: 'verify@test.com' },
+        data: { emailVerified: expect.any(Date) },
+      });
+    });
+
+    it('커스텀 emailVerified 필드명을 쓰면 그 컬럼에 시간을 써야 한다', async () => {
+      const config: PrismaAdapterConfig = {
+        userFields: { emailVerified: 'verifiedAt' },
+      };
+      const repo = new PrismaUserRepository(mockPrisma, config);
+      mockPrisma.user.update.mockResolvedValue({});
+
+      await repo.verifyEmail('verify@test.com');
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { email: 'verify@test.com' },
+        data: { verifiedAt: expect.any(Date) },
+      });
+    });
+  });
+
   describe('findById — null 반환', () => {
     it('사용자가 없으면 null을 반환해야 한다', async () => {
       const repo = new PrismaUserRepository(mockPrisma);

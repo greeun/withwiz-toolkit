@@ -135,7 +135,7 @@ export class PrismaUserRepository implements UserRepository {
   async verifyEmail(email: string): Promise<void> {
     await (this.prisma as any).user.update({
       where: { email },
-      data: { emailVerified: new Date() },
+      data: { [this.config.userFields.emailVerified]: new Date() },
     });
   }
 
