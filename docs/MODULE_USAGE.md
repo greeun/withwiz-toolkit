@@ -422,6 +422,159 @@ export const POST = auth.refresh;   // POST /api/auth/refresh
 export const GET  = auth.me;        // GET  /api/auth/me
 ```
 
+### 3.5 Auth Database Adapter (Prisma)
+
+`@withwiz/toolkit/auth/adapters/prisma`는 `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` 세 인터페이스의 Prisma 구현체를 제공합니다. 소비 프로젝트는 (1) 이 어댑터를 그대로 쓰거나, (2) 같은 인터페이스를 직접 구현해 다른 ORM/스토리지를 사용할 수 있습니다 — 핸들러는 인터페이스에만 의존하므로 구현체는 교체 가능합니다.
+
+```typescript
+import {
+  PrismaUserRepository,
+  PrismaOAuthAccountRepository,
+  PrismaEmailTokenRepository,
+} from '@withwiz/toolkit/auth/adapters/prisma';
+import { prisma } from '@/lib/prisma'; // 소비 프로젝트의 PrismaClient
+
+const userRepository = new PrismaUserRepository(prisma);
+const oauthAccountRepository = new PrismaOAuthAccountRepository(prisma);
+const emailTokenRepository = new PrismaEmailTokenRepository(prisma);
+```
+
+> **참고**: 어댑터는 `PrismaClient`를 덕 타이핑(`Record<string, any>`)으로 받습니다. Prisma 7부터 생성 경로가 프로젝트별로 달라지므로, 패키지가 특정 클라이언트 import에 종속되지 않도록 한 의도적 설계입니다.
+
+#### 요구 Prisma 스키마 (기본값 기준)
+
+다음 모델·필드·관계가 존재해야 합니다. 컬럼 단계의 변형은 Prisma `@map`으로 자유롭게 처리하세요 — 어댑터는 **Prisma 클라이언트 API**(모델 필드명)만 호출합니다.
+
+```prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?     // PrismaAdapterConfig.userFields.password 로 모델 필드명 오버라이드 가능
+  role          String?     // PrismaAdapterConfig.userFields.role 로 오버라이드 가능
+  emailVerified DateTime?   // PrismaAdapterConfig.userFields.emailVerified 로 오버라이드 가능 (Boolean 스키마 대응)
+  image         String?     // PrismaAdapterConfig.userFields.image 로 오버라이드 가능
+  isActive      Boolean?    // 컨벤션 — 다르면 자체 UserRepository 구현 권장
+  lastLoginAt   DateTime?   // 컨벤션 — 다르면 자체 UserRepository 구현 권장
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EmailVerificationToken {   // PrismaAdapterConfig.tokenTables.emailVerification 로 모델명 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {       // PrismaAdapterConfig.tokenTables.passwordReset 로 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+model MagicLinkToken {           // PrismaAdapterConfig.tokenTables.magicLink 로 오버라이드 가능
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+```
+
+#### PrismaAdapterConfig — 외부화된 항목
+
+```typescript
+new PrismaUserRepository(prisma, {
+  tokenTables: {
+    emailVerification: 'email_verification_tokens',  // 모델명 (Prisma client API)
+    passwordReset: 'password_reset_tokens',
+    magicLink: 'magic_link_tokens',
+  },
+  userFields: {
+    password: 'hashedPassword',     // Prisma 모델 필드명 (DB 컬럼은 @map 으로 별도 처리)
+    role: 'userRole',
+    emailVerified: 'verifiedAt',
+    image: 'avatarUrl',
+  },
+});
+```
+
+**원칙**:
+- `userFields` 는 **Prisma 모델 필드명** 기준입니다. DB 컬럼명 변형은 소비 프로젝트의 Prisma 스키마에서 `@map("column_name")` 으로 처리하세요.
+  ```prisma
+  model User {
+    verifiedAt DateTime? @map("verified_at")  // Prisma 측 필드: verifiedAt, DB 컬럼: verified_at
+  }
+  ```
+- 외부화 대상이 아닌 필드(`id` / `email` / `name` / `createdAt` / `updatedAt` / `isActive` / `lastLoginAt`)는 Prisma 컨벤션 필드명이며, 다르면 자체 `UserRepository` 구현을 권장합니다.
+
+#### ⚠️ OAuth Account 스키마 가정 (NextAuth.js v4 호환)
+
+`PrismaOAuthAccountRepository`는 **NextAuth.js v4 Adapter Account 스키마와 호환되는 구조를 강제**합니다. `@map` 으로 해결되지 않는 **구조적 가정**이므로 별도 외부화 진입로가 없습니다:
+
+```prisma
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String   // 어댑터가 'oauth' 리터럴을 씀 — 필드 자체와 String 타입 필수
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token AccountToken? // 1:1 관계, 어댑터가 `account.token` 으로 접근
+
+  @@unique([provider, providerAccountId])  // Prisma 기본 인덱스 이름 'provider_providerAccountId' 사용 — 어댑터 리터럴
+}
+
+model AccountToken {
+  id           String  @id @default(cuid())
+  accountId    String  @unique
+  accessToken  String? @db.Text
+  refreshToken String? @db.Text
+  expiresAt    Int?    // ← DateTime 아님. epoch seconds (Int). 어댑터가 Math.floor(date/1000) 로 변환 저장
+  tokenType    String?
+  scope        String?
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+```
+
+**제약 요약**:
+1. `Account` 모델명, `Account.type` 필드 존재 + `String` 타입 (값 `'oauth'`)
+2. `Account ↔ AccountToken` 분리 (단일 Account에 토큰 컬럼 합친 스키마 불가)
+3. `AccountToken.expiresAt` 타입은 `Int` (epoch seconds). `DateTime` 컬럼을 쓰는 스키마는 비호환.
+4. 복합 unique 인덱스 명은 Prisma 기본 명명 규칙 `provider_providerAccountId` (`@@unique` 외에 `name` 옵션을 주면 깨짐)
+
+**위 가정에 맞지 않는 스키마를 쓰는 프로젝트**는 `OAuthAccountRepository` 인터페이스를 자체 구현하고 `dependencies.oauthAccountRepository` 자리에 주입하세요:
+
+```typescript
+import type { OAuthAccountRepository } from '@withwiz/toolkit/auth/types';
+
+class MyOAuthAccountRepository implements OAuthAccountRepository {
+  async findByProvider(provider, providerAccountId) { /* 자체 구현 */ }
+  async findByUserId(userId) { /* ... */ }
+  async create(data) { /* ... */ }
+  async update(id, data) { /* ... */ }
+  async delete(id) { /* ... */ }
+}
+
+const auth = createAuthHandlers({
+  dependencies: {
+    userRepository: new PrismaUserRepository(prisma),
+    oauthAccountRepository: new MyOAuthAccountRepository(),  // ← 교체
+    emailTokenRepository: new PrismaEmailTokenRepository(prisma),
+  },
+  // ...
+});
+```
+
 ---
 
 ## 4. Cache (캐시)

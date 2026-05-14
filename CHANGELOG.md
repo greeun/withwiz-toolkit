@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.4] - 2026-05-15
 
+### Docs
+- **`docs/MODULE_USAGE.md` §3.5 "Auth Database Adapter (Prisma)" 신설**
+  - 그동안 export되어 있었지만 사용 가이드가 비어있던 `PrismaUserRepository` / `PrismaOAuthAccountRepository` / `PrismaEmailTokenRepository` 사용법을 문서화
+  - 요구 Prisma 스키마(기본값 기준) 전체를 모델 정의로 명시
+  - `PrismaAdapterConfig.userFields` / `tokenTables` 외부화 항목과 적용 범위 명확화
+  - **원칙 명문화**: `userFields`는 **Prisma 모델 필드명** 기준이며 DB 컬럼 변형은 소비 프로젝트의 `@map`으로 처리
+  - **⚠️ OAuth Account 스키마 가정 경고 섹션 추가**: `PrismaOAuthAccountRepository`가 NextAuth.js v4 Adapter 호환 스키마를 강제하는 구조적 가정(4개) 명시
+    1. `Account.type` 필드 + `String` 타입 (값 `'oauth'` 리터럴)
+    2. `Account ↔ AccountToken` 1:1 분리
+    3. `AccountToken.expiresAt`는 `Int` (epoch seconds), `DateTime` 아님
+    4. 복합 unique 인덱스명 `provider_providerAccountId` (Prisma 기본 명명 규칙)
+  - 위 가정에 맞지 않는 스키마를 쓰는 프로젝트가 `OAuthAccountRepository` 인터페이스를 자체 구현해 주입하는 우회로 예시 포함
+
 ### Changed
 - **JWT 기본값 단일 진실 원천화** — `constants/security.ts`의 `JWT_DEFAULTS`를 실제로 사용하도록 통일 (동작 변경 없음)
   - 기존: `'7d'` / `'30d'` / `'HS256'` 리터럴이 `auth/config.ts`, `auth/handlers/{login,me}.handler.ts`, `auth/services/{login,oauth-callback,token-refresh}.service.ts` 6개 파일에 inline 복사돼 있었고, `JWT_DEFAULTS` 상수는 선언만 되고 어디서도 import되지 않는 고아 상수였음
@@ -29,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     1. 실제 Prisma 모델에 오버라이드한 필드(`verifiedAt` 등)만 존재하는지 확인 — 만약 `emailVerified` 필드가 함께 남아있었고 이메일 인증이 의도와 다르게 그쪽에 기록돼 왔다면, 이번 업데이트 후 정상 필드에 기록되기 시작합니다.
     2. 양쪽 필드 데이터가 어긋나 있던 경우 일회성 백필(backfill) 마이그레이션 필요 여부 검토.
     3. 이메일 인증 상태를 읽는 화면/로직이 동일한 `userFields.emailVerified` 설정값을 사용하고 있는지 재확인.
+
+### Notes
+- 본 패키지의 `userFields` 설정은 **Prisma 모델 필드명** 기준입니다. DB 컬럼명 변형은 소비 프로젝트의 Prisma 스키마에서 `@map`으로 처리하세요 (예: `verifiedAt DateTime? @map("verified_at")`).
 
 ## [0.6.3] - 2026-05-14
 
