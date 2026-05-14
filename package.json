@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -63,6 +63,7 @@
     "./geolocation/batch-processor": "./dist/geolocation/batch-processor.js",
     "./geolocation/providers": "./dist/geolocation/providers/index.js",
     "./auth/types": "./dist/auth/types/index.js",
+    "./auth/handler-types": "./dist/auth/types/handler-types.js",
     "./hooks/useDataTable": "./dist/hooks/useDataTable.js",
     "./hooks/useDebounce": "./dist/hooks/useDebounce.js",
     "./hooks/useExitIntent": "./dist/hooks/useExitIntent.js",
