@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.5] - 2026-05-15
+
+### Removed
+- **BREAKING**: `auth/types` 배럴에서 `handler-types` 재내보내기 제거 (`src/auth/types/index.ts`)
+  - 기존: `auth/types/index.ts`가 마지막 줄 `export * from './handler-types'`로 `AuthHandlerOptions` / `AuthHandlerDependencies` / `AuthHandlerHooks` / `AuthHandlerUrls` / `AuthHandlerResult`를 `@withwiz/toolkit/auth/types`에서도 접근 가능하게 했음
+  - 변경: `auth/types` 배럴은 이제 framework-독립적 타입만 노출. handler-types(Next.js `NextRequest` 의존)는 **별도 subpath `@withwiz/toolkit/auth/handler-types`로 분리**
+  - 이유: `auth/types` 배럴은 core/JWT/OAuth/Password처럼 프레임워크-독립적 타입을 모은 진입점인데, Next.js `NextRequest`를 의존하는 handler-types를 transitive하게 끌어들이고 있어 비-Next 환경에서 타입 해석 실패 위험이 있었음. 0.7 티어 분할의 사전 정리.
+
+### Added
+- **`./auth/handler-types` subpath**: `package.json` exports에 `./dist/auth/types/handler-types.js`로 신규 추가
+
+### Migration
+- **`@withwiz/toolkit/auth/types`에서 `AuthHandlerOptions` 등을 import하던 소비 프로젝트**: 새 subpath로 교체:
+  ```diff
+  - import type { AuthHandlerOptions } from '@withwiz/toolkit/auth/types';
+  + import type { AuthHandlerOptions } from '@withwiz/toolkit/auth/handler-types';
+  ```
+- 영향받는 타입: `AuthHandlerOptions`, `AuthHandlerDependencies`, `AuthHandlerHooks`, `AuthHandlerUrls`, `AuthHandlerResult`
+- `JWTConfig` / `JWTPayload` / `TokenPair` / `OAuthConfig` / `PasswordConfig` 등 다른 타입은 그대로 `@withwiz/toolkit/auth/types`에서 import (변경 없음)
+- 본 패키지의 모든 내부 사용처는 이미 `../types/handler-types` 상대 경로를 쓰고 있어 내부 동작 차이 없음.
+
 ## [0.6.4] - 2026-05-15
 
 ### Docs
