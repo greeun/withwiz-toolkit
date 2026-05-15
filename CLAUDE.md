@@ -26,58 +26,86 @@ The project uses a two-stage build:
 
 2. **Type Declarations (tsc)**: Generates `.d.ts` files with `--emitDeclarationOnly`
    - All external dependencies are marked as `external` in tsup to avoid bundling
-   - Output preserves directory structure: `dist/auth/index.js`, `dist/cache/index.js`, etc.
+   - Output preserves directory structure under framework tiers: `dist/core/auth/index.js`, `dist/next/middleware/index.js`, etc.
    - TypeScript strict mode enforced
 
 ### Package Exports
 
 The package uses conditional exports in `package.json`:
 
+Since 0.7, every subpath is namespaced under a framework tier
+(`core` / `next` / `react` / `prisma`). See `docs/FRAMEWORK_TIERS.md`.
+
 ```
 exports:
-  ./auth → dist/auth/index.js (and 7 subpaths for jwt, password, oauth, adapters)
-  ./cache → dist/cache/index.js (and 4 subpaths for factory, invalidation, defaults, env)
-  ./components/ui/* → dist/components/ui/*.js
-  ./constants → dist/constants/index.js (with 4 subpaths)
-  ./error → dist/error/index.js (and 2 subpaths)
-  ./geolocation → (and 2 subpaths)
-  ./hooks/* → Individual hooks as separate exports
-  ./logger/logger → dist/logger/logger.js
-  ./middleware → (and 4 middleware-specific subpaths)
-  ./storage → dist/storage/r2-storage.js
-  ./system → (and 1 subpath)
-  ./types/* → Multiple type subpaths (api, database, env, geoip, user, i18n, qr-code)
-  ./utils → (and 15+ utility subpaths)
-  ./validators → dist/validators/index.js
+  ./initialize → dist/initialize.js (composition root, all tiers)
+
+  # core — zero framework dependency (pure TS)
+  ./core/auth → dist/core/auth/index.js (jwt, password, oauth, services, email, types subpaths)
+  ./core/cache → dist/core/cache/index.js (factory, invalidation, defaults, env subpaths)
+  ./core/config, ./core/constants, ./core/cors, ./core/error, ./core/geolocation,
+  ./core/logger/logger, ./core/storage, ./core/system, ./core/types/*,
+  ./core/utils, ./core/validators
+
+  # next — Next.js dependent
+  ./next/middleware → dist/next/middleware/index.js (+ auth, rate-limit, cors, security, types, wrappers)
+  ./next/auth-handlers, ./next/auth-types,
+  ./next/error → dist/next/error/index.js (+ ./next/error/error-handler)
+  ./next/utils → dist/next/utils/index.js (api-helpers, cors, csv-export, error-processor)
+
+  # react — React dependent
+  ./react/components/ui/* → dist/react/components/ui/*.js
+  ./react/hooks/* → Individual hooks as separate exports
+  ./react/error → dist/react/error/index.js (+ ./react/error/error-display)
+  ./react/utils/* → client-utils, qr-code
+
+  # prisma — Prisma adapter
+  ./prisma/auth-adapter → dist/prisma/auth-adapter/index.js
 ```
 
-**Pattern**: Public APIs are exported through `index.ts` files; internal helpers live in `core/` subdirectories.
+**Tier rule**: `core` imports no framework; `next`/`react`/`prisma` may import
+`core` only, never each other. `initialize.ts` is the composition root exception.
+
+**Pattern**: Public APIs are exported through `index.ts` files; internal helpers live in `core/` subdirectories of each module.
 
 ## Module Structure
 
+Source is organized by framework tier (see `docs/FRAMEWORK_TIERS.md`):
+
 ```
 src/
-├── auth/              # JWT, password hashing, OAuth, Prisma adapter
-│   ├── core/
-│   │   ├── jwt/
-│   │   ├── password/
-│   │   └── oauth/
-│   ├── adapters/prisma/
-│   └── types/
-├── cache/             # Redis + in-memory caching with factory
-│   └── core/
-├── components/ui/     # React components (Button, Table, Badge, etc.)
-├── constants/         # Error codes, messages, pagination, security
-├── error/             # AppError class, handlers, display utilities
-├── geolocation/       # GeoIP lookup, batch processor, provider factory
-├── hooks/             # React hooks (useDataTable, useDebounce, etc.)
-├── logger/            # Winston-based structured logging
-├── middleware/        # Next.js middleware (auth, rate-limit, cors, security)
-├── storage/           # Cloudflare R2 / S3 storage
-├── system/            # Health checks, system monitoring
-├── types/             # Shared TypeScript types
-├── utils/             # ~20 utility modules (sanitizer, validators, etc.)
-└── validators/        # Password strength validation
+├── initialize.ts      # composition root (root-level, assembles all tiers)
+│
+├── core/              # zero framework dependency (pure TS)
+│   ├── auth/          #   jwt, password, oauth, services, email, types, config
+│   ├── cache/         #   Redis + in-memory caching with factory
+│   ├── config/        #   config registry (common, errors, warn)
+│   ├── constants/     #   error codes, messages, pagination, security
+│   ├── cors/          #   pure CORS config (← old middleware/cors-config)
+│   ├── error/         #   AppError, error codes, i18n messages, extractErrorInfo
+│   ├── geolocation/   #   GeoIP lookup, batch processor, provider factory
+│   ├── logger/        #   Winston-based structured logging
+│   ├── storage/       #   Cloudflare R2 / S3 storage
+│   ├── system/        #   health checks, system monitoring
+│   ├── types/         #   shared TypeScript types
+│   ├── utils/         #   pure utils (sanitizer, type-guards, format-number, …)
+│   └── validators/    #   password strength validation
+│
+├── next/              # Next.js dependent
+│   ├── middleware/    #   auth, rate-limit, cors, security, wrappers
+│   ├── auth-handlers/ #   Next.js route handlers (← old auth/handlers)
+│   ├── auth-types/    #   handler types (NextRequest signatures)
+│   ├── error/         #   error-handler (NextResponse), LocaleDetector, ErrorBoundary
+│   └── utils/         #   api-helpers, cors, csv-export, error-processor
+│
+├── react/             # React dependent
+│   ├── components/ui/ #   Button, Table, Badge, DataTable, etc.
+│   ├── hooks/         #   useDataTable, useDebounce, useExitIntent, useTimezone
+│   ├── error/         #   error-display (sonner toast)
+│   └── utils/         #   client-utils, qr-code (browser context)
+│
+└── prisma/            # Prisma dependent
+    └── auth-adapter/  #   Prisma auth repository adapter
 ```
 
 ## Testing
@@ -153,7 +181,7 @@ describe('PasswordValidator', () => {
 ### 1. Subpath Exports (Tree-Shaking)
 
 Every module is granularly exported to allow consumers to import only what they need:
-- ✅ `import { signToken } from '@withwiz/toolkit/auth/core/jwt'` (small bundle)
+- ✅ `import { signToken } from '@withwiz/toolkit/core/auth/jwt'` (small bundle)
 - ❌ Avoid: `import * from '@withwiz/toolkit'` (imports everything)
 
 ### 2. Factory Pattern for Extensibility
@@ -171,7 +199,7 @@ Every module is granularly exported to allow consumers to import only what they 
 
 Middleware functions wrap Next.js handler functions:
 ```typescript
-import { withAuth, withRateLimit } from '@withwiz/toolkit/middleware'
+import { withAuth, withRateLimit } from '@withwiz/toolkit/next/middleware'
 
 export default withAuth(withRateLimit(handler))
 ```
@@ -180,7 +208,7 @@ export default withAuth(withRateLimit(handler))
 
 Winston-based structured logging with daily rotation:
 ```typescript
-import { logInfo, logError } from '@withwiz/toolkit/logger/logger'
+import { logInfo, logError } from '@withwiz/toolkit/core/logger/logger'
 logError('Failed to fetch', { error, userId, context: 'payment' })
 ```
 
@@ -252,21 +280,21 @@ Each module should have:
 2. `core/` (optional) — internal implementations
 3. Typed exports in `package.json` for each subpath
 
-Example (`src/auth/index.ts`):
+Example (`src/core/auth/index.ts`):
 ```typescript
 // ✅ Public API
-export * from './core/jwt'
-export * from './core/password'
-export * from './core/oauth'
+export * from './jwt'
+export * from './password'
+export * from './oauth'
 
 // ❌ Don't export internals
-// export * from './core/jwt/helpers'
+// export * from './jwt/helpers'
 ```
 
 ### Testing
 
 - Test files are organized by **type** (`unit/`, `integration/`) and **category** (`security/`, `performance/`, `accessibility/`)
-- Unit tests mirror source structure: `src/auth/index.ts` → `__tests__/unit/auth/index.test.ts`
+- Unit tests mirror source structure: `src/core/auth/index.ts` → `__tests__/unit/auth/index.test.ts` (test dirs are not tier-prefixed)
 - Category tests group related tests by concern (security/auth, performance/cache, etc.)
 - Use `vitest` globals (no imports needed for `describe`, `it`, `expect`)
 - Mock external dependencies (Redis, API calls, file I/O)
