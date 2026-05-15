@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - Unreleased
+
+> **상태**: `npm publish --tag rc` 관찰 단계. 안정성 확인 후 `latest` 승격 시 날짜 확정.
+
+### Breaking — 프레임워크 티어 재구조화
+
+`src/` 전체와 모든 npm subpath를 프레임워크 의존성에 따라 **4개 티어**로 분리:
+
+```
+core/   ← 프레임워크 독립 (pure TS, zero framework dep)
+next/   ← Next.js 의존
+react/  ← React 의존
+prisma/ ← Prisma 어댑터
+```
+
+- **Hard cut**: 구 subpath에 대한 alias를 제공하지 않음 (deprecate 사이클 없음). 모든 소비 프로젝트는 import 경로를 일괄 치환해야 함.
+- `core`는 어떤 프레임워크도 import하지 않음. `next`/`react`/`prisma`는 `core`만 import 가능하며 서로 import 불가. `./initialize`는 모든 티어를 조립하는 composition root 예외.
+- `error` 배럴 **3-way 분할**: `core/error`(AppError·코드·i18n 메시지·`extractErrorInfo`) / `next/error`(error-handler·LocaleDetector·ErrorBoundary) / `react/error`(error-display).
+- `utils` 배럴 **2-way 분할**: `core/utils`(sanitizer·type-guards 등 pure) / `next/utils`(api-helpers·cors·csv-export·error-processor) / `react/utils`(client-utils·qr-code).
+- `extractErrorInfo`는 의존성 없는 순수 함수로, `react`에서 `core/error`로 강등 (티어 규칙 준수).
+
+### Added
+
+- **`peerDependenciesMeta`**: `next`/`react`/`react-dom`를 `optional`로 선언 → `core` 티어만 쓰는 소비자(백엔드·CLI)가 프레임워크 미설치 경고 없이 사용 가능.
+- **`"type": "module"`**: ESM-only 출력에 맞춘 선언 (기존 누락으로 인한 bare-node `MODULE_TYPELESS_PACKAGE_JSON` 경고·reparse 오버헤드 제거).
+- **`docs/FRAMEWORK_TIERS.md`** 신설: 티어 모델·규칙·티어별 모듈표·마이그레이션 매핑.
+- OAuth provider `microsoft`/`meta` subpath 추가 (기존 누락분).
+
+### Migration
+
+구 → 신 경로 일괄 치환. macOS는 `sed -i ''`, Linux는 `sed -i`. **순서 중요 — 구체적 패턴부터, core 광역 치환은 마지막**:
+
+```bash
+F=$(find . -name "*.ts" -o -name "*.tsx" | grep -v node_modules)
+
+# 1. 티어 이동 (가장 구체적)
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/auth/adapters/prisma|@withwiz/toolkit/prisma/auth-adapter|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/auth/handlers|@withwiz/toolkit/next/auth-handlers|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/auth/handler-types|@withwiz/toolkit/next/auth-types|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/auth/core/|@withwiz/toolkit/core/auth/|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/middleware/cors-config|@withwiz/toolkit/core/cors|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/middleware|@withwiz/toolkit/next/middleware|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/error/error-handler|@withwiz/toolkit/next/error/error-handler|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/error/error-display|@withwiz/toolkit/react/error/error-display|g"
+for m in api-helpers cors csv-export error-processor; do
+  echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/utils/$m|@withwiz/toolkit/next/utils/$m|g"
+done
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/utils/client/|@withwiz/toolkit/react/utils/|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/components/ui|@withwiz/toolkit/react/components/ui|g"
+echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/hooks|@withwiz/toolkit/react/hooks|g"
+
+# 2. core 광역 (마지막 — 위 1번이 모두 끝난 뒤). 개별 모듈로 풀어 sed 방언 차이 회피
+for m in auth cache config constants error geolocation logger storage system types utils validators; do
+  echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/$m|@withwiz/toolkit/core/$m|g"
+done
+```
+
+> 참고: macOS sed(BRE)는 `\|` alternation을 지원하지 않으므로 위처럼 `for` 루프로
+> 풀어 쓰는 것이 sed 방언(BSD/GNU) 차이에 안전합니다. 또한 `zsh`에서는 `$F` 같은
+> 변수가 단어 분리되지 않으니 `find ... -print0 | xargs -0 sed` 형태 권장.
+
+- `./initialize`는 변경 없음 (composition root).
+- **barrel 분할 주의**: 한 import 문에서 여러 티어 심볼을 함께 꺼내쓰던 코드는 sed로 자동 분리되지 않으므로 **수동 분리** 필요:
+  ```ts
+  // 구
+  import { AppError, errorHandlerMiddleware } from '@withwiz/toolkit/error';
+  // 신 (티어별 분리)
+  import { AppError } from '@withwiz/toolkit/core/error';
+  import { errorHandlerMiddleware } from '@withwiz/toolkit/next/error';
+  ```
+- 전체 매핑표·티어 규칙은 [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md) 참조.
+- 치환 후 빌드·타입체크·테스트 풀세트 재실행 권장. 실소비처(Next 16 + React 19 + Prisma 7) 검증에서 위 패턴 + `tsc --noEmit` 클린 통과 확인됨.
+
 ## [0.6.5] - 2026-05-15
 
 ### Removed
