@@ -1,5 +1,5 @@
-import { RegisterService } from '../../../../src/auth/services/register.service';
-import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/auth/types';
+import { RegisterService } from '../../../../src/core/auth/services/register.service';
+import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),

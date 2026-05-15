@@ -8,8 +8,8 @@
  * Note: Detailed behavior of HybridCacheManager is verified in integration tests
  */
 
-import { RedisCacheManager } from "@withwiz/cache/redis-cache-manager";
-import { HybridCacheManager } from "@withwiz/cache/hybrid-cache-manager";
+import { RedisCacheManager } from "@withwiz/core/cache/redis-cache-manager";
+import { HybridCacheManager } from "@withwiz/core/cache/hybrid-cache-manager";
 
 // Mock Redis client
 const mockRedisGet = vi.fn();
@@ -21,7 +21,7 @@ const mockRedisIncrby = vi.fn();
 const mockRedisExpire = vi.fn();
 const mockRedisPing = vi.fn();
 
-vi.mock("@withwiz/cache/cache-redis", () => ({
+vi.mock("@withwiz/core/cache/cache-redis", () => ({
   getRedisClient: vi.fn(() => ({
     get: mockRedisGet,
     set: mockRedisSet,
@@ -40,7 +40,7 @@ vi.mock("@withwiz/cache/cache-redis", () => ({
 // Mock global cache functions
 const mockIsCacheEnabled = vi.fn(() => true);
 
-vi.mock("@withwiz/cache/cache-env", () => ({
+vi.mock("@withwiz/core/cache/cache-env", () => ({
   isCacheEnabled: () => mockIsCacheEnabled(),
   getENV: vi.fn(() => ({
     CACHE: { ENABLED: true },
@@ -65,7 +65,7 @@ vi.mock("@withwiz/cache/cache-env", () => ({
 }));
 
 // Mock logger
-vi.mock("@withwiz/logger/logger", () => ({
+vi.mock("@withwiz/core/logger/logger", () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

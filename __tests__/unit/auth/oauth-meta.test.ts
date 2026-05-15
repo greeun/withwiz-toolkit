@@ -7,9 +7,9 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { MetaOAuthProvider } from '@withwiz/auth/core/oauth/providers/meta';
-import type { OAuthProviderConfig } from '@withwiz/auth/types';
-import { OAuthError } from '@withwiz/auth/errors';
+import { MetaOAuthProvider } from '@withwiz/core/auth/oauth/providers/meta';
+import type { OAuthProviderConfig } from '@withwiz/core/auth/types';
+import { OAuthError } from '@withwiz/core/auth/errors';
 
 const mockConfig: OAuthProviderConfig = {
   clientId: 'test-meta-app-id',

@@ -1,5 +1,5 @@
-import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/geolocation/config';
-import { ConfigurationError } from '../../../src/config/errors';
+import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/core/geolocation/config';
+import { ConfigurationError } from '../../../src/core/config/errors';
 
 describe('Geolocation Config', () => {
   beforeEach(() => { resetGeolocation(); });

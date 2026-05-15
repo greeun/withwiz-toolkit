@@ -7,9 +7,9 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { MicrosoftOAuthProvider } from '@withwiz/auth/core/oauth/providers/microsoft';
-import { OAuthError } from '@withwiz/auth/errors';
-import type { OAuthProviderConfig } from '@withwiz/auth/types';
+import { MicrosoftOAuthProvider } from '@withwiz/core/auth/oauth/providers/microsoft';
+import { OAuthError } from '@withwiz/core/auth/errors';
+import type { OAuthProviderConfig } from '@withwiz/core/auth/types';
 
 function base64url(input: string): string {
   return Buffer.from(input, 'utf8')

@@ -1,5 +1,5 @@
-import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/storage/config';
-import { ConfigurationError } from '../../../src/config/errors';
+import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/core/storage/config';
+import { ConfigurationError } from '../../../src/core/config/errors';
 
 describe('Storage Config', () => {
   beforeEach(() => { resetStorage(); });

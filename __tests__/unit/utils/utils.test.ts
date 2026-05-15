@@ -14,12 +14,12 @@ import {
   isAppScheme,
   getUrlType,
   SUPPORTED_SCHEMES,
-} from "@withwiz/utils/url-normalizer";
+} from "@withwiz/core/utils/url-normalizer";
 
 import {
   generateShortCode,
   generateUniqueShortCode,
-} from "@withwiz/utils/short-code-generator";
+} from "@withwiz/core/utils/short-code-generator";
 
 import {
   isPrivateIP,
@@ -27,7 +27,7 @@ import {
   normalizeIP,
   extractClientIp,
   isValidIP,
-} from "@withwiz/utils/ip-utils";
+} from "@withwiz/core/utils/ip-utils";
 
 import {
   sanitizeHtml,
@@ -36,12 +36,12 @@ import {
   sanitizeArray,
   sanitizeObjectFields,
   removeEventHandlers,
-} from "@withwiz/utils/sanitizer";
+} from "@withwiz/core/utils/sanitizer";
 
 import {
   formatNumber,
   formatChartNumber,
-} from "@withwiz/utils/format-number";
+} from "@withwiz/core/utils/format-number";
 
 import {
   getCurrentUTC,
@@ -56,7 +56,7 @@ import {
   getUserTimezone,
   getTimezoneOffset,
   toUTCISOString,
-} from "@withwiz/utils/timezone";
+} from "@withwiz/core/utils/timezone";
 
 // ============================================================================
 // SC-UNIT-UTIL-001: URL Normalization (url-normalizer.ts)

@@ -1,6 +1,6 @@
 // __tests__/unit/config/common.test.ts
-import { initializeCommon, getCommonConfig, resetCommon } from '../../../src/config/common';
-import { ConfigurationError } from '../../../src/config/errors';
+import { initializeCommon, getCommonConfig, resetCommon } from '../../../src/core/config/common';
+import { ConfigurationError } from '../../../src/core/config/errors';
 
 describe('Common Config', () => {
   beforeEach(() => { resetCommon(); });

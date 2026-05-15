@@ -1,5 +1,5 @@
 /**
- * Unit Tests: @withwiz/utils/csv-export tests
+ * Unit Tests: @withwiz/core/utils/csv-export tests
  * CSV export utility tests
  *
  * Note: Only pure utility functions are tested due to NextResponse dependency

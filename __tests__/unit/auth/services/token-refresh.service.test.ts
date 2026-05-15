@@ -1,6 +1,6 @@
-import { TokenRefreshService } from '../../../../src/auth/services/token-refresh.service';
-import { JWTService } from '../../../../src/auth/core/jwt';
-import type { UserRepository } from '../../../../src/auth/types';
+import { TokenRefreshService } from '../../../../src/core/auth/services/token-refresh.service';
+import { JWTService } from '../../../../src/core/auth/jwt';
+import type { UserRepository } from '../../../../src/core/auth/types';
 
 const jwtSecret = 'a'.repeat(32);
 

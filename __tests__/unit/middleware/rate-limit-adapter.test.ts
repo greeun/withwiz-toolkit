@@ -1,12 +1,12 @@
 /**
  * Unit Tests: Rate Limit Middleware - Adapter 미설정 경고 & isEnabled 체크
  *
- * 커버리지 대상: src/middleware/rate-limit.ts
+ * 커버리지 대상: src/next/middleware/rate-limit.ts
  * - lines 112-116: getRateLimitAdapter() 경고 로깅 (한 번만 출력)
  * - lines 154-155: adapter.isEnabled가 false를 반환할 때 스킵 경로
  */
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -15,13 +15,13 @@ vi.mock('@withwiz/logger/logger', () => ({
   },
 }));
 
-import { logger } from '@withwiz/logger/logger';
+import { logger } from '@withwiz/core/logger/logger';
 import {
   setRateLimitAdapter,
   createRateLimitMiddleware,
   type IRateLimitAdapter,
   type IRateLimiter,
-} from '@withwiz/middleware/rate-limit';
+} from '@withwiz/next/middleware/rate-limit';
 
 // ============================================================================
 // 테스트 헬퍼

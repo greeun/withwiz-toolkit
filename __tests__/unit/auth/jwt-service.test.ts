@@ -1,7 +1,7 @@
 /**
  * Unit Tests: JWTService & JWTManager extended coverage
  *
- * Targets uncovered lines in src/auth/core/jwt/index.ts:
+ * Targets uncovered lines in src/core/auth/jwt/index.ts:
  * - createTokenPair success and failure paths
  * - verifyAccessToken with expired token (TOKEN_EXPIRED)
  * - verifyAccessToken with invalid token (TOKEN_VERIFICATION_FAILED)
@@ -14,9 +14,9 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { JWTService, JWTManager } from '@withwiz/auth/core/jwt';
-import { JWTError } from '@withwiz/auth/errors';
-import type { JWTConfig } from '@withwiz/auth/types';
+import { JWTService, JWTManager } from '@withwiz/core/auth/jwt';
+import { JWTError } from '@withwiz/core/auth/errors';
+import type { JWTConfig } from '@withwiz/core/auth/types';
 
 const testConfig: JWTConfig = {
   secret: 'test-secret-key-that-is-at-least-32-characters-long',

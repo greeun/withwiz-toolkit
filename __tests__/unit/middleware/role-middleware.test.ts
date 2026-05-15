@@ -5,12 +5,12 @@
  * - adminMiddleware 하위 호환성 확인
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { IApiContext } from '@withwiz/middleware/types';
-import { AppError } from '@withwiz/error/app-error';
-import { ERROR_CODES } from '@withwiz/constants/error-codes';
+import type { IApiContext } from '@withwiz/next/middleware/types';
+import { AppError } from '@withwiz/core/error/app-error';
+import { ERROR_CODES } from '@withwiz/core/constants/error-codes';
 
 // logger mock
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('@withwiz/logger/logger', () => ({
 }));
 
 // auth config mock — createRoleMiddleware는 JWT 불필요하지만 모듈 로드 시 참조됨
-vi.mock('@withwiz/auth/core/jwt', () => ({
+vi.mock('@withwiz/core/auth/jwt', () => ({
   JWTManager: vi.fn(),
 }));
 
@@ -48,7 +48,7 @@ describe('createRoleMiddleware', () => {
 
   describe('단일 역할 (ADMIN)', () => {
     it('ADMIN 역할이 아닌 사용자를 FORBIDDEN 에러로 거부해야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN');
       const context = createMockContext({ id: '1', email: 'user@test.com', role: 'USER' });
 
@@ -62,7 +62,7 @@ describe('createRoleMiddleware', () => {
     });
 
     it('ADMIN 역할의 사용자를 허용해야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN');
       const context = createMockContext({ id: '1', email: 'admin@test.com', role: 'ADMIN' });
 
@@ -79,7 +79,7 @@ describe('createRoleMiddleware', () => {
 
   describe('복수 역할 (ADMIN, EDITOR)', () => {
     it('허용된 복수 역할 중 하나인 사용자를 통과시켜야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN', 'EDITOR');
 
       // ADMIN 허용
@@ -96,7 +96,7 @@ describe('createRoleMiddleware', () => {
     });
 
     it('허용 역할 목록에 없는 사용자를 FORBIDDEN 에러로 거부해야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN', 'EDITOR');
       const context = createMockContext({ id: '3', email: 'user@test.com', role: 'USER' });
 
@@ -116,7 +116,7 @@ describe('createRoleMiddleware', () => {
 
   describe('미인증 사용자', () => {
     it('context.user가 undefined이면 UNAUTHORIZED 에러를 발생시켜야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN');
       const context = createMockContext(undefined);
 
@@ -130,7 +130,7 @@ describe('createRoleMiddleware', () => {
     });
 
     it('context.user가 null이면 UNAUTHORIZED 에러를 발생시켜야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN');
       const context = createMockContext(undefined);
       // 명시적으로 null 설정
@@ -152,7 +152,7 @@ describe('createRoleMiddleware', () => {
 
   describe('next() 호출', () => {
     it('허용된 역할이면 next()를 정확히 한 번 호출해야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('MODERATOR');
       const context = createMockContext({ id: '1', email: 'mod@test.com', role: 'MODERATOR' });
 
@@ -162,7 +162,7 @@ describe('createRoleMiddleware', () => {
     });
 
     it('거부된 경우 next()를 호출하지 않아야 한다', async () => {
-      const { createRoleMiddleware } = await import('@withwiz/middleware/auth');
+      const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
       const middleware = createRoleMiddleware('ADMIN');
       const context = createMockContext({ id: '1', email: 'user@test.com', role: 'USER' });
 
@@ -187,7 +187,7 @@ describe('adminMiddleware (하위 호환성)', () => {
   });
 
   it('ADMIN 역할의 사용자를 허용해야 한다', async () => {
-    const { adminMiddleware } = await import('@withwiz/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
     const context = createMockContext({ id: '1', email: 'admin@test.com', role: 'ADMIN' });
 
     const response = await adminMiddleware(context, mockNext);
@@ -197,7 +197,7 @@ describe('adminMiddleware (하위 호환성)', () => {
   });
 
   it('ADMIN이 아닌 사용자를 FORBIDDEN 에러로 거부해야 한다', async () => {
-    const { adminMiddleware } = await import('@withwiz/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
     const context = createMockContext({ id: '1', email: 'user@test.com', role: 'USER' });
 
     try {
@@ -210,7 +210,7 @@ describe('adminMiddleware (하위 호환성)', () => {
   });
 
   it('인증되지 않은 사용자를 UNAUTHORIZED 에러로 거부해야 한다', async () => {
-    const { adminMiddleware } = await import('@withwiz/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
     const context = createMockContext(undefined);
 
     try {
@@ -223,7 +223,7 @@ describe('adminMiddleware (하위 호환성)', () => {
   });
 
   it('createRoleMiddleware("ADMIN")과 동일하게 동작해야 한다', async () => {
-    const { adminMiddleware, createRoleMiddleware } = await import('@withwiz/middleware/auth');
+    const { adminMiddleware, createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
     const roleMiddleware = createRoleMiddleware('ADMIN');
 
     // 둘 다 ADMIN 허용

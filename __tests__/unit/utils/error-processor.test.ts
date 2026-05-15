@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -42,11 +42,11 @@ import {
   throwUnauthorizedError,
   throwValidationError,
   throwBadRequestError,
-} from '@withwiz/utils/error-processor';
-import { AppError } from '@withwiz/error/app-error';
-import { ERROR_CODES } from '@withwiz/constants/error-codes';
+} from '@withwiz/next/utils/error-processor';
+import { AppError } from '@withwiz/core/error/app-error';
+import { ERROR_CODES } from '@withwiz/core/constants/error-codes';
 import { NextResponse } from 'next/server';
-import { logger } from '@withwiz/logger/logger';
+import { logger } from '@withwiz/core/logger/logger';
 import { z } from 'zod';
 
 describe('ErrorProcessor', () => {

@@ -14,8 +14,8 @@ import {
   PasswordHasher,
   defaultPasswordSchema,
   strongPasswordSchema,
-} from "@withwiz/auth/core/password";
-import { PasswordStrength } from "@withwiz/auth/types";
+} from "@withwiz/core/auth/password";
+import { PasswordStrength } from "@withwiz/core/auth/types";
 
 describe("Password Module", () => {
   describe("PasswordValidator", () => {

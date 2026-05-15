@@ -7,11 +7,11 @@
  * - getUserInfo(): 사용자 정보 조회 및 필드 매핑
  */
 
-import { GoogleOAuthProvider } from '@withwiz/auth/core/oauth/providers/google';
-import { GitHubOAuthProvider } from '@withwiz/auth/core/oauth/providers/github';
-import { KakaoOAuthProvider } from '@withwiz/auth/core/oauth/providers/kakao';
-import { OAuthError } from '@withwiz/auth/errors';
-import type { OAuthProviderConfig } from '@withwiz/auth/types';
+import { GoogleOAuthProvider } from '@withwiz/core/auth/oauth/providers/google';
+import { GitHubOAuthProvider } from '@withwiz/core/auth/oauth/providers/github';
+import { KakaoOAuthProvider } from '@withwiz/core/auth/oauth/providers/kakao';
+import { OAuthError } from '@withwiz/core/auth/errors';
+import type { OAuthProviderConfig } from '@withwiz/core/auth/types';
 
 // ============================================================================
 // 공통 설정

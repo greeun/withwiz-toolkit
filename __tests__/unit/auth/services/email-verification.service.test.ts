@@ -1,5 +1,5 @@
-import { EmailVerificationService } from '../../../../src/auth/services/email-verification.service';
-import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/auth/types';
+import { EmailVerificationService } from '../../../../src/core/auth/services/email-verification.service';
+import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),

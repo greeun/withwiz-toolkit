@@ -3,9 +3,9 @@
  * Based on: TEST_SCENARIOS.md - auth module
  */
 
-import { JWTService, JWTManager } from "@withwiz/auth/core/jwt";
-import { JWTError } from "@withwiz/auth/errors";
-import type { JWTConfig } from "@withwiz/auth/types";
+import { JWTService, JWTManager } from "@withwiz/core/auth/jwt";
+import { JWTError } from "@withwiz/core/auth/errors";
+import type { JWTConfig } from "@withwiz/core/auth/types";
 
 // JWT configuration for testing
 const testConfig: JWTConfig = {

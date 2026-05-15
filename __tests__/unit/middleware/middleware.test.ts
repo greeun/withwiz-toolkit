@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextResponse } from 'next/server';
 
 // Mock all middleware dependencies
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
   logApiRequest: vi.fn(),
   logApiResponse: vi.fn(),
@@ -17,28 +17,28 @@ vi.mock('@withwiz/logger/logger', () => ({
 // Track middleware invocations in order
 const callOrder: string[] = [];
 
-vi.mock('@withwiz/middleware/error-handler', () => ({
+vi.mock('@withwiz/next/middleware/error-handler', () => ({
   errorHandlerMiddleware: vi.fn(async (_ctx, next) => {
     callOrder.push('errorHandler');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/security', () => ({
+vi.mock('@withwiz/next/middleware/security', () => ({
   securityMiddleware: vi.fn(async (_ctx, next) => {
     callOrder.push('security');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/cors', () => ({
+vi.mock('@withwiz/next/middleware/cors', () => ({
   corsMiddleware: vi.fn(async (_ctx, next) => {
     callOrder.push('cors');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/init-request', () => ({
+vi.mock('@withwiz/next/middleware/init-request', () => ({
   initRequestMiddleware: vi.fn(async (ctx, next) => {
     callOrder.push('initRequest');
     ctx.requestId = 'test-request-id';
@@ -46,7 +46,7 @@ vi.mock('@withwiz/middleware/init-request', () => ({
   }),
 }));
 
-vi.mock('@withwiz/middleware/auth', () => ({
+vi.mock('@withwiz/next/middleware/auth', () => ({
   authMiddleware: vi.fn(async (ctx, next) => {
     callOrder.push('auth');
     ctx.user = { id: 'user-1', email: 'test@test.com', role: 'USER' };
@@ -65,7 +65,7 @@ vi.mock('@withwiz/middleware/auth', () => ({
   }),
 }));
 
-vi.mock('@withwiz/middleware/rate-limit', () => ({
+vi.mock('@withwiz/next/middleware/rate-limit', () => ({
   rateLimitMiddleware: {
     api: vi.fn(async (ctx, next) => {
       callOrder.push('rateLimit:api');
@@ -80,7 +80,7 @@ vi.mock('@withwiz/middleware/rate-limit', () => ({
   },
 }));
 
-vi.mock('@withwiz/middleware/response-logger', () => ({
+vi.mock('@withwiz/next/middleware/response-logger', () => ({
   responseLoggerMiddleware: vi.fn(async (_ctx, next) => {
     callOrder.push('responseLogger');
     return await next();
@@ -106,7 +106,7 @@ describe('Middleware Wrappers', () => {
 
   describe('withPublicApi', () => {
     it('should execute middleware chain in correct order and call handler', async () => {
-      const { withPublicApi } = await import('@withwiz/middleware/wrappers');
+      const { withPublicApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(
         NextResponse.json({ ok: true })
@@ -129,7 +129,7 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should pass context with requestId to handler', async () => {
-      const { withPublicApi } = await import('@withwiz/middleware/wrappers');
+      const { withPublicApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockImplementation((ctx) => {
         expect(ctx.requestId).toBe('test-request-id');
@@ -143,7 +143,7 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should NOT include auth middleware', async () => {
-      const { withPublicApi } = await import('@withwiz/middleware/wrappers');
+      const { withPublicApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withPublicApi(handler);
@@ -154,7 +154,7 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should forward props to handler', async () => {
-      const { withPublicApi } = await import('@withwiz/middleware/wrappers');
+      const { withPublicApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withPublicApi(handler);
@@ -170,7 +170,7 @@ describe('Middleware Wrappers', () => {
 
   describe('withAuthApi', () => {
     it('should include authMiddleware between initRequest and rateLimit', async () => {
-      const { withAuthApi } = await import('@withwiz/middleware/wrappers');
+      const { withAuthApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withAuthApi(handler);
@@ -188,7 +188,7 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should populate context.user from authMiddleware', async () => {
-      const { withAuthApi } = await import('@withwiz/middleware/wrappers');
+      const { withAuthApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockImplementation((ctx) => {
         expect(ctx.user).toEqual({
@@ -206,7 +206,7 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should use api rate limit (not admin)', async () => {
-      const { withAuthApi } = await import('@withwiz/middleware/wrappers');
+      const { withAuthApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withAuthApi(handler);
@@ -220,14 +220,14 @@ describe('Middleware Wrappers', () => {
   describe('withAdminApi', () => {
     it('should include both authMiddleware and adminMiddleware', async () => {
       // Override auth mock to set ADMIN role so adminMiddleware passes
-      const { authMiddleware } = await import('@withwiz/middleware/auth');
+      const { authMiddleware } = await import('@withwiz/next/middleware/auth');
       (authMiddleware as any).mockImplementation(async (ctx: any, next: any) => {
         callOrder.push('auth');
         ctx.user = { id: 'admin-1', email: 'admin@test.com', role: 'ADMIN' };
         return await next();
       });
 
-      const { withAdminApi } = await import('@withwiz/middleware/wrappers');
+      const { withAdminApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withAdminApi(handler);
@@ -246,14 +246,14 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should use admin rate limit', async () => {
-      const { authMiddleware } = await import('@withwiz/middleware/auth');
+      const { authMiddleware } = await import('@withwiz/next/middleware/auth');
       (authMiddleware as any).mockImplementation(async (ctx: any, next: any) => {
         callOrder.push('auth');
         ctx.user = { id: 'admin-1', email: 'admin@test.com', role: 'ADMIN' };
         return await next();
       });
 
-      const { withAdminApi } = await import('@withwiz/middleware/wrappers');
+      const { withAdminApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withAdminApi(handler);
@@ -264,14 +264,14 @@ describe('Middleware Wrappers', () => {
     });
 
     it('should block non-admin users via adminMiddleware', async () => {
-      const { authMiddleware } = await import('@withwiz/middleware/auth');
+      const { authMiddleware } = await import('@withwiz/next/middleware/auth');
       (authMiddleware as any).mockImplementation(async (ctx: any, next: any) => {
         callOrder.push('auth');
         ctx.user = { id: 'user-1', email: 'user@test.com', role: 'USER' };
         return await next();
       });
 
-      const { withAdminApi } = await import('@withwiz/middleware/wrappers');
+      const { withAdminApi } = await import('@withwiz/next/middleware/wrappers');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
       const wrapped = withAdminApi(handler);
@@ -283,10 +283,10 @@ describe('Middleware Wrappers', () => {
 
   describe('withCustomApi', () => {
     it('should allow building a custom middleware chain', async () => {
-      const { withCustomApi } = await import('@withwiz/middleware/wrappers');
-      const { errorHandlerMiddleware } = await import('@withwiz/middleware/error-handler');
-      const { initRequestMiddleware } = await import('@withwiz/middleware/init-request');
-      const { responseLoggerMiddleware } = await import('@withwiz/middleware/response-logger');
+      const { withCustomApi } = await import('@withwiz/next/middleware/wrappers');
+      const { errorHandlerMiddleware } = await import('@withwiz/next/middleware/error-handler');
+      const { initRequestMiddleware } = await import('@withwiz/next/middleware/init-request');
+      const { responseLoggerMiddleware } = await import('@withwiz/next/middleware/response-logger');
 
       const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
 

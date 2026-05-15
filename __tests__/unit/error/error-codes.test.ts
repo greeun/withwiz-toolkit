@@ -1,5 +1,5 @@
 /**
- * Unit Tests: @withwiz/constants/error-codes tests
+ * Unit Tests: @withwiz/core/constants/error-codes tests
  * Based on: TEST_SCENARIOS.md - constants module
  */
 
@@ -16,8 +16,8 @@ import {
   getErrorCodesByCategory,
   formatErrorMessage,
   classifyError,
-} from "@withwiz/constants/error-codes";
-import type { ErrorCodeKey } from "@withwiz/constants/error-codes";
+} from "@withwiz/core/constants/error-codes";
+import type { ErrorCodeKey } from "@withwiz/core/constants/error-codes";
 
 // ============================================================================
 // SC-CONST-ERR-001: Error Code Structure

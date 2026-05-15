@@ -14,7 +14,7 @@ import {
   normalizeIP,
   extractClientIp,
   isValidIP,
-} from "@withwiz/utils/ip-utils";
+} from "@withwiz/core/utils/ip-utils";
 
 describe("IP Utils", () => {
   describe("isValidIP", () => {

@@ -1,5 +1,5 @@
 /**
- * Unit Tests: @withwiz/constants/validation Consistency Tests
+ * Unit Tests: @withwiz/core/constants/validation Consistency Tests
  * Based on: TEST_SCENARIOS.md - constants module
  */
 
@@ -11,7 +11,7 @@ import {
   NUMERIC,
   DATE,
   FILE_UPLOAD,
-} from "@withwiz/constants/validation";
+} from "@withwiz/core/constants/validation";
 
 // ============================================================================
 // SC-CONST-VAL-001: PASSWORD Constants

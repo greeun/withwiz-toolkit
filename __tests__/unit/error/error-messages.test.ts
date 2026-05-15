@@ -1,4 +1,4 @@
-import { getErrorMessage, getAllMessages, hasMessage, isLocaleSupported, supportedLocales } from '../../../src/error/messages';
+import { getErrorMessage, getAllMessages, hasMessage, isLocaleSupported, supportedLocales } from '../../../src/core/error/messages';
 
 describe('Error Messages Module', () => {
   describe('getErrorMessage', () => {

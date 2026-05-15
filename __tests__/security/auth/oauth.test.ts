@@ -9,7 +9,7 @@
  * - Error handling
  */
 
-import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/auth/core/oauth";
+import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/core/auth/oauth";
 
 // Mock logger
 const mockLogger = {

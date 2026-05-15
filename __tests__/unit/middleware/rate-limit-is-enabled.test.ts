@@ -13,7 +13,7 @@
  */
 
 // Mock Logger
-vi.mock("@withwiz/logger/logger", () => ({
+vi.mock("@withwiz/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -27,7 +27,7 @@ import {
   createRateLimitMiddleware,
   type IRateLimitAdapter,
   type IRateLimiter,
-} from "@withwiz/middleware/rate-limit";
+} from "@withwiz/next/middleware/rate-limit";
 
 // ============================================================================
 // 테스트 헬퍼

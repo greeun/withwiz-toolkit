@@ -2,7 +2,7 @@ import {
   formatRedisError,
   formatDatabaseError,
   formatGenericError,
-} from '@withwiz/utils/error-message-formatter'
+} from '@withwiz/core/utils/error-message-formatter'
 
 describe('formatRedisError', () => {
   it('returns user-friendly message for rate limit exceeded with details', () => {

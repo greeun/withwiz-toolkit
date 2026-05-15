@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // logger mock
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -17,20 +17,20 @@ vi.mock('@withwiz/logger/logger', () => ({
 }));
 
 // error-message-formatter mock
-vi.mock('@withwiz/utils/error-message-formatter', () => ({
+vi.mock('@withwiz/core/utils/error-message-formatter', () => ({
   formatRedisError: vi.fn((msg: string) => `[Redis] ${msg}`),
   formatDatabaseError: vi.fn((msg: string) => `[DB] ${msg}`),
 }));
 
 // cache mock
-vi.mock('@withwiz/cache/cache', () => ({
+vi.mock('@withwiz/core/cache/cache', () => ({
   checkRedisConnection: vi.fn(),
 }));
 
 describe('System Utils', () => {
   describe('getPlatform', () => {
     it('should return current platform string', async () => {
-      const { getPlatform } = await import('@withwiz/system/utils');
+      const { getPlatform } = await import('@withwiz/core/system/utils');
       const platform = getPlatform();
       expect(typeof platform).toBe('string');
       expect(['darwin', 'linux', 'win32']).toContain(platform);
@@ -39,36 +39,36 @@ describe('System Utils', () => {
 
   describe('formatBytesPerSec', () => {
     it('should return "0 B/s" for zero or negative values', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       expect(formatBytesPerSec(0)).toBe('0 B/s');
       expect(formatBytesPerSec(-100)).toBe('0 B/s');
     });
 
     it('should format bytes per second', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       expect(formatBytesPerSec(500)).toBe('500 B/s');
     });
 
     it('should format KB per second', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       const result = formatBytesPerSec(1024);
       expect(result).toBe('1 KB/s');
     });
 
     it('should format MB per second', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       const result = formatBytesPerSec(1024 * 1024);
       expect(result).toBe('1 MB/s');
     });
 
     it('should format GB per second', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       const result = formatBytesPerSec(1024 * 1024 * 1024);
       expect(result).toBe('1 GB/s');
     });
 
     it('should handle fractional values', async () => {
-      const { formatBytesPerSec } = await import('@withwiz/system/utils');
+      const { formatBytesPerSec } = await import('@withwiz/core/system/utils');
       const result = formatBytesPerSec(1536); // 1.5 KB
       expect(result).toBe('1.5 KB/s');
     });
@@ -76,34 +76,34 @@ describe('System Utils', () => {
 
   describe('convertToBytes', () => {
     it('should convert B correctly', async () => {
-      const { convertToBytes } = await import('@withwiz/system/utils');
+      const { convertToBytes } = await import('@withwiz/core/system/utils');
       expect(convertToBytes(100, 'B')).toBe(100);
     });
 
     it('should convert KiB correctly', async () => {
-      const { convertToBytes } = await import('@withwiz/system/utils');
+      const { convertToBytes } = await import('@withwiz/core/system/utils');
       expect(convertToBytes(1, 'KiB')).toBe(1024);
     });
 
     it('should convert MiB correctly', async () => {
-      const { convertToBytes } = await import('@withwiz/system/utils');
+      const { convertToBytes } = await import('@withwiz/core/system/utils');
       expect(convertToBytes(1, 'MiB')).toBe(1024 * 1024);
     });
 
     it('should convert GiB correctly', async () => {
-      const { convertToBytes } = await import('@withwiz/system/utils');
+      const { convertToBytes } = await import('@withwiz/core/system/utils');
       expect(convertToBytes(1, 'GiB')).toBe(1024 * 1024 * 1024);
     });
 
     it('should return raw value for unknown units', async () => {
-      const { convertToBytes } = await import('@withwiz/system/utils');
+      const { convertToBytes } = await import('@withwiz/core/system/utils');
       expect(convertToBytes(42, 'unknown')).toBe(42);
     });
   });
 
   describe('getRecommendedCommands', () => {
     it('should return commands for current platform', async () => {
-      const { getRecommendedCommands } = await import('@withwiz/system/utils');
+      const { getRecommendedCommands } = await import('@withwiz/core/system/utils');
       const commands = getRecommendedCommands();
 
       expect(commands).toHaveProperty('cpu');
@@ -122,9 +122,9 @@ describe('Environment Check', () => {
   // 각 테스트에서 config를 적절히 초기화/리셋합니다.
   beforeEach(async () => {
     // 각 테스트 전 config 리셋
-    const { resetCommon } = await import('../../../src/config/common');
-    const { resetAuth } = await import('../../../src/auth/config');
-    const { resetCache } = await import('../../../src/cache/config');
+    const { resetCommon } = await import('../../../src/core/config/common');
+    const { resetAuth } = await import('../../../src/core/auth/config');
+    const { resetCache } = await import('../../../src/core/cache/config');
     resetCommon();
     resetAuth();
     resetCache();
@@ -132,7 +132,7 @@ describe('Environment Check', () => {
 
   describe('checkEnvironmentVariables', () => {
     it('should check required env vars and return results', async () => {
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       expect(Array.isArray(results)).toBe(true);
@@ -148,7 +148,7 @@ describe('Environment Check', () => {
     });
 
     it('should include platform info', async () => {
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       const platformResult = results.find((r) => r.key === 'PLATFORM');
@@ -159,10 +159,10 @@ describe('Environment Check', () => {
 
     it('should include NODE_ENV from common config', async () => {
       // common config를 'test'로 초기화
-      const { initializeCommon } = await import('../../../src/config/common');
+      const { initializeCommon } = await import('../../../src/core/config/common');
       initializeCommon({ nodeEnv: 'test' });
 
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       const nodeEnvResult = results.find((r) => r.key === 'NODE_ENV');
@@ -171,7 +171,7 @@ describe('Environment Check', () => {
     });
 
     it('should include architecture info', async () => {
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       const archResult = results.find((r) => r.key === 'ARCHITECTURE');
@@ -181,7 +181,7 @@ describe('Environment Check', () => {
 
     it('should mark JWT_SECRET as not ok when auth not initialized', async () => {
       // resetAuth()는 beforeEach에서 이미 호출됨
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       const jwtResult = results.find((r) => r.key === 'JWT_SECRET');
@@ -191,11 +191,11 @@ describe('Environment Check', () => {
     });
 
     it('should truncate long JWT_SECRET values', async () => {
-      const { initializeAuth } = await import('../../../src/auth/config');
+      const { initializeAuth } = await import('../../../src/core/auth/config');
       const longSecret = 'a'.repeat(50); // 50자 JWT secret
       initializeAuth({ jwtSecret: longSecret });
 
-      const { checkEnvironmentVariables } = await import('@withwiz/system/environment');
+      const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
       const results = checkEnvironmentVariables();
 
       const jwtResult = results.find((r) => r.key === 'JWT_SECRET');
@@ -214,7 +214,7 @@ describe('Health Check', () => {
 
   describe('checkServiceHealth', () => {
     it('should return warning for Database when no prisma client provided', async () => {
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth();
 
       const dbService = services.find((s) => s.name === 'Database');
@@ -227,7 +227,7 @@ describe('Health Check', () => {
       const mockPrisma = {
         $queryRaw: vi.fn().mockResolvedValue([{ 1: 1 }]),
       };
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth(mockPrisma);
 
       const dbService = services.find((s) => s.name === 'Database');
@@ -240,7 +240,7 @@ describe('Health Check', () => {
       const mockPrisma = {
         $queryRaw: vi.fn().mockRejectedValue(new Error('Connection refused')),
       };
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth(mockPrisma);
 
       const dbService = services.find((s) => s.name === 'Database');
@@ -253,7 +253,7 @@ describe('Health Check', () => {
       const mockPrisma = {
         $queryRaw: vi.fn().mockResolvedValue([{ 1: 1 }]),
       };
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth(mockPrisma);
 
       const dbService = services.find((s) => s.name === 'Database');
@@ -267,7 +267,7 @@ describe('Health Check', () => {
 
     it('should return Redis warning when CACHE_ENABLED is false', async () => {
       process.env.CACHE_ENABLED = 'false';
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth();
 
       const redisService = services.find((s) => s.name === 'Redis');
@@ -279,7 +279,7 @@ describe('Health Check', () => {
     it('should return Redis warning when env vars are missing', async () => {
       delete process.env.REDIS_REST_URL;
       delete process.env.REDIS_REST_TOKEN;
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth();
 
       const redisService = services.find((s) => s.name === 'Redis');
@@ -288,7 +288,7 @@ describe('Health Check', () => {
     });
 
     it('should always return at least Database and Redis services', async () => {
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth();
 
       expect(services.length).toBeGreaterThanOrEqual(2);
@@ -297,7 +297,7 @@ describe('Health Check', () => {
     });
 
     it('should include platform info in metrics', async () => {
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
       const services = await checkServiceHealth();
 
       for (const service of services) {

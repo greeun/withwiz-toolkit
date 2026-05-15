@@ -5,9 +5,9 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   classifyError,
   ERROR_CODES,
-} from '@withwiz/constants/error-codes';
+} from '@withwiz/core/constants/error-codes';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -159,8 +159,8 @@ describe('classifyError', () => {
 // ============================================================================
 describe('AuthError → processError integration', () => {
   it('should map TOKEN_EXPIRED AuthError to 40103', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { JWTError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { JWTError } = await import('@withwiz/core/auth/errors');
 
     const error = new JWTError('Token has expired', 'TOKEN_EXPIRED');
     const result = processError(error);
@@ -170,8 +170,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should map TOKEN_INVALID AuthError to INVALID_TOKEN code', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { JWTError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { JWTError } = await import('@withwiz/core/auth/errors');
 
     const error = new JWTError('Invalid token', 'TOKEN_INVALID');
     const result = processError(error);
@@ -181,8 +181,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should map TOKEN_CREATION_FAILED to SERVER_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { JWTError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { JWTError } = await import('@withwiz/core/auth/errors');
 
     const error = new JWTError('JWT secret too short', 'TOKEN_CREATION_FAILED');
     const result = processError(error);
@@ -192,8 +192,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should map PASSWORD_HASH_FAILED to SERVER_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { PasswordError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { PasswordError } = await import('@withwiz/core/auth/errors');
 
     const error = new PasswordError('Hash failed', 'PASSWORD_HASH_FAILED');
     const result = processError(error);
@@ -203,8 +203,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should map OAUTH_TOKEN_EXCHANGE_FAILED to EXTERNAL_SERVICE_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { OAuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { OAuthError } = await import('@withwiz/core/auth/errors');
 
     const error = new OAuthError('Token exchange failed', 'OAUTH_TOKEN_EXCHANGE_FAILED');
     const result = processError(error);
@@ -214,8 +214,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should map INVALID_CREDENTIALS to correct code', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { AuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { AuthError } = await import('@withwiz/core/auth/errors');
 
     const error = new AuthError('Wrong password', 'INVALID_CREDENTIALS', 401);
     const result = processError(error);
@@ -225,8 +225,8 @@ describe('AuthError → processError integration', () => {
   });
 
   it('should fallback unmapped AuthError to statusCode-based code', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { AuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { AuthError } = await import('@withwiz/core/auth/errors');
 
     const error = new AuthError('Unknown auth error', 'UNKNOWN_CODE', 401);
     const result = processError(error);

@@ -1,5 +1,5 @@
-import { LoginService } from '../../../../src/auth/services/login.service';
-import type { UserRepository, Logger } from '../../../../src/auth/types';
+import { LoginService } from '../../../../src/core/auth/services/login.service';
+import type { UserRepository, Logger } from '../../../../src/core/auth/types';
 import { hash } from 'bcryptjs';
 
 const mockUserRepo: UserRepository = {
