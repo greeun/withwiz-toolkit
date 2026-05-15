@@ -37,8 +37,15 @@ prisma/ ← Prisma 어댑터
 
 구 → 신 경로 일괄 치환. macOS는 `sed -i ''`, Linux는 `sed -i`. **순서 중요 — 구체적 패턴부터, core 광역 치환은 마지막**:
 
+> ⚠️ **적용 범위 — 가장 흔한 누락**: `src/`뿐 아니라 `tests/`, `__tests__/`,
+> 스크립트 등 **`@withwiz/toolkit`을 import하는 모든 디렉토리**가 대상입니다.
+> 테스트 파일도 toolkit을 직접 import하므로, 테스트 디렉토리를 빼고 치환하면
+> 옛 경로가 잔존해 0.7에서 모듈 해석 실패(빌드/테스트 깨짐)합니다. 아래 `find .`는
+> 프로젝트 루트 전체를 잡으니 디렉토리를 임의로 좁히지 마세요.
+
 ```bash
-F=$(find . -name "*.ts" -o -name "*.tsx" | grep -v node_modules)
+# 프로젝트 루트에서. node_modules만 제외, 나머지(src/tests/...) 전부 포함
+F=$(find . \( -name "*.ts" -o -name "*.tsx" \) -not -path "*/node_modules/*")
 
 # 1. 티어 이동 (가장 구체적)
 echo "$F" | xargs sed -i '' "s|@withwiz/toolkit/auth/adapters/prisma|@withwiz/toolkit/prisma/auth-adapter|g"
@@ -76,7 +83,15 @@ done
   import { errorHandlerMiddleware } from '@withwiz/toolkit/next/error';
   ```
 - 전체 매핑표·티어 규칙은 [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md) 참조.
-- 치환 후 빌드·타입체크·테스트 풀세트 재실행 권장. 실소비처(Next 16 + React 19 + Prisma 7) 검증에서 위 패턴 + `tsc --noEmit` 클린 통과 확인됨.
+- 치환 후 **빌드 + 타입체크 + 소비처 자체 테스트 스위트**를 재실행해 검증할 것.
+  특히 테스트 파일도 toolkit을 import하므로, 테스트 디렉토리 누락 시 단위
+  테스트에서 옛 경로 import 실패가 발생합니다 (이를 통해 누락을 역으로 탐지 가능).
+- 실소비처 검증 결과:
+  - 소규모(Next 16, 부분 티어): sed + `tsc --noEmit` 클린 통과
+  - 대규모(Next 16 + React 19 + Prisma 7, 823 소스 + 844 테스트, 4티어 전부):
+    `src` + `tests` 완전 마이그레이션 후 Turbopack 프로덕션 빌드 컴파일 성공,
+    단위 테스트 7576/7587 통과, **toolkit 0.7 관련 회귀 0건**
+    (잔여 실패는 DB·`next/server` 등 소비처 인프라 의존으로 0.7 무관).
 
 ## [0.6.5] - 2026-05-15
 
