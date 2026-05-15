@@ -105,6 +105,22 @@ describe('MetaOAuthProvider', () => {
         provider.exchangeCodeForToken(mockConfig, 'invalid-code'),
       ).rejects.toThrow('Meta token exchange failed');
     });
+
+    it('HTTP 200이어도 access_token이 없으면 OAuthError(INVALID_RESPONSE)를 던져야 한다', async () => {
+      // Meta는 오류를 HTTP 200 + { error: {...} } 형태로 반환할 수 있다
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ error: { message: 'This authorization code has expired.' } }),
+      } as Response);
+
+      await expect(
+        provider.exchangeCodeForToken(mockConfig, 'expired-code'),
+      ).rejects.toThrow(OAuthError);
+      await expect(
+        provider.exchangeCodeForToken(mockConfig, 'expired-code'),
+      ).rejects.toThrow('Invalid Meta response');
+    });
   });
 
   describe('getUserInfo()', () => {
