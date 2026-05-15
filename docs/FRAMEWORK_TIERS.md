@@ -1,0 +1,91 @@
+# Framework Tiers (0.7+)
+
+`@withwiz/toolkit` 0.7부터 모든 모듈은 프레임워크 의존성에 따라 4개 티어로
+분리됩니다. 소비자는 실제로 쓰는 티어만 임포트하므로 불필요한 프레임워크
+의존성을 끌어오지 않습니다.
+
+## 티어 모델
+
+```
+core/   ← 의존성 없음, pure TypeScript
+  ↑
+  ├─ react    React / React-DOM 의존
+  ├─ next     Next.js 의존 (core 사용 가능)
+  └─ prisma   Prisma 어댑터 (core 사용 가능)
+```
+
+## 규칙
+
+- `core`는 **어떤 프레임워크도 import 하지 않는다** (zero framework dependency).
+- `react` / `next` / `prisma`는 **`core`만 import 할 수 있다**.
+- `react` / `next` / `prisma`는 **서로 import 할 수 없다**.
+- 예외: `@withwiz/toolkit/initialize`는 composition root로, 모든 티어를 조립한다.
+
+## 티어별 모듈
+
+| 티어 | 대표 subpath | 비고 |
+|---|---|---|
+| **core** | `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
+| **next** | `next/middleware`, `next/auth-handlers`, `next/auth-types`, `next/error`, `next/error/error-handler`, `next/utils` | `next/server`, `next/link` 등 Next.js 의존 |
+| **react** | `react/components/ui/*`, `react/hooks/*`, `react/error`, `react/error/error-display`, `react/utils/*` | React 컴포넌트/훅, sonner toast |
+| **prisma** | `prisma/auth-adapter` | Prisma 클라이언트 덕 타이핑 어댑터 |
+
+`error`와 `utils`는 의존성에 따라 티어가 갈립니다:
+
+- `core/error` — `AppError`, 에러 코드, 다국어 메시지, `extractErrorInfo` (pure)
+- `next/error` — `error-handler`(NextResponse), `LocaleDetector`(NextRequest), `ErrorBoundary`(next/link)
+- `react/error` — `error-display` (sonner toast)
+- `core/utils` — `sanitizer`, `type-guards`, `format-number`, `ip-utils` 등 pure 유틸
+- `next/utils` — `api-helpers`, `cors`, `csv-export`, `error-processor` (NextResponse)
+- `react/utils` — `client-utils`, `qr-code` (브라우저 컨텍스트)
+
+## peerDependenciesMeta
+
+`next` / `react` / `react-dom`는 `optional` peer dependency입니다.
+`core` 티어만 사용하는 소비자(예: 백엔드 서비스, CLI)는 React/Next.js를
+설치하지 않아도 설치 경고가 발생하지 않습니다.
+
+## 0.6 → 0.7 마이그레이션
+
+0.7은 hard cut입니다 — 구 subpath(`@withwiz/toolkit/utils` 등)에 대한
+alias를 제공하지 않습니다. 임포트 경로를 일괄 치환해야 합니다.
+
+대표 매핑:
+
+| 구 (≤0.6) | 신 (0.7+) |
+|---|---|
+| `@withwiz/toolkit/auth` | `@withwiz/toolkit/core/auth` |
+| `@withwiz/toolkit/auth/core/jwt` | `@withwiz/toolkit/core/auth/jwt` |
+| `@withwiz/toolkit/auth/handlers` | `@withwiz/toolkit/next/auth-handlers` |
+| `@withwiz/toolkit/auth/adapters/prisma` | `@withwiz/toolkit/prisma/auth-adapter` |
+| `@withwiz/toolkit/cache` | `@withwiz/toolkit/core/cache` |
+| `@withwiz/toolkit/components/ui/*` | `@withwiz/toolkit/react/components/ui/*` |
+| `@withwiz/toolkit/hooks/*` | `@withwiz/toolkit/react/hooks/*` |
+| `@withwiz/toolkit/middleware` | `@withwiz/toolkit/next/middleware` |
+| `@withwiz/toolkit/middleware/cors-config` | `@withwiz/toolkit/core/cors` |
+| `@withwiz/toolkit/error` | `@withwiz/toolkit/core/error` (+ `next/error`, `react/error`) |
+| `@withwiz/toolkit/error/error-handler` | `@withwiz/toolkit/next/error/error-handler` |
+| `@withwiz/toolkit/error/error-display` | `@withwiz/toolkit/react/error/error-display` |
+| `@withwiz/toolkit/utils` | `@withwiz/toolkit/core/utils` (+ `next/utils`, `react/utils`) |
+| `@withwiz/toolkit/utils/api-helpers` | `@withwiz/toolkit/next/utils/api-helpers` |
+| `@withwiz/toolkit/utils/client/*` | `@withwiz/toolkit/react/utils/*` |
+| `@withwiz/toolkit/{constants,config,logger,storage,system,types,geolocation,validators}/*` | `@withwiz/toolkit/core/{...}/*` |
+
+### barrel 분할 주의
+
+`error`와 `utils` barrel이 티어별로 분할되었으므로, 한 import 문에서 여러
+티어 심볼을 함께 꺼내쓰던 코드는 **티어별로 분리**해야 합니다:
+
+```ts
+// 구 (한 줄)
+import { AppError, errorHandlerMiddleware } from '@withwiz/toolkit/error';
+import { sanitize, withErrorHandling } from '@withwiz/toolkit/utils';
+
+// 신 (티어별 분리)
+import { AppError } from '@withwiz/toolkit/core/error';
+import { errorHandlerMiddleware } from '@withwiz/toolkit/next/error';
+import { sanitize } from '@withwiz/toolkit/core/utils';
+import { withErrorHandling } from '@withwiz/toolkit/next/utils';
+```
+
+일괄 치환 sed 패턴은 `CHANGELOG.md` [0.7.0] 항목을 참조하세요.

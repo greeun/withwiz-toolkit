@@ -38,7 +38,7 @@ npm install next react react-dom
 
 ```ts
 // Auth — JWT
-import { signToken, verifyToken } from '@withwiz/toolkit/auth/core/jwt'
+import { signToken, verifyToken } from '@withwiz/toolkit/core/auth/jwt'
 
 const token = await signToken({ userId: 'u_123' })
 const payload = await verifyToken(token)
@@ -46,21 +46,21 @@ const payload = await verifyToken(token)
 
 ```ts
 // Cache — Redis wrapper
-import { withCache } from '@withwiz/toolkit/cache'
+import { withCache } from '@withwiz/toolkit/core/cache'
 
 const data = await withCache('my-key', async () => fetchData(), 3600)
 ```
 
 ```ts
 // Error — typed error class
-import { AppError } from '@withwiz/toolkit/error'
+import { AppError } from '@withwiz/toolkit/core/error'
 
 throw new AppError('NOT_FOUND', 'Resource not found', 404)
 ```
 
 ```ts
 // Logger
-import { logInfo, logError } from '@withwiz/toolkit/logger/logger'
+import { logInfo, logError } from '@withwiz/toolkit/core/logger/logger'
 
 logInfo('Server started', { port: 3000 })
 logError('Something went wrong', { error })
@@ -68,7 +68,7 @@ logError('Something went wrong', { error })
 
 ```ts
 // Geolocation
-import { getGeoLocation } from '@withwiz/toolkit/geolocation'
+import { getGeoLocation } from '@withwiz/toolkit/core/geolocation'
 
 const geo = await getGeoLocation('8.8.8.8')
 // { country: 'US', city: 'Mountain View', ... }
@@ -76,16 +76,16 @@ const geo = await getGeoLocation('8.8.8.8')
 
 ```tsx
 // Hooks (React)
-import { useDebounce } from '@withwiz/toolkit/hooks/useDebounce'
+import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce'
 
 const debouncedQuery = useDebounce(query, 300)
 ```
 
 ```ts
 // Utils
-import { sanitizeInput } from '@withwiz/toolkit/utils/sanitizer'
-import { formatNumber }  from '@withwiz/toolkit/utils/format-number'
-import { normalizeUrl }  from '@withwiz/toolkit/utils/url-normalizer'
+import { sanitizeInput } from '@withwiz/toolkit/core/utils/sanitizer'
+import { formatNumber }  from '@withwiz/toolkit/core/utils/format-number'
+import { normalizeUrl }  from '@withwiz/toolkit/core/utils/url-normalizer'
 ```
 
 ## Module reference

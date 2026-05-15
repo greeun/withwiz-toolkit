@@ -59,8 +59,8 @@ export const config = initialize({
 모듈 단위로 개별 초기화도 가능합니다.
 
 ```typescript
-import { initializeAuth } from '@withwiz/toolkit/auth/config';
-import { initializeLogger } from '@withwiz/toolkit/logger/config';
+import { initializeAuth } from '@withwiz/toolkit/core/auth/config';
+import { initializeLogger } from '@withwiz/toolkit/core/logger/config';
 
 initializeAuth({ jwtSecret: 'my-secret', cookieSecure: true });
 initializeLogger({ level: 'debug' });
@@ -79,7 +79,7 @@ initializeLogger({ level: 'debug' });
 import { config } from '@/lib/toolkit';
 
 // 방법 2: 별도 import
-import { config } from '@withwiz/toolkit/config';
+import { config } from '@withwiz/toolkit/core/config';
 ```
 
 ### 설정 읽기
@@ -91,7 +91,7 @@ config.cache?.enabled
 config.cors?.allowedOrigins
 
 // 모듈 getter를 통한 접근 (동일 객체)
-import { getAuthConfig } from '@withwiz/toolkit/auth/config';
+import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
 getAuthConfig().jwtSecret  // === config.auth.jwtSecret
 ```
 
@@ -113,9 +113,9 @@ getAuthConfig().jwtSecret  // === config.auth.jwtSecret
 
 ```typescript
 // app/types/toolkit.d.ts — 타입 확장 선언
-import '@withwiz/toolkit/config';
+import '@withwiz/toolkit/core/config';
 
-declare module '@withwiz/toolkit/config' {
+declare module '@withwiz/toolkit/core/config' {
   interface ConfigRegistry {
     app: {
       siteName: string;
@@ -146,7 +146,7 @@ config.app.siteName;       // 앱 설정 (자동완성 동작)
 ### 테스트에서 리셋
 
 ```typescript
-import { resetConfig } from '@withwiz/toolkit/config';
+import { resetConfig } from '@withwiz/toolkit/core/config';
 
 beforeEach(() => {
   resetConfig(); // 모든 모듈 설정 초기화
@@ -158,7 +158,7 @@ beforeEach(() => {
 ## 3. Auth (인증)
 
 ```typescript
-import { ... } from '@withwiz/toolkit/auth';
+import { ... } from '@withwiz/toolkit/core/auth';
 ```
 
 ### 3.1 JWT
@@ -166,7 +166,7 @@ import { ... } from '@withwiz/toolkit/auth';
 #### JWTService (간편 래퍼)
 
 ```typescript
-import { JWTService } from '@withwiz/toolkit/auth';
+import { JWTService } from '@withwiz/toolkit/core/auth';
 
 const jwt = new JWTService({
   secret: config.auth.jwtSecret,
@@ -193,7 +193,7 @@ const token = jwt.extractTokenFromHeader(req.headers.get('authorization'));
 #### JWTManager (로거 포함)
 
 ```typescript
-import { JWTManager } from '@withwiz/toolkit/auth';
+import { JWTManager } from '@withwiz/toolkit/core/auth';
 
 const jwtManager = new JWTManager(jwtConfig, logger);
 
@@ -213,7 +213,7 @@ import {
   decodeJWTPayload,
   createAuthHeader,
   createApiHeaders,
-} from '@withwiz/toolkit/auth';
+} from '@withwiz/toolkit/core/auth';
 
 // 토큰 저장/조회
 storeTokens({ accessToken, refreshToken });
@@ -230,7 +230,7 @@ const headers = createApiHeaders(); // Authorization: Bearer <token>
 ### 3.2 Password
 
 ```typescript
-import { PasswordHasher, PasswordValidator, PasswordStrength } from '@withwiz/toolkit/auth';
+import { PasswordHasher, PasswordValidator, PasswordStrength } from '@withwiz/toolkit/core/auth';
 
 // 해싱
 const hasher = new PasswordHasher(12); // bcrypt rounds
@@ -252,7 +252,7 @@ const result = validator.validate('Test123!');
 // → { isValid: true, strength: 'STRONG', errors: [], score: 85 }
 
 // 간편 함수
-import { validatePassword, getPasswordStrength } from '@withwiz/toolkit/auth';
+import { validatePassword, getPasswordStrength } from '@withwiz/toolkit/core/auth';
 
 validatePassword('weak');    // → { isValid: false, errors: [...] }
 getPasswordStrength('Test123!@#'); // → PasswordStrength.VERY_STRONG
@@ -261,7 +261,7 @@ getPasswordStrength('Test123!@#'); // → PasswordStrength.VERY_STRONG
 #### Zod 스키마
 
 ```typescript
-import { defaultPasswordSchema, strongPasswordSchema } from '@withwiz/toolkit/auth';
+import { defaultPasswordSchema, strongPasswordSchema } from '@withwiz/toolkit/core/auth';
 
 const schema = z.object({
   password: strongPasswordSchema, // min 12, 대/소문자 + 숫자 + 특수문자
@@ -282,7 +282,7 @@ const schema = z.object({
 new OAuthManager(config: OAuthConfig, logger: Logger): OAuthManager
 ```
 
-**`OAuthConfig`** (from `@withwiz/toolkit/auth/types`):
+**`OAuthConfig`** (from `@withwiz/toolkit/core/auth/types`):
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
@@ -296,7 +296,7 @@ new OAuthManager(config: OAuthConfig, logger: Logger): OAuthManager
 | `clientSecret` | `string` | O | 해당 플랫폼의 OAuth 앱 시크릿 (Meta는 "App Secret") |
 | `redirectUri` | `string` | O | 콜백 라우트의 절대 URL. 플랫폼 dev 콘솔의 허용 redirect URI 목록에 등록되어 있어야 함 |
 
-**`Logger`** (from `@withwiz/toolkit/auth/types`) — 4개 메서드를 가진 minimal 인터페이스:
+**`Logger`** (from `@withwiz/toolkit/core/auth/types`) — 4개 메서드를 가진 minimal 인터페이스:
 
 ```typescript
 interface Logger {
@@ -307,13 +307,13 @@ interface Logger {
 }
 ```
 
-toolkit의 Winston 로거(`@withwiz/toolkit/logger/logger`) 인스턴스가 이 인터페이스를 만족하므로 그대로 주입 가능. 테스트에서는 `console`이나 `{ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }` 같은 stub을 사용해도 됨.
+toolkit의 Winston 로거(`@withwiz/toolkit/core/logger/logger`) 인스턴스가 이 인터페이스를 만족하므로 그대로 주입 가능. 테스트에서는 `console`이나 `{ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }` 같은 stub을 사용해도 됨.
 
 #### 초기화 예시
 
 ```typescript
-import { OAuthManager, OAUTH_PROVIDERS } from '@withwiz/toolkit/auth';
-import { logger } from '@withwiz/toolkit/logger/logger';
+import { OAuthManager, OAUTH_PROVIDERS } from '@withwiz/toolkit/core/auth';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 const oauth = new OAuthManager({
   providers: {
@@ -403,7 +403,7 @@ npm test -- __tests__/unit/auth/oauth- __tests__/security/auth/oauth.test.ts
 ### 3.4 Auth Route Handlers
 
 ```typescript
-import { createAuthHandlers } from '@withwiz/toolkit/auth';
+import { createAuthHandlers } from '@withwiz/toolkit/core/auth';
 
 const auth = createAuthHandlers({
   dependencies: { userRepository },
@@ -424,14 +424,14 @@ export const GET  = auth.me;        // GET  /api/auth/me
 
 ### 3.5 Auth Database Adapter (Prisma)
 
-`@withwiz/toolkit/auth/adapters/prisma`는 `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` 세 인터페이스의 Prisma 구현체를 제공합니다. 소비 프로젝트는 (1) 이 어댑터를 그대로 쓰거나, (2) 같은 인터페이스를 직접 구현해 다른 ORM/스토리지를 사용할 수 있습니다 — 핸들러는 인터페이스에만 의존하므로 구현체는 교체 가능합니다.
+`@withwiz/toolkit/prisma/auth-adapter`는 `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` 세 인터페이스의 Prisma 구현체를 제공합니다. 소비 프로젝트는 (1) 이 어댑터를 그대로 쓰거나, (2) 같은 인터페이스를 직접 구현해 다른 ORM/스토리지를 사용할 수 있습니다 — 핸들러는 인터페이스에만 의존하므로 구현체는 교체 가능합니다.
 
 ```typescript
 import {
   PrismaUserRepository,
   PrismaOAuthAccountRepository,
   PrismaEmailTokenRepository,
-} from '@withwiz/toolkit/auth/adapters/prisma';
+} from '@withwiz/toolkit/prisma/auth-adapter';
 import { prisma } from '@/lib/prisma'; // 소비 프로젝트의 PrismaClient
 
 const userRepository = new PrismaUserRepository(prisma);
@@ -555,7 +555,7 @@ model AccountToken {
 **위 가정에 맞지 않는 스키마를 쓰는 프로젝트**는 `OAuthAccountRepository` 인터페이스를 자체 구현하고 `dependencies.oauthAccountRepository` 자리에 주입하세요:
 
 ```typescript
-import type { OAuthAccountRepository } from '@withwiz/toolkit/auth/types';
+import type { OAuthAccountRepository } from '@withwiz/toolkit/core/auth/types';
 
 class MyOAuthAccountRepository implements OAuthAccountRepository {
   async findByProvider(provider, providerAccountId) { /* 자체 구현 */ }
@@ -580,7 +580,7 @@ const auth = createAuthHandlers({
 ## 4. Cache (캐시)
 
 ```typescript
-import { ... } from '@withwiz/toolkit/cache';
+import { ... } from '@withwiz/toolkit/core/cache';
 ```
 
 ### 4.1 withCache (권장)
@@ -588,7 +588,7 @@ import { ... } from '@withwiz/toolkit/cache';
 데이터베이스 쿼리 등을 자동 캐싱합니다.
 
 ```typescript
-import { withCache } from '@withwiz/toolkit/cache';
+import { withCache } from '@withwiz/toolkit/core/cache';
 
 // prefix로 카테고리 지정
 const user = await withCache(
@@ -607,7 +607,7 @@ const links = await withCache(
 ### 4.2 캐시 매니저 직접 사용
 
 ```typescript
-import { cache, geoCache, getCacheManager } from '@withwiz/toolkit/cache';
+import { cache, geoCache, getCacheManager } from '@withwiz/toolkit/core/cache';
 
 // 기본 캐시 인스턴스
 await cache.set('key', value, 3600);
@@ -625,7 +625,7 @@ await analyticsCache.set('daily-stats', stats, 1800);
 ### 4.3 캐시 설정 조회
 
 ```typescript
-import { getCacheConfig, getCacheTTL } from '@withwiz/toolkit/cache';
+import { getCacheConfig, getCacheTTL } from '@withwiz/toolkit/core/cache';
 
 // 카테고리별 활성/TTL
 getCacheConfig.user.enabled();    // boolean
@@ -642,7 +642,7 @@ getCacheTTL.geoip();     // 2592000
 ### 4.4 캐시 무효화
 
 ```typescript
-import { invalidateCache } from '@withwiz/toolkit/cache';
+import { invalidateCache } from '@withwiz/toolkit/core/cache';
 
 await invalidateCache('user:123');
 await invalidateCache('community:*'); // 패턴 매칭
@@ -658,7 +658,7 @@ await invalidateCache('community:*'); // 패턴 매칭
 | `none` | 모두 비활성 | NoopCacheManager (캐시 미사용) |
 
 ```typescript
-import { getEffectiveCacheBackend } from '@withwiz/toolkit/cache';
+import { getEffectiveCacheBackend } from '@withwiz/toolkit/core/cache';
 
 getEffectiveCacheBackend(); // 'hybrid' | 'redis' | 'memory' | 'none'
 ```
@@ -666,7 +666,7 @@ getEffectiveCacheBackend(); // 'hybrid' | 'redis' | 'memory' | 'none'
 ### 4.6 캐시 메트릭
 
 ```typescript
-import { cacheMetrics } from '@withwiz/toolkit/cache';
+import { cacheMetrics } from '@withwiz/toolkit/core/cache';
 
 console.log(cacheMetrics.hits);
 console.log(cacheMetrics.misses);
@@ -680,7 +680,7 @@ cacheMetrics.reset();
 ## 5. Error (에러 처리)
 
 ```typescript
-import { AppError } from '@withwiz/toolkit/error';
+import { AppError } from '@withwiz/toolkit/core/error';
 ```
 
 ### 5.1 에러 생성 (팩토리 메서드)
@@ -736,7 +736,7 @@ throw AppError.externalServiceError('Payment API');
 - `YY` = 세부 구분 번호
 
 ```typescript
-import { ERROR_CODES } from '@withwiz/toolkit/error';
+import { ERROR_CODES } from '@withwiz/toolkit/core/error';
 
 ERROR_CODES.VALIDATION_ERROR     // { code: 40001, status: 400, message: '...' }
 ERROR_CODES.UNAUTHORIZED         // { code: 40101, status: 401, message: '...' }
@@ -760,7 +760,7 @@ error.toFriendlyMessage();
 error.toLogString();
 
 // 다국어 메시지
-import { getFriendlyMessage, getErrorDisplayInfo } from '@withwiz/toolkit/error';
+import { getFriendlyMessage, getErrorDisplayInfo } from '@withwiz/toolkit/core/error';
 
 getFriendlyMessage(40401, 'ko'); // 한국어 메시지
 getErrorDisplayInfo(40401, 'en');
@@ -781,7 +781,7 @@ try {
 ### 5.5 ErrorBoundary (React)
 
 ```typescript
-import { ErrorBoundary } from '@withwiz/toolkit/error';
+import { ErrorBoundary } from '@withwiz/toolkit/core/error';
 
 <ErrorBoundary fallback={<p>문제가 발생했습니다</p>}>
   <MyComponent />
@@ -793,7 +793,7 @@ import { ErrorBoundary } from '@withwiz/toolkit/error';
 ## 6. Middleware (미들웨어)
 
 ```typescript
-import { ... } from '@withwiz/toolkit/middleware';
+import { ... } from '@withwiz/toolkit/next/middleware';
 ```
 
 ### 6.1 API 래퍼 (권장)
@@ -801,7 +801,7 @@ import { ... } from '@withwiz/toolkit/middleware';
 Next.js App Router의 API 라우트에 미들웨어 체인을 적용합니다.
 
 ```typescript
-import { withPublicApi, withAuthApi, withAdminApi, withOptionalAuthApi } from '@withwiz/toolkit/middleware';
+import { withPublicApi, withAuthApi, withAdminApi, withOptionalAuthApi } from '@withwiz/toolkit/next/middleware';
 import { NextResponse } from 'next/server';
 
 // 공개 API (인증 불필요, Rate limit: 120/min)
@@ -840,7 +840,7 @@ import {
   authMiddleware,
   rateLimitMiddleware,
   responseLoggerMiddleware,
-} from '@withwiz/toolkit/middleware';
+} from '@withwiz/toolkit/next/middleware';
 
 export const POST = withCustomApi(
   async (ctx) => {
@@ -858,7 +858,7 @@ export const POST = withCustomApi(
 ### 6.3 미들웨어 체인 (수동 구성)
 
 ```typescript
-import { MiddlewareChain } from '@withwiz/toolkit/middleware';
+import { MiddlewareChain } from '@withwiz/toolkit/next/middleware';
 
 const chain = new MiddlewareChain()
   .use(errorHandlerMiddleware)
@@ -890,7 +890,7 @@ const response = await chain.execute(context, handler);
 ### 6.5 커스텀 Role 미들웨어
 
 ```typescript
-import { createRoleMiddleware } from '@withwiz/toolkit/middleware';
+import { createRoleMiddleware } from '@withwiz/toolkit/next/middleware';
 
 const editorOnly = createRoleMiddleware(['editor', 'admin']);
 ```
@@ -898,7 +898,7 @@ const editorOnly = createRoleMiddleware(['editor', 'admin']);
 ### 6.6 Rate Limit 어댑터
 
 ```typescript
-import { setRateLimitAdapter } from '@withwiz/toolkit/middleware';
+import { setRateLimitAdapter } from '@withwiz/toolkit/next/middleware';
 
 setRateLimitAdapter({
   rateLimiters: {
@@ -926,7 +926,7 @@ interface IApiContext {
 ## 7. Logger (로거)
 
 ```typescript
-import { logger, logInfo, logError, logDebug } from '@withwiz/toolkit/logger/logger';
+import { logger, logInfo, logError, logDebug } from '@withwiz/toolkit/core/logger/logger';
 ```
 
 ### 기본 사용
@@ -947,7 +947,7 @@ logger.http('HTTP 요청', { method: 'GET', url: '/api/users' });
 ### API 요청/응답 로깅
 
 ```typescript
-import { logApiRequest, logApiResponse } from '@withwiz/toolkit/logger/logger';
+import { logApiRequest, logApiResponse } from '@withwiz/toolkit/core/logger/logger';
 
 logApiRequest(request, { userId: '123' });
 logApiResponse(request, response, { duration: 150 });
@@ -958,7 +958,7 @@ logApiResponse(request, response, { duration: 150 });
 ### 설정
 
 ```typescript
-import { initializeLogger } from '@withwiz/toolkit/logger/config';
+import { initializeLogger } from '@withwiz/toolkit/core/logger/config';
 
 initializeLogger({
   level: 'debug',         // 'debug' | 'info' | 'warn' | 'error'
@@ -974,14 +974,14 @@ initializeLogger({
 ## 8. Storage (파일 저장소)
 
 ```typescript
-import { uploadToR2, deleteFromR2, getFromR2, isR2Enabled } from '@withwiz/toolkit/storage';
+import { uploadToR2, deleteFromR2, getFromR2, isR2Enabled } from '@withwiz/toolkit/core/storage';
 ```
 
 ### CloudFlare R2 / S3 호환 스토리지
 
 ```typescript
 // 설정 (initialize에서 또는 개별)
-import { initializeStorage } from '@withwiz/toolkit/storage/config';
+import { initializeStorage } from '@withwiz/toolkit/core/storage/config';
 
 initializeStorage({
   accountId: process.env.R2_ACCOUNT_ID!,
@@ -1011,13 +1011,13 @@ if (isR2Enabled()) {
 ## 9. Geolocation (위치 정보)
 
 ```typescript
-import { ... } from '@withwiz/toolkit/geolocation';
+import { ... } from '@withwiz/toolkit/core/geolocation';
 ```
 
 ### GeoIP 프로바이더
 
 ```typescript
-import { GeoIPProviderFactory } from '@withwiz/toolkit/geolocation';
+import { GeoIPProviderFactory } from '@withwiz/toolkit/core/geolocation';
 
 // 사용 가능한 프로바이더 조회
 const providers = GeoIPProviderFactory.getAvailableProviders();
@@ -1031,7 +1031,7 @@ const geoData = await provider.lookup('8.8.8.8');
 ### 배치 처리
 
 ```typescript
-import { createBatchProcessor } from '@withwiz/toolkit/geolocation';
+import { createBatchProcessor } from '@withwiz/toolkit/core/geolocation';
 
 const processor = createBatchProcessor({
   batchSize: 100,
@@ -1058,7 +1058,7 @@ const result = await processor.processBatch(['8.8.8.8', '1.1.1.1', '...']);
 ## 10. System (시스템 모니터링)
 
 ```typescript
-import { getSystemInfo, getSimpleSystemInfo } from '@withwiz/toolkit/system';
+import { getSystemInfo, getSimpleSystemInfo } from '@withwiz/toolkit/core/system';
 ```
 
 ### 전체 시스템 정보
@@ -1095,7 +1095,7 @@ import {
   getNetworkInfo,
   checkEnvironmentVariables,
   checkServiceHealth,
-} from '@withwiz/toolkit/system';
+} from '@withwiz/toolkit/core/system';
 
 const cpu = await getCpuInfo();
 const memory = await getMemoryInfo();
@@ -1106,7 +1106,7 @@ const memory = await getMemoryInfo();
 ## 11. Utils (유틸리티)
 
 ```typescript
-import { ... } from '@withwiz/toolkit/utils';
+import { ... } from '@withwiz/toolkit/core/utils';
 ```
 
 ### 11.1 Sanitizer (XSS 방지)
@@ -1117,7 +1117,7 @@ import {
   sanitizeUrl,
   sanitizeObject,
   sanitizeFileName,
-} from '@withwiz/toolkit/utils';
+} from '@withwiz/toolkit/core/utils';
 
 sanitizeHtml('<script>alert("xss")</script>Hello');  // → 'Hello'
 sanitizeUrl('javascript:alert(1)');                   // → ''
@@ -1137,7 +1137,7 @@ import {
   throwNotFoundError,
   throwValidationError,
   handlePrismaError,
-} from '@withwiz/toolkit/utils';
+} from '@withwiz/toolkit/core/utils';
 
 // 래퍼 함수
 const result = await withErrorHandling(
@@ -1164,7 +1164,7 @@ const response = errorToResponse(unknownError);
 ### 11.3 API Helpers
 
 ```typescript
-import { validateAndParse, parsePagination } from '@withwiz/toolkit/utils';
+import { validateAndParse, parsePagination } from '@withwiz/toolkit/core/utils';
 
 // Zod 스키마 검증 + 파싱
 const validation = validateAndParse(createUserSchema, requestBody);
@@ -1179,7 +1179,7 @@ const { page, limit, skip } = parsePagination(request, 20, 100);
 ### 11.4 CSV Export
 
 ```typescript
-import { exportToCsv } from '@withwiz/toolkit/utils';
+import { exportToCsv } from '@withwiz/toolkit/core/utils';
 
 exportToCsv(users, 'users.csv', {
   columns: ['id', 'email', 'name', 'createdAt'],
@@ -1192,7 +1192,7 @@ exportToCsv(users, 'users.csv', {
 ## 12. Validators (검증)
 
 ```typescript
-import { PasswordValidator, PasswordStrength } from '@withwiz/toolkit/validators';
+import { PasswordValidator, PasswordStrength } from '@withwiz/toolkit/core/validators';
 ```
 
 auth 모듈의 패스워드 검증 기능을 독립적으로도 사용할 수 있습니다.
@@ -1219,7 +1219,7 @@ const confirmation = validator.validateConfirmation('MyP@ss123', 'MyP@ss124');
 ### useDebounce
 
 ```typescript
-import { useDebounce } from '@withwiz/toolkit/hooks/useDebounce';
+import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce';
 
 function SearchInput() {
   const [query, setQuery] = useState('');
@@ -1234,7 +1234,7 @@ function SearchInput() {
 ### useDataTable
 
 ```typescript
-import { useDataTable } from '@withwiz/toolkit/hooks/useDataTable';
+import { useDataTable } from '@withwiz/toolkit/react/hooks/useDataTable';
 
 function UserTable() {
   const {
@@ -1268,7 +1268,7 @@ function UserTable() {
 ### useExitIntent
 
 ```typescript
-import { useExitIntent } from '@withwiz/toolkit/hooks/useExitIntent';
+import { useExitIntent } from '@withwiz/toolkit/react/hooks/useExitIntent';
 
 function PopupBanner() {
   useExitIntent({
@@ -1282,7 +1282,7 @@ function PopupBanner() {
 ### useTimezone
 
 ```typescript
-import { useTimezone } from '@withwiz/toolkit/hooks/useTimezone';
+import { useTimezone } from '@withwiz/toolkit/react/hooks/useTimezone';
 
 function TimeDisplay() {
   const { timezone, offset, formatDate } = useTimezone();
@@ -1306,7 +1306,7 @@ import {
   DataTableBulkActions,
   DataTableBody,
   DataTablePagination,
-} from '@withwiz/toolkit/components/ui/data-table';
+} from '@withwiz/toolkit/react/components/ui/data-table';
 
 <DataTable
   columns={[
@@ -1347,7 +1347,7 @@ import {
 ### API 응답
 
 ```typescript
-import type { IApiResponse } from '@withwiz/toolkit/types/api';
+import type { IApiResponse } from '@withwiz/toolkit/core/types/api';
 
 // 표준 API 응답 형식
 const response: IApiResponse<User> = {
@@ -1368,27 +1368,27 @@ const errorResponse: IApiResponse = {
 ### User
 
 ```typescript
-import type { IUser, IUserCreateData, IUserUpdateData, IUserListResult } from '@withwiz/toolkit/types/user';
+import type { IUser, IUserCreateData, IUserUpdateData, IUserListResult } from '@withwiz/toolkit/core/types/user';
 ```
 
 ### Environment
 
 ```typescript
-import type { ICacheEnv, IInMemoryCacheEnv } from '@withwiz/toolkit/types/env';
+import type { ICacheEnv, IInMemoryCacheEnv } from '@withwiz/toolkit/core/types/env';
 ```
 
 ### GeoIP
 
 ```typescript
-import type { IGeoLocationData, IGeoIPApiResponse, IGeoIPProvider } from '@withwiz/toolkit/types/geoip';
+import type { IGeoLocationData, IGeoIPApiResponse, IGeoIPProvider } from '@withwiz/toolkit/core/types/geoip';
 ```
 
 ### 기타
 
 ```typescript
-import type { ... } from '@withwiz/toolkit/types/database';
-import type { ... } from '@withwiz/toolkit/types/i18n';
-import type { ... } from '@withwiz/toolkit/types/qr-code';
+import type { ... } from '@withwiz/toolkit/core/types/database';
+import type { ... } from '@withwiz/toolkit/core/types/i18n';
+import type { ... } from '@withwiz/toolkit/core/types/qr-code';
 ```
 
 ---
@@ -1396,9 +1396,9 @@ import type { ... } from '@withwiz/toolkit/types/qr-code';
 ## 16. Constants (상수)
 
 ```typescript
-import { ERROR_CODES } from '@withwiz/toolkit/constants/error-codes';
-import { JWT_DEFAULTS, EMAIL_VERIFICATION, PASSWORD_RESET } from '@withwiz/toolkit/constants/security';
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@withwiz/toolkit/constants/pagination';
+import { ERROR_CODES } from '@withwiz/toolkit/core/constants/error-codes';
+import { JWT_DEFAULTS, EMAIL_VERIFICATION, PASSWORD_RESET } from '@withwiz/toolkit/core/constants/security';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@withwiz/toolkit/core/constants/pagination';
 ```
 
 ### 에러 코드 카테고리
@@ -1433,20 +1433,20 @@ PASSWORD_RESET.TOKEN_EXPIRES_HOURS           // 1
 | 모듈 | Import 경로 |
 |------|------------|
 | 초기화 | `@withwiz/toolkit/initialize` |
-| 설정 레지스트리 | `@withwiz/toolkit/config` |
-| Auth | `@withwiz/toolkit/auth` |
-| Auth Config | `@withwiz/toolkit/auth/config` |
-| Cache | `@withwiz/toolkit/cache` |
-| Error | `@withwiz/toolkit/error` |
-| Middleware | `@withwiz/toolkit/middleware` |
-| Logger | `@withwiz/toolkit/logger/logger` |
-| Storage | `@withwiz/toolkit/storage` |
-| Storage Config | `@withwiz/toolkit/storage/config` |
-| Geolocation | `@withwiz/toolkit/geolocation` |
-| System | `@withwiz/toolkit/system` |
-| Utils | `@withwiz/toolkit/utils` |
-| Validators | `@withwiz/toolkit/validators` |
-| Hooks | `@withwiz/toolkit/hooks/useDebounce` 등 개별 |
-| Components | `@withwiz/toolkit/components/ui/data-table` |
-| Types | `@withwiz/toolkit/types/api` 등 개별 |
-| Constants | `@withwiz/toolkit/constants/error-codes` 등 개별 |
+| 설정 레지스트리 | `@withwiz/toolkit/core/config` |
+| Auth | `@withwiz/toolkit/core/auth` |
+| Auth Config | `@withwiz/toolkit/core/auth/config` |
+| Cache | `@withwiz/toolkit/core/cache` |
+| Error | `@withwiz/toolkit/core/error` |
+| Middleware | `@withwiz/toolkit/next/middleware` |
+| Logger | `@withwiz/toolkit/core/logger/logger` |
+| Storage | `@withwiz/toolkit/core/storage` |
+| Storage Config | `@withwiz/toolkit/core/storage/config` |
+| Geolocation | `@withwiz/toolkit/core/geolocation` |
+| System | `@withwiz/toolkit/core/system` |
+| Utils | `@withwiz/toolkit/core/utils` |
+| Validators | `@withwiz/toolkit/core/validators` |
+| Hooks | `@withwiz/toolkit/react/hooks/useDebounce` 등 개별 |
+| Components | `@withwiz/toolkit/react/components/ui/data-table` |
+| Types | `@withwiz/toolkit/core/types/api` 등 개별 |
+| Constants | `@withwiz/toolkit/core/constants/error-codes` 등 개별 |

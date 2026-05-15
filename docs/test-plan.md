@@ -376,19 +376,19 @@
 | 파일 경로 | 테스트 대상 | 우선순위 | 테스트 케이스 |
 |----------|-----------|---------|-------------|
 | `api/exports-initialize.test.ts` | `@withwiz/toolkit/initialize` exports | 높음 | - `initialize` 함수 export 확인<br>- `ToolkitConfig` 타입 export 확인<br>- 각 모듈별 config 타입 export 확인 (`AuthConfig`, `CacheConfig` 등) |
-| `api/exports-config.test.ts` | `@withwiz/toolkit/*/config` exports | 높음 | - `@withwiz/toolkit/auth/config`: `initializeAuth`, `getAuthConfig`, `resetAuth` export 확인<br>- `@withwiz/toolkit/logger/config`: `initializeLogger`, `getLoggerConfig` export 확인<br>- `@withwiz/toolkit/storage/config`: `initializeStorage`, `getStorageConfig` export 확인<br>- `@withwiz/toolkit/geolocation/config`: `initializeGeolocation`, `getGeolocationConfig` export 확인<br>- 각 모듈별 독립 import 가능 검증 |
-| `api/exports-auth.test.ts` | `@withwiz/toolkit/auth` exports | 높음 | - `import { signToken, verifyToken } from './auth/core/jwt'` 존재 확인<br>- `import { hashPassword, comparePassword } from './auth/core/password'` 존재 확인<br>- `import { getOAuthUrl, handleOAuthCallback } from './auth/core/oauth'` 존재 확인<br>- 7개 subpath 전체 import 가능 검증<br>- 각 export가 function/class 타입인지 검증 |
-| `api/exports-cache.test.ts` | `@withwiz/toolkit/cache` exports | 높음 | - CacheFactory, InMemoryCacheManager 등 핵심 클래스 export 확인<br>- 5개 subpath import 검증<br>- factory 패턴 API 시그니처 안정성 |
-| `api/exports-error.test.ts` | `@withwiz/toolkit/error` exports | 높음 | - AppError 클래스, ErrorResponse 객체 export 확인<br>- static factory 메서드 시그니처 검증<br>- toJSON() 반환 구조 계약 검증 |
-| `api/exports-middleware.test.ts` | `@withwiz/toolkit/middleware` exports | 높음 | - authMiddleware, corsMiddleware, securityMiddleware 등 export 확인<br>- 4개 subpath import 검증<br>- 미들웨어 함수 시그니처 (req, res, next) 검증 |
-| `api/exports-components.test.ts` | `@withwiz/toolkit/components/ui/*` exports | 중간 | - Button, DataTable, Badge 등 12개 컴포넌트 export 확인<br>- React.FC 또는 forwardRef 타입 검증 |
-| `api/exports-utils.test.ts` | `@withwiz/toolkit/utils` exports | 중간 | - 15+ subpath import 검증<br>- 각 유틸 함수 export 존재 확인 |
-| `api/exports-hooks.test.ts` | `@withwiz/toolkit/hooks/*` exports | 중간 | - useDataTable, useDebounce, useExitIntent, useTimezone export 확인<br>- 훅 함수 시그니처 검증 |
-| `api/exports-types.test.ts` | `@withwiz/toolkit/types/*` exports | 중간 | - 7개 type subpath import 가능 검증<br>- 주요 타입/인터페이스 존재 확인 |
-| `api/exports-constants.test.ts` | `@withwiz/toolkit/constants` exports | 낮음 | - ERROR_CODES, PAGINATION, SECURITY_HEADERS 등 상수 export 확인<br>- 4개 subpath import 검증 |
-| `api/exports-system.test.ts` | `@withwiz/toolkit/system` exports | 낮음 | - getSystemInfo, checkServiceHealth 등 export 확인<br>- 반환 타입 구조 검증 |
-| `api/exports-storage.test.ts` | `@withwiz/toolkit/storage` exports | 낮음 | - uploadToR2, getFromR2, deleteFromR2 등 export 확인 |
-| `api/exports-validators.test.ts` | `@withwiz/toolkit/validators` exports | 낮음 | - validatePassword export 확인<br>- 반환 타입 { isValid, errors } 구조 검증 |
+| `api/exports-config.test.ts` | `@withwiz/toolkit/*/config` exports | 높음 | - `@withwiz/toolkit/core/auth/config`: `initializeAuth`, `getAuthConfig`, `resetAuth` export 확인<br>- `@withwiz/toolkit/core/logger/config`: `initializeLogger`, `getLoggerConfig` export 확인<br>- `@withwiz/toolkit/core/storage/config`: `initializeStorage`, `getStorageConfig` export 확인<br>- `@withwiz/toolkit/core/geolocation/config`: `initializeGeolocation`, `getGeolocationConfig` export 확인<br>- 각 모듈별 독립 import 가능 검증 |
+| `api/exports-auth.test.ts` | `@withwiz/toolkit/core/auth` exports | 높음 | - `import { signToken, verifyToken } from './auth/core/jwt'` 존재 확인<br>- `import { hashPassword, comparePassword } from './auth/core/password'` 존재 확인<br>- `import { getOAuthUrl, handleOAuthCallback } from './auth/core/oauth'` 존재 확인<br>- 7개 subpath 전체 import 가능 검증<br>- 각 export가 function/class 타입인지 검증 |
+| `api/exports-cache.test.ts` | `@withwiz/toolkit/core/cache` exports | 높음 | - CacheFactory, InMemoryCacheManager 등 핵심 클래스 export 확인<br>- 5개 subpath import 검증<br>- factory 패턴 API 시그니처 안정성 |
+| `api/exports-error.test.ts` | `@withwiz/toolkit/core/error` exports | 높음 | - AppError 클래스, ErrorResponse 객체 export 확인<br>- static factory 메서드 시그니처 검증<br>- toJSON() 반환 구조 계약 검증 |
+| `api/exports-middleware.test.ts` | `@withwiz/toolkit/next/middleware` exports | 높음 | - authMiddleware, corsMiddleware, securityMiddleware 등 export 확인<br>- 4개 subpath import 검증<br>- 미들웨어 함수 시그니처 (req, res, next) 검증 |
+| `api/exports-components.test.ts` | `@withwiz/toolkit/react/components/ui/*` exports | 중간 | - Button, DataTable, Badge 등 12개 컴포넌트 export 확인<br>- React.FC 또는 forwardRef 타입 검증 |
+| `api/exports-utils.test.ts` | `@withwiz/toolkit/core/utils` exports | 중간 | - 15+ subpath import 검증<br>- 각 유틸 함수 export 존재 확인 |
+| `api/exports-hooks.test.ts` | `@withwiz/toolkit/react/hooks/*` exports | 중간 | - useDataTable, useDebounce, useExitIntent, useTimezone export 확인<br>- 훅 함수 시그니처 검증 |
+| `api/exports-types.test.ts` | `@withwiz/toolkit/core/types/*` exports | 중간 | - 7개 type subpath import 가능 검증<br>- 주요 타입/인터페이스 존재 확인 |
+| `api/exports-constants.test.ts` | `@withwiz/toolkit/core/constants` exports | 낮음 | - ERROR_CODES, PAGINATION, SECURITY_HEADERS 등 상수 export 확인<br>- 4개 subpath import 검증 |
+| `api/exports-system.test.ts` | `@withwiz/toolkit/core/system` exports | 낮음 | - getSystemInfo, checkServiceHealth 등 export 확인<br>- 반환 타입 구조 검증 |
+| `api/exports-storage.test.ts` | `@withwiz/toolkit/core/storage` exports | 낮음 | - uploadToR2, getFromR2, deleteFromR2 등 export 확인 |
+| `api/exports-validators.test.ts` | `@withwiz/toolkit/core/validators` exports | 낮음 | - validatePassword export 확인<br>- 반환 타입 { isValid, errors } 구조 검증 |
 | `api/backward-compatibility.test.ts` | 하위 호환성 | 높음 | - v0.1.x에서 사용되던 주요 import 경로가 v0.2.0에서도 동작 확인<br>- deprecated export가 있다면 경고 메시지 검증<br>- 타입 변경 없이 동일 시그니처 유지 확인 |
 
 ---

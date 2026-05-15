@@ -1,27 +1,32 @@
-# Shared Auth Module
+# Auth Module (core tier)
 
-**버전**: 1.0.0 (Tier 3 - Framework Agnostic)
+**패키지**: `@withwiz/toolkit` v0.7+
+**티어**: `core` — 프레임워크 독립 (pure TypeScript)
 **상태**: ✅ 프로덕션 사용 가능
-**계층**: 범용 공유 라이브러리 (프레임워크 독립적)
 
 ## 개요
 
-`src/shared/auth/`는 **프레임워크에 완전히 독립적인** 인증 모듈입니다.
-Next.js, Express, Fastify, NestJS 등 **어떤 Node.js 프레임워크에서도 사용 가능**합니다.
+`@withwiz/toolkit/core/auth`는 **프레임워크에 독립적인** 인증 모듈입니다.
+JWT·비밀번호 해싱·OAuth·이메일 토큰 등 순수 로직만 포함하며,
+Next.js / Express / Fastify / NestJS 등 어떤 Node.js 런타임에서도 사용할 수 있습니다.
 
-### 3-Tier 아키텍처에서의 위치
+### 0.7 4-Tier 모델에서의 위치
 
 ```
-src/app/auth/              (Tier 1: Application Layer)
-    ↓ 참조
-src/lib/@auth/             (Tier 2: Library Layer - Next.js/Prisma)
-    ↓ 참조
-src/shared/auth/           (Tier 3: Shared Layer - Framework 독립) ← 여기
+core/   ← 여기 (auth: jwt · password · oauth · services · types · email — zero framework dep)
+  ↑
+  ├─ next/    Next.js 요청 핸들러  → @withwiz/toolkit/next/auth-handlers
+  │           핸들러 타입          → @withwiz/toolkit/next/auth-types
+  └─ prisma/  Prisma 어댑터        → @withwiz/toolkit/prisma/auth-adapter
 ```
+
+프레임워크 결합 부분(요청/응답 핸들러, DB 어댑터)은 의도적으로 별도 티어로
+분리되어 있으므로, `core/auth`만 임포트하면 프레임워크 의존성이 전혀 없습니다.
 
 ## 특징
 
-✅ **Zero Framework Dependency**: Next.js, Prisma 등 프레임워크 의존성 없음
+✅ **Zero Framework Dependency (`core/auth` 한정)**: `core/auth`는 Next.js·Prisma
+   의존성이 없음. Next 핸들러·Prisma 어댑터는 각각 `next`/`prisma` 티어로 분리
 ✅ **Pure TypeScript**: 순수 TypeScript 로직만 포함
 ✅ **Minimal Dependencies**: `jose`, `bcryptjs`, `zod` 등 최소한의 라이브러리만 사용
 ✅ **Fully Typed**: 완벽한 TypeScript 타입 지원
