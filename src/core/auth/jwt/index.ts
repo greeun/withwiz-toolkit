@@ -36,7 +36,7 @@ export class JWTManager {
     payload: Omit<JWTPayload, "iat" | "exp">,
   ): Promise<string> {
     try {
-      const jwt = await new SignJWT(payload)
+      const jwt = await new SignJWT({ ...payload, tokenType: "access" })
         .setProtectedHeader({ alg: this.config.algorithm })
         .setIssuedAt()
         .setExpirationTime(this.config.accessTokenExpiry)
@@ -134,6 +134,13 @@ export class JWTManager {
       const userId = (payload.userId || payload.sub || payload.id) as string;
       if (!userId || !payload.email || !payload.role) {
         throw new JWTError("Invalid JWT payload structure", "INVALID_PAYLOAD");
+      }
+
+      // 토큰 혼동 방지(J-1): tokenType 이 명시되었으면 'access' 여야 한다.
+      // tokenType 부재는 0.7 이전 레거시 access 토큰으로 간주해 허용
+      // (업그레이드 시 기존 발급 access 토큰 대량 무효화 방지).
+      if (payload.tokenType !== undefined && payload.tokenType !== "access") {
+        throw new JWTError("Token is not an access token", "INVALID_PAYLOAD");
       }
 
       this.logger.debug("Access token verified successfully", {
