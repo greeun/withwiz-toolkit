@@ -126,11 +126,29 @@ export function getAllowedOrigins(): string[] {
   return Array.from(origins).filter(Boolean);
 }
 
+/**
+ * localhost 정확 호스트 판정 (substring 우회 방지 — C-1)
+ * `https://localhost.attacker.com` 같은 substring 매칭을 차단한다.
+ */
+function isLocalhostOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '::1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 // CORS 검증 함수
 export function isOriginAllowed(origin: string | null | undefined): boolean {
   if (!origin) return true; // Same-origin 요청은 허용
 
-  // 개발 환경에서는 localhost 허용
+  // 개발 환경에서는 localhost 허용 (정확 호스트만)
   let isDevEnv = globalCorsConfig.isDevelopment ?? false;
   if (!isDevEnv) {
     try {
@@ -139,7 +157,7 @@ export function isOriginAllowed(origin: string | null | undefined): boolean {
       isDevEnv = false;
     }
   }
-  if (isDevEnv && origin.includes('localhost')) {
+  if (isDevEnv && isLocalhostOrigin(origin)) {
     return true;
   }
 
@@ -150,8 +168,13 @@ export function isOriginAllowed(origin: string | null | undefined): boolean {
 export function setCorsHeaders(response: NextResponse, request?: NextRequest): NextResponse {
   const origin = request?.headers.get('origin');
 
-  if (isOriginAllowed(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin || '*');
+  // Origin 정확 일치 시에만 반사한다. 자격증명(Allow-Credentials)은
+  // 특정 Origin 과만 결합하며, 절대 '*' 또는 무-Origin 과 함께
+  // 설정하지 않는다(C-1).
+  if (origin && isOriginAllowed(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.append('Vary', 'Origin');
   }
 
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -160,7 +183,6 @@ export function setCorsHeaders(response: NextResponse, request?: NextRequest): N
     'Content-Type, Authorization, X-Requested-With, Accept, Origin'
   );
   response.headers.set('Access-Control-Max-Age', '86400'); // 24시간
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
 
   return response;
 }

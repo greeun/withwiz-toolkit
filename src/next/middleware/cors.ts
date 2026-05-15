@@ -60,16 +60,17 @@ export function createCorsMiddleware(config: CorsMiddlewareConfig): TApiMiddlewa
 
       if (origin && allowedOrigins.includes(origin)) {
         response.headers.set('Access-Control-Allow-Origin', origin);
+        if (allowCredentials) {
+          response.headers.set('Access-Control-Allow-Credentials', 'true');
+        }
       } else if (allowedOrigins.includes('*')) {
+        // '*' 는 자격증명(Allow-Credentials)과 결합 불가(C-1)
         response.headers.set('Access-Control-Allow-Origin', '*');
       }
 
       response.headers.set('Access-Control-Allow-Methods', allowedMethods);
       response.headers.set('Access-Control-Allow-Headers', allowedHeaders);
       response.headers.set('Access-Control-Max-Age', String(maxAge));
-      if (allowCredentials) {
-        response.headers.set('Access-Control-Allow-Credentials', 'true');
-      }
 
       return response;
     }
@@ -84,10 +85,8 @@ export function createCorsMiddleware(config: CorsMiddlewareConfig): TApiMiddlewa
         response.headers.set('Access-Control-Allow-Credentials', 'true');
       }
     } else if (allowedOrigins.includes('*')) {
+      // '*' 는 자격증명(Allow-Credentials)과 결합 불가(C-1)
       response.headers.set('Access-Control-Allow-Origin', '*');
-      if (allowCredentials) {
-        response.headers.set('Access-Control-Allow-Credentials', 'true');
-      }
     }
 
     // 공통 CORS 헤더
