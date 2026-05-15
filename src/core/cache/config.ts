@@ -201,6 +201,14 @@ export function getResolvedCacheConfig(): ResolvedCacheConfig {
   return cache;
 }
 
+/**
+ * 캐시 설정이 초기화되었는지 여부 (throw 없이 확인).
+ * 팩토리가 미초기화 상태를 graceful degrade 로 처리하기 위해 사용한다.
+ */
+export function isCacheConfigInitialized(): boolean {
+  return !!globalThis.__withwiz_config?.cache;
+}
+
 export function resetCache(): void {
   if (globalThis.__withwiz_config) delete globalThis.__withwiz_config.cache;
 }

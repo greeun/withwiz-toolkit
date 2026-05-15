@@ -6,7 +6,9 @@
  */
 import { logger } from '@withwiz/core/logger/logger';
 import type { CacheBackendType } from '@withwiz/core/types/env';
+import { configWarn } from '../config/warn';
 import { getENV, isCacheEnabled } from './cache-env';
+import { isCacheConfigInitialized } from './config';
 import { isRedisAvailableNow, isRedisGloballyDisabled, getRedisGlobalStatus } from './cache-redis';
 import { getCacheConfig } from './cache-config';
 import { RedisCacheManager } from './redis-cache-manager';
@@ -81,6 +83,9 @@ export function getEffectiveCacheBackend(): CacheBackendType | 'none' {
 // 백엔드 없는 경우 경고 로그 출력 여부 (중복 방지)
 let _noBackendWarningLogged = false;
 
+// 미초기화 경고 출력 여부 (중복 방지)
+let _notInitializedWarningLogged = false;
+
 // ============================================================================
 // 캐시 매니저 팩토리
 // ============================================================================
@@ -89,6 +94,22 @@ let _noBackendWarningLogged = false;
  * 캐시 매니저 인스턴스 생성 함수 (지연 초기화)
  */
 export function getCacheManager(prefix: string): RedisCacheManager | HybridCacheManager | InMemoryCacheManager | NoopCacheManager {
+  // 미초기화 graceful degrade:
+  // initializeCache() 없이 import 된 경우 throw 대신 1회 warn 후 noop 으로
+  // 동작한다. (eager `export const cache = getCacheManager(...)` 가
+  // import-time 에 throw 하던 문제 — storage/geolocation 의 degrade 패턴과 일치)
+  if (!isCacheConfigInitialized()) {
+    if (!_notInitializedWarningLogged) {
+      configWarn(
+        'Cache',
+        'Cache config not initialized — caching disabled (degraded to no-op). ' +
+          'Call initializeCache() (or initialize()) to enable caching.',
+      );
+      _notInitializedWarningLogged = true;
+    }
+    return new NoopCacheManager(prefix);
+  }
+
   // 새로운 통일된 캐시 설정 확인
   const cacheConfig = getCacheConfig[prefix as keyof typeof getCacheConfig];
   if (cacheConfig && !cacheConfig.enabled()) {
