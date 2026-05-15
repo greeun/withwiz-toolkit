@@ -167,11 +167,13 @@ describe('Bundle Contamination Check', () => {
 
   it('no external dependency source code bundled in main exports', () => {
     const mainFiles = [
-      'dist/auth/index.js',
-      'dist/cache/index.js',
-      'dist/error/index.js',
-      'dist/middleware/index.js',
-      'dist/utils/index.js',
+      'dist/core/auth/index.js',
+      'dist/core/cache/index.js',
+      'dist/core/error/index.js',
+      'dist/core/utils/index.js',
+      'dist/next/middleware/index.js',
+      'dist/next/error/index.js',
+      'dist/react/error/index.js',
     ];
 
     for (const file of mainFiles) {
