@@ -6,13 +6,14 @@
  * - 모바일 반응형 지원 (핀치 줌, 드래그 스크롤)
  */
 'use client';
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import dynamic from 'next/dynamic';
+import { useMemo, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 
-// @nivo/geo는 서버 사이드에서 next/document를 참조할 수 있으므로 dynamic import로 로드
-const ResponsiveChoropleth = dynamic(
-  () => import('@nivo/geo').then((mod) => mod.ResponsiveChoropleth),
-  { ssr: false }
+// @nivo/geo 는 무거운 클라이언트 전용 차트 → React.lazy 로 코드 스플릿.
+// 서버 렌더 시에는 features.length === 0 분기만 렌더되어 이 컴포넌트가
+// 인스턴스화되지 않으므로 next/dynamic 의 { ssr: false } 와 동등하게 동작한다.
+// (티어 규칙: react 는 next 를 import 할 수 없음 — docs/FRAMEWORK_TIERS.md)
+const ResponsiveChoropleth = lazy(() =>
+  import('@nivo/geo').then((mod) => ({ default: mod.ResponsiveChoropleth }))
 );
 
 interface IWorldMapChartProps {
@@ -292,23 +293,31 @@ export default function WorldMapChart({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <ResponsiveChoropleth
-            key={`world-map-${processedData.length}-${Date.now()}`}
-            data={processedData}
-            features={features}
-            margin={{ top: 0, right: 0, bottom: isMobile ? 30 : 0, left: 0 }}
-            colors={colors}
-            domain={[0, Math.max(1, ...processedData.map(d => d.value))]}
-            unknownColor={unknownColor}
-            label="properties.name"
-            valueFormat={valueFormat}
-            projectionScale={projectionScale}
-            projectionTranslation={[0.5, isMobile ? 0.55 : 0.5]}
-            projectionRotation={[0, 0, 0]}
-            borderWidth={borderWidth}
-            borderColor={borderColor}
-            legends={[legendConfig]}
-          />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                지도 데이터 로딩 중...
+              </div>
+            }
+          >
+            <ResponsiveChoropleth
+              key={`world-map-${processedData.length}-${Date.now()}`}
+              data={processedData}
+              features={features}
+              margin={{ top: 0, right: 0, bottom: isMobile ? 30 : 0, left: 0 }}
+              colors={colors}
+              domain={[0, Math.max(1, ...processedData.map(d => d.value))]}
+              unknownColor={unknownColor}
+              label="properties.name"
+              valueFormat={valueFormat}
+              projectionScale={projectionScale}
+              projectionTranslation={[0.5, isMobile ? 0.55 : 0.5]}
+              projectionRotation={[0, 0, 0]}
+              borderWidth={borderWidth}
+              borderColor={borderColor}
+              legends={[legendConfig]}
+            />
+          </Suspense>
         </div>
       ) : (
         <div className="flex items-center justify-center h-full text-muted-foreground">
