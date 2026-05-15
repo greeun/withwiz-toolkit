@@ -82,6 +82,8 @@ export class MetaOAuthProvider implements IOAuthProviderAdapter {
       email: data.email as string,
       name: data.name ?? null,
       image: data.picture?.data?.url ?? null,
+      // Graph API는 이메일 검증 신호를 제공하지 않음 → 존재만으로 true.
+      // Microsoft(email_verified)/Kakao(is_email_verified) 같은 strict 검증 불가(provider 한계).
       emailVerified: !!data.email,
     };
   }

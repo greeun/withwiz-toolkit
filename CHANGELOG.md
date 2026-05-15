@@ -168,6 +168,8 @@ done
   - Graph API **v25.0** (`META_GRAPH_VERSION` 모듈 상수)
   - GET + query string 방식 token exchange (Meta 공식 권고)
   - `/me?fields=id,name,email,picture` 응답 매핑, `picture.data.url` 폴백 처리
+  - `emailVerified`: Graph API가 이메일 검증 신호를 제공하지 않아 `email` 존재 시 `true` 처리 — Microsoft(`email_verified`)·Kakao(`is_email_verified`)와 달리 strict 검증 불가(provider 한계)
+  - `exchangeCodeForToken`: HTTP 200 + `{ error }` 응답 대비 `access_token` 부재 시 `OAuthError(INVALID_RESPONSE)` (미검증 캐스팅 차단)
 - **`OAUTH_PROVIDERS`** 상수에 `MICROSOFT: 'microsoft'`, `META: 'meta'` 추가
 - **`OAuthManager`** 가 microsoft / meta 자동 등록
 - **`OAUTH_PROVIDERS` lint 테스트** — 상수에 등록된 모든 provider가 OAuthManager에 자동 등록되어 있는지 회귀 검증
