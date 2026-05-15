@@ -5,14 +5,14 @@
  * 서비스 헬스 체크 로직 검증
  */
 
-vi.mock('@withwiz/cache/config', () => ({
+vi.mock('@withwiz/core/cache/config', () => ({
   getResolvedCacheConfig: vi.fn(() => ({
     enabled: true,
     redis: { url: 'https://redis.test', token: 'token123', enabled: true },
   })),
 }));
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -21,21 +21,21 @@ vi.mock('@withwiz/logger/logger', () => ({
   },
 }));
 
-vi.mock('@withwiz/utils/error-message-formatter', () => ({
+vi.mock('@withwiz/core/utils/error-message-formatter', () => ({
   formatRedisError: vi.fn((msg: string) => msg),
   formatDatabaseError: vi.fn((msg: string) => msg),
 }));
 
-vi.mock('@withwiz/system/utils', () => ({
+vi.mock('@withwiz/core/system/utils', () => ({
   getPlatform: vi.fn(() => 'darwin'),
 }));
 
-vi.mock('@withwiz/cache/cache', () => ({
+vi.mock('@withwiz/core/cache/cache', () => ({
   checkRedisConnection: vi.fn(),
 }));
 
-import { getResolvedCacheConfig } from '@withwiz/cache/config';
-import { getPlatform } from '@withwiz/system/utils';
+import { getResolvedCacheConfig } from '@withwiz/core/cache/config';
+import { getPlatform } from '@withwiz/core/system/utils';
 
 describe('Health Check - checkServiceHealth', () => {
   beforeEach(() => {
@@ -49,7 +49,7 @@ describe('Health Check - checkServiceHealth', () => {
 
   describe('Database check', () => {
     it('should return warning status when prismaClient is not provided', async () => {
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const dbService = services.find((s) => s.name === 'Database');
@@ -64,7 +64,7 @@ describe('Health Check - checkServiceHealth', () => {
         $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
       };
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth(mockPrisma);
       const dbService = services.find((s) => s.name === 'Database');
@@ -85,7 +85,7 @@ describe('Health Check - checkServiceHealth', () => {
         $queryRaw: vi.fn().mockRejectedValue(new Error('Connection refused')),
       };
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth(mockPrisma);
       const dbService = services.find((s) => s.name === 'Database');
@@ -99,7 +99,7 @@ describe('Health Check - checkServiceHealth', () => {
     it('should show Linux platform when not darwin', async () => {
       (getPlatform as ReturnType<typeof vi.fn>).mockReturnValue('linux');
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const dbService = services.find((s) => s.name === 'Database');
@@ -119,7 +119,7 @@ describe('Health Check - checkServiceHealth', () => {
         redis: { url: 'https://redis.test', token: 'token123', enabled: true },
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -135,7 +135,7 @@ describe('Health Check - checkServiceHealth', () => {
         redis: { url: '', token: '', enabled: true },
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -151,7 +151,7 @@ describe('Health Check - checkServiceHealth', () => {
         redis: { url: undefined, token: undefined, enabled: true },
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -162,13 +162,13 @@ describe('Health Check - checkServiceHealth', () => {
     });
 
     it('should return ok when checkRedisConnection succeeds', async () => {
-      const { checkRedisConnection } = await import('@withwiz/cache/cache');
+      const { checkRedisConnection } = await import('@withwiz/core/cache/cache');
       (checkRedisConnection as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         details: { responseTime: 5 },
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -179,13 +179,13 @@ describe('Health Check - checkServiceHealth', () => {
     });
 
     it('should return error when checkRedisConnection fails', async () => {
-      const { checkRedisConnection } = await import('@withwiz/cache/cache');
+      const { checkRedisConnection } = await import('@withwiz/core/cache/cache');
       (checkRedisConnection as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: false,
         error: 'Connection timeout',
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -196,12 +196,12 @@ describe('Health Check - checkServiceHealth', () => {
     });
 
     it('should return error when Redis module import throws', async () => {
-      const { checkRedisConnection } = await import('@withwiz/cache/cache');
+      const { checkRedisConnection } = await import('@withwiz/core/cache/cache');
       (checkRedisConnection as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Module not found')
       );
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -216,7 +216,7 @@ describe('Health Check - checkServiceHealth', () => {
         throw new Error('Config not initialized');
       });
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth();
       const redisService = services.find((s) => s.name === 'Redis');
@@ -229,7 +229,7 @@ describe('Health Check - checkServiceHealth', () => {
 
   describe('Combined results', () => {
     it('should return both Database and Redis service info', async () => {
-      const { checkRedisConnection } = await import('@withwiz/cache/cache');
+      const { checkRedisConnection } = await import('@withwiz/core/cache/cache');
       (checkRedisConnection as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         details: { responseTime: 5 },
@@ -239,7 +239,7 @@ describe('Health Check - checkServiceHealth', () => {
         $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
       };
 
-      const { checkServiceHealth } = await import('@withwiz/system/health-check');
+      const { checkServiceHealth } = await import('@withwiz/core/system/health-check');
 
       const services = await checkServiceHealth(mockPrisma);
 

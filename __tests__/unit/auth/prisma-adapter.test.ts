@@ -9,7 +9,7 @@ import {
   PrismaUserRepository,
   PrismaOAuthAccountRepository,
   PrismaEmailTokenRepository,
-} from '../../../src/auth/adapters/prisma';
+} from '../../../src/prisma/auth-adapter';
 
 // ============================================================================
 // Mock Prisma Client Factory

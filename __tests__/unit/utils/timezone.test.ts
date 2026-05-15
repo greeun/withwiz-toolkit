@@ -8,7 +8,7 @@ import {
   getUserTimezone,
   getTimezoneOffset,
   toUTCISOString,
-} from '@withwiz/utils/timezone';
+} from '@withwiz/core/utils/timezone';
 
 describe('getCurrentUTC', () => {
   it('returns a Date object', () => {

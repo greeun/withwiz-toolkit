@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -9,8 +9,8 @@ vi.mock('@withwiz/logger/logger', () => ({
   },
 }));
 
-import { MiddlewareChain } from '@withwiz/middleware/middleware-chain';
-import type { IApiContext, TApiMiddleware, TApiHandler } from '@withwiz/middleware/types';
+import { MiddlewareChain } from '@withwiz/next/middleware/middleware-chain';
+import type { IApiContext, TApiMiddleware, TApiHandler } from '@withwiz/next/middleware/types';
 
 function createMockContext(): IApiContext {
   return {

@@ -1,7 +1,7 @@
 /**
  * Unit Tests: Middleware Wrappers - withOptionalAuthApi
  *
- * 커버리지 대상: src/middleware/wrappers.ts lines 153-173
+ * 커버리지 대상: src/next/middleware/wrappers.ts lines 153-173
  * withOptionalAuthApi 함수가 올바른 미들웨어 체인을 구성하고
  * 핸들러를 올바른 컨텍스트로 호출하는지 검증합니다.
  */
@@ -11,34 +11,34 @@ import { NextResponse } from 'next/server';
 // Track middleware invocations in order
 const callOrder: string[] = [];
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
   logApiRequest: vi.fn(),
   logApiResponse: vi.fn(),
 }));
 
-vi.mock('@withwiz/middleware/error-handler', () => ({
+vi.mock('@withwiz/next/middleware/error-handler', () => ({
   errorHandlerMiddleware: vi.fn(async (_ctx: any, next: any) => {
     callOrder.push('errorHandler');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/security', () => ({
+vi.mock('@withwiz/next/middleware/security', () => ({
   securityMiddleware: vi.fn(async (_ctx: any, next: any) => {
     callOrder.push('security');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/cors', () => ({
+vi.mock('@withwiz/next/middleware/cors', () => ({
   corsMiddleware: vi.fn(async (_ctx: any, next: any) => {
     callOrder.push('cors');
     return await next();
   }),
 }));
 
-vi.mock('@withwiz/middleware/init-request', () => ({
+vi.mock('@withwiz/next/middleware/init-request', () => ({
   initRequestMiddleware: vi.fn(async (ctx: any, next: any) => {
     callOrder.push('initRequest');
     ctx.requestId = 'test-request-id';
@@ -46,7 +46,7 @@ vi.mock('@withwiz/middleware/init-request', () => ({
   }),
 }));
 
-vi.mock('@withwiz/middleware/auth', () => ({
+vi.mock('@withwiz/next/middleware/auth', () => ({
   authMiddleware: vi.fn(async (ctx: any, next: any) => {
     callOrder.push('auth');
     ctx.user = { id: 'user-1', email: 'test@test.com', role: 'USER' };
@@ -63,7 +63,7 @@ vi.mock('@withwiz/middleware/auth', () => ({
   }),
 }));
 
-vi.mock('@withwiz/middleware/rate-limit', () => ({
+vi.mock('@withwiz/next/middleware/rate-limit', () => ({
   rateLimitMiddleware: {
     api: vi.fn(async (ctx: any, next: any) => {
       callOrder.push('rateLimit:api');
@@ -78,7 +78,7 @@ vi.mock('@withwiz/middleware/rate-limit', () => ({
   },
 }));
 
-vi.mock('@withwiz/middleware/response-logger', () => ({
+vi.mock('@withwiz/next/middleware/response-logger', () => ({
   responseLoggerMiddleware: vi.fn(async (_ctx: any, next: any) => {
     callOrder.push('responseLogger');
     return await next();
@@ -103,7 +103,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('async 함수를 반환한다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({ ok: true }));
 
     const wrapped = withOptionalAuthApi(handler);
@@ -112,7 +112,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('올바른 미들웨어 체인 순서로 실행한다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({ ok: true }));
 
     const wrapped = withOptionalAuthApi(handler);
@@ -130,7 +130,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('optionalAuthMiddleware를 포함하고 authMiddleware는 포함하지 않는다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
 
     const wrapped = withOptionalAuthApi(handler);
@@ -142,7 +142,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('핸들러에 올바른 context 구조를 전달한다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockImplementation((ctx) => {
       expect(ctx).toHaveProperty('request');
       expect(ctx).toHaveProperty('locale', 'ko');
@@ -160,7 +160,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('핸들러의 반환값이 최종 응답으로 반환된다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const expectedResponse = NextResponse.json({ data: 'test-data' });
     const handler = vi.fn().mockResolvedValue(expectedResponse);
 
@@ -171,7 +171,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('props를 핸들러에 전달한다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
 
     const wrapped = withOptionalAuthApi(handler);
@@ -185,7 +185,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('API rate limit을 사용한다 (admin이 아닌)', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({}));
 
     const wrapped = withOptionalAuthApi(handler);
@@ -196,7 +196,7 @@ describe('withOptionalAuthApi', () => {
   });
 
   it('POST 요청에서도 정상 동작한다', async () => {
-    const { withOptionalAuthApi } = await import('@withwiz/middleware/wrappers');
+    const { withOptionalAuthApi } = await import('@withwiz/next/middleware/wrappers');
     const handler = vi.fn().mockResolvedValue(NextResponse.json({ created: true }));
 
     const wrapped = withOptionalAuthApi(handler);

@@ -2,9 +2,9 @@
  * Error Handler Unit Tests
  */
 import { describe, it, expect, vi } from 'vitest';
-import { ERROR_CODES } from '@withwiz/constants/error-codes';
+import { ERROR_CODES } from '@withwiz/core/constants/error-codes';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@withwiz/logger/logger', () => ({
 
 describe('Error Handler exports', () => {
   it('should export error handler functions', async () => {
-    const errorHandler = await import('@withwiz/error/error-handler');
+    const errorHandler = await import('@withwiz/next/error/error-handler');
     expect(errorHandler).toBeDefined();
     expect(typeof errorHandler.processError).toBe('function');
     expect(typeof errorHandler.errorToResponse).toBe('function');
@@ -24,7 +24,7 @@ describe('Error Handler exports', () => {
   });
 
   it('should export AUTH_ERROR_CODE_MAP', async () => {
-    const errorHandler = await import('@withwiz/error/error-handler');
+    const errorHandler = await import('@withwiz/next/error/error-handler');
     expect(errorHandler.AUTH_ERROR_CODE_MAP).toBeDefined();
     expect(typeof errorHandler.AUTH_ERROR_CODE_MAP).toBe('object');
   });
@@ -32,7 +32,7 @@ describe('Error Handler exports', () => {
 
 describe('Error Display exports', () => {
   it('should export error display utilities', async () => {
-    const errorDisplay = await import('@withwiz/error/error-display');
+    const errorDisplay = await import('@withwiz/react/error/error-display');
     expect(errorDisplay).toBeDefined();
   });
 });
@@ -42,8 +42,8 @@ describe('Error Display exports', () => {
 // ============================================================================
 describe('processError: AppError passthrough', () => {
   it('should return AppError fields directly', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
 
     const error = AppError.notFound('Test resource');
     const result = processError(error);
@@ -59,7 +59,7 @@ describe('processError: AppError passthrough', () => {
 // ============================================================================
 describe('processError: ZodError handling', () => {
   it('should map ZodError to VALIDATION_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const { z } = await import('zod');
 
     const schema = z.object({ email: z.string().email() });
@@ -79,7 +79,7 @@ describe('processError: ZodError handling', () => {
 // ============================================================================
 describe('processError: Prisma error mapping', () => {
   it('should map P2002 to DUPLICATE_RESOURCE', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const error = new Error('Unique constraint failed P2002');
     const result = processError(error);
     expect(result.code).toBe(40905); // DUPLICATE_RESOURCE
@@ -87,7 +87,7 @@ describe('processError: Prisma error mapping', () => {
   });
 
   it('should map P2025 to NOT_FOUND', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const error = new Error('Record not found P2025');
     const result = processError(error);
     expect(result.code).toBe(40401);
@@ -95,7 +95,7 @@ describe('processError: Prisma error mapping', () => {
   });
 
   it('should map unmapped Prisma codes to DATABASE_ERROR via classifyError', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const error = new Error('P9999 unknown prisma error');
     const result = processError(error);
     expect(result.code).toBe(ERROR_CODES.DATABASE_ERROR.code);
@@ -108,14 +108,14 @@ describe('processError: Prisma error mapping', () => {
 // ============================================================================
 describe('processError: classifyError fallback', () => {
   it('should classify "not found" message via classifyError', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const result = processError(new Error('Entity not found'));
     expect(result.code).toBe(ERROR_CODES.NOT_FOUND.code);
     expect(result.status).toBe(404);
   });
 
   it('should classify network error via classifyError', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const error = new Error('fetch failed');
     const result = processError(error);
     expect(result.code).toBe(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code);
@@ -123,14 +123,14 @@ describe('processError: classifyError fallback', () => {
   });
 
   it('should classify unknown error as SERVER_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const result = processError(new Error('Unexpected thing'));
     expect(result.code).toBe(ERROR_CODES.SERVER_ERROR.code);
     expect(result.status).toBe(500);
   });
 
   it('should classify non-Error types as INTERNAL_SERVER_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
+    const { processError } = await import('@withwiz/next/error/error-handler');
     const result = processError('string error');
     expect(result.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR.code);
     expect(result.status).toBe(500);
@@ -142,40 +142,40 @@ describe('processError: classifyError fallback', () => {
 // ============================================================================
 describe('processError: AuthError mapping', () => {
   it('should map JWTError TOKEN_EXPIRED to 40103', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { JWTError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { JWTError } = await import('@withwiz/core/auth/errors');
     const result = processError(new JWTError('Expired', 'TOKEN_EXPIRED'));
     expect(result.code).toBe(ERROR_CODES.TOKEN_EXPIRED.code);
     expect(result.status).toBe(401);
   });
 
   it('should map OAuthError to EXTERNAL_SERVICE_ERROR', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { OAuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { OAuthError } = await import('@withwiz/core/auth/errors');
     const result = processError(new OAuthError('Exchange failed', 'OAUTH_TOKEN_EXCHANGE_FAILED'));
     expect(result.code).toBe(ERROR_CODES.EXTERNAL_SERVICE_ERROR.code);
     expect(result.status).toBe(503);
   });
 
   it('should map PASSWORD_HASH_FAILED to SERVER_ERROR (not 400)', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { PasswordError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { PasswordError } = await import('@withwiz/core/auth/errors');
     const result = processError(new PasswordError('Hash failed', 'PASSWORD_HASH_FAILED'));
     expect(result.code).toBe(ERROR_CODES.SERVER_ERROR.code);
     expect(result.status).toBe(500);
   });
 
   it('should fallback unmapped AuthError by statusCode', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { AuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { AuthError } = await import('@withwiz/core/auth/errors');
     const result = processError(new AuthError('Unknown', 'CUSTOM_CODE', 401));
     expect(result.code).toBe(ERROR_CODES.UNAUTHORIZED.code);
     expect(result.status).toBe(401);
   });
 
   it('should fallback unmapped AuthError 400 to BAD_REQUEST', async () => {
-    const { processError } = await import('@withwiz/error/error-handler');
-    const { AuthError } = await import('@withwiz/auth/errors');
+    const { processError } = await import('@withwiz/next/error/error-handler');
+    const { AuthError } = await import('@withwiz/core/auth/errors');
     const result = processError(new AuthError('Bad', 'CUSTOM_CODE', 400));
     expect(result.code).toBe(ERROR_CODES.BAD_REQUEST.code);
     expect(result.status).toBe(400);
@@ -187,8 +187,8 @@ describe('processError: AuthError mapping', () => {
 // ============================================================================
 describe('AUTH_ERROR_CODE_MAP completeness', () => {
   it('should contain all AUTH_ERROR_CODES keys', async () => {
-    const { AUTH_ERROR_CODE_MAP } = await import('@withwiz/error/error-handler');
-    const { AUTH_ERROR_CODES } = await import('@withwiz/auth/errors');
+    const { AUTH_ERROR_CODE_MAP } = await import('@withwiz/next/error/error-handler');
+    const { AUTH_ERROR_CODES } = await import('@withwiz/core/auth/errors');
 
     const allAuthKeys = Object.values(AUTH_ERROR_CODES);
     const mappedKeys = Object.keys(AUTH_ERROR_CODE_MAP);
@@ -204,7 +204,7 @@ describe('AUTH_ERROR_CODE_MAP completeness', () => {
 // ============================================================================
 describe('ErrorResponse utility completeness', () => {
   it('should have all expected response factory methods', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
 
     // 400xx
     expect(typeof ErrorResponse.validation).toBe('function');
@@ -271,8 +271,8 @@ describe('ErrorResponse utility completeness', () => {
 // ============================================================================
 describe('errorToResponse', () => {
   it('should return NextResponse with correct status and body for AppError', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
 
     const error = AppError.notFound('User not found');
     const response = errorToResponse(error, '/api/users/1');
@@ -285,7 +285,7 @@ describe('errorToResponse', () => {
   });
 
   it('should return 400 with validation details for ZodError', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
     const { z } = await import('zod');
 
     const schema = z.object({ email: z.string().email() });
@@ -304,8 +304,8 @@ describe('errorToResponse', () => {
   });
 
   it('should return correct mapped code for AuthError with mapped code', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
-    const { JWTError } = await import('@withwiz/auth/errors');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+    const { JWTError } = await import('@withwiz/core/auth/errors');
 
     const error = new JWTError('Token has expired', 'TOKEN_EXPIRED');
     const response = errorToResponse(error);
@@ -316,8 +316,8 @@ describe('errorToResponse', () => {
   });
 
   it('should fallback for AuthError with unmapped code', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
-    const { AuthError } = await import('@withwiz/auth/errors');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+    const { AuthError } = await import('@withwiz/core/auth/errors');
 
     const error = new AuthError('Custom auth error', 'UNKNOWN_AUTH_CODE', 401);
     const response = errorToResponse(error);
@@ -328,7 +328,7 @@ describe('errorToResponse', () => {
   });
 
   it('should return mapped code for Prisma error message', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
 
     const error = new Error('Unique constraint violation P2002');
     const response = errorToResponse(error);
@@ -339,7 +339,7 @@ describe('errorToResponse', () => {
   });
 
   it('should use classifyError for generic Error', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
 
     const error = new Error('random unexpected error');
     const response = errorToResponse(error);
@@ -350,7 +350,7 @@ describe('errorToResponse', () => {
   });
 
   it('should return 500 for non-Error values', async () => {
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
 
     const response = errorToResponse('string error');
 
@@ -360,9 +360,9 @@ describe('errorToResponse', () => {
   });
 
   it('should log via logger.error for status >= 500', async () => {
-    const { logger } = await import('@withwiz/logger/logger');
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { logger } = await import('@withwiz/core/logger/logger');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
 
     vi.mocked(logger.error).mockClear();
     const error = AppError.serverError('DB down');
@@ -375,9 +375,9 @@ describe('errorToResponse', () => {
   });
 
   it('should log via logger.warn for status 400-499', async () => {
-    const { logger } = await import('@withwiz/logger/logger');
-    const { errorToResponse } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { logger } = await import('@withwiz/core/logger/logger');
+    const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
 
     vi.mocked(logger.warn).mockClear();
     const error = AppError.notFound('Missing resource');
@@ -395,7 +395,7 @@ describe('errorToResponse', () => {
 // ============================================================================
 describe('withErrorHandler', () => {
   it('should return handler response when it succeeds', async () => {
-    const { withErrorHandler } = await import('@withwiz/error/error-handler');
+    const { withErrorHandler } = await import('@withwiz/next/error/error-handler');
     const { NextRequest, NextResponse } = await import('next/server');
 
     const successResponse = NextResponse.json({ success: true, data: 'hello' });
@@ -412,8 +412,8 @@ describe('withErrorHandler', () => {
   });
 
   it('should catch errors and return error response', async () => {
-    const { withErrorHandler } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { withErrorHandler } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
     const { NextRequest } = await import('next/server');
 
     const handler = vi.fn().mockRejectedValue(AppError.forbidden('No access'));
@@ -429,7 +429,7 @@ describe('withErrorHandler', () => {
   });
 
   it('should handle non-AppError throws', async () => {
-    const { withErrorHandler } = await import('@withwiz/error/error-handler');
+    const { withErrorHandler } = await import('@withwiz/next/error/error-handler');
     const { NextRequest } = await import('next/server');
 
     const handler = vi.fn().mockRejectedValue(new Error('Unexpected crash'));
@@ -444,10 +444,10 @@ describe('withErrorHandler', () => {
   });
 
   it('should pass request path for logging', async () => {
-    const { withErrorHandler } = await import('@withwiz/error/error-handler');
-    const { AppError } = await import('@withwiz/error/app-error');
+    const { withErrorHandler } = await import('@withwiz/next/error/error-handler');
+    const { AppError } = await import('@withwiz/core/error/app-error');
     const { NextRequest } = await import('next/server');
-    const { logger } = await import('@withwiz/logger/logger');
+    const { logger } = await import('@withwiz/core/logger/logger');
 
     vi.mocked(logger.error).mockClear();
     const handler = vi.fn().mockRejectedValue(AppError.serverError('Internal'));
@@ -468,7 +468,7 @@ describe('withErrorHandler', () => {
 // ============================================================================
 describe('ErrorResponse factory status codes', () => {
   it('ErrorResponse.validation() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.validation('Bad input');
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -476,7 +476,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.unauthorized() → 401', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.unauthorized();
     expect(response.status).toBe(401);
     const body = await response.json();
@@ -484,7 +484,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.forbidden() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.forbidden();
     expect(response.status).toBe(403);
     const body = await response.json();
@@ -492,7 +492,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.notFound() → 404', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.notFound();
     expect(response.status).toBe(404);
     const body = await response.json();
@@ -500,7 +500,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.conflict() → 409', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.conflict();
     expect(response.status).toBe(409);
     const body = await response.json();
@@ -508,7 +508,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.rateLimit() → 429', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.rateLimit();
     expect(response.status).toBe(429);
     const body = await response.json();
@@ -516,7 +516,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.serverError() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.serverError();
     expect(response.status).toBe(500);
     const body = await response.json();
@@ -524,7 +524,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.serviceUnavailable() → 503', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.serviceUnavailable();
     expect(response.status).toBe(503);
     const body = await response.json();
@@ -532,7 +532,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.businessRule() → 422', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.businessRule('Cannot do that');
     expect(response.status).toBe(422);
     const body = await response.json();
@@ -540,7 +540,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.duplicate() → 409', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.duplicate('email');
     expect(response.status).toBe(409);
     const body = await response.json();
@@ -548,7 +548,7 @@ describe('ErrorResponse factory status codes', () => {
   });
 
   it('ErrorResponse.accessBlocked() → 403 (security)', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.accessBlocked('Blocked by policy');
     expect(response.status).toBe(403);
     const body = await response.json();
@@ -561,13 +561,13 @@ describe('ErrorResponse factory status codes', () => {
 // ============================================================================
 describe('ErrorResponse factory status codes - extended', () => {
   it('ErrorResponse.invalidInput() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidInput('bad data');
     expect(response.status).toBe(400);
   });
 
   it('ErrorResponse.missingField() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.missingField('email');
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -575,97 +575,97 @@ describe('ErrorResponse factory status codes - extended', () => {
   });
 
   it('ErrorResponse.invalidUrl() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidUrl();
     expect(response.status).toBe(400);
   });
 
   it('ErrorResponse.invalidEmail() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidEmail();
     expect(response.status).toBe(400);
   });
 
   it('ErrorResponse.weakPassword() → 400', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.weakPassword();
     expect(response.status).toBe(400);
   });
 
   it('ErrorResponse.invalidToken() → 401', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidToken();
     expect(response.status).toBe(401);
   });
 
   it('ErrorResponse.tokenExpired() → 401', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.tokenExpired();
     expect(response.status).toBe(401);
   });
 
   it('ErrorResponse.invalidCredentials() → 401', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidCredentials();
     expect(response.status).toBe(401);
   });
 
   it('ErrorResponse.sessionExpired() → 401', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.sessionExpired();
     expect(response.status).toBe(401);
   });
 
   it('ErrorResponse.emailNotVerified() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.emailNotVerified();
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.accountDisabled() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.accountDisabled();
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.accountLocked() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.accountLocked();
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.userNotFound() → 404', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.userNotFound();
     expect(response.status).toBe(404);
   });
 
   it('ErrorResponse.duplicate() without resource → 409', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.duplicate();
     expect(response.status).toBe(409);
   });
 
   it('ErrorResponse.emailExists() → 409', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.emailExists();
     expect(response.status).toBe(409);
   });
 
   it('ErrorResponse.invalidOperation() → 422', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.invalidOperation('cannot perform action');
     expect(response.status).toBe(422);
   });
 
   it('ErrorResponse.quotaExceeded() → 422', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.quotaExceeded();
     expect(response.status).toBe(422);
   });
 
   it('ErrorResponse.fileTooLarge() → 422', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.fileTooLarge('10MB');
     expect(response.status).toBe(422);
     const body = await response.json();
@@ -673,7 +673,7 @@ describe('ErrorResponse factory status codes - extended', () => {
   });
 
   it('ErrorResponse.unsupportedFileType() → 422', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.unsupportedFileType('.exe');
     expect(response.status).toBe(422);
     const body = await response.json();
@@ -681,55 +681,55 @@ describe('ErrorResponse factory status codes - extended', () => {
   });
 
   it('ErrorResponse.dailyLimit() → 429', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.dailyLimit();
     expect(response.status).toBe(429);
   });
 
   it('ErrorResponse.apiQuotaExceeded() → 429', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.apiQuotaExceeded();
     expect(response.status).toBe(429);
   });
 
   it('ErrorResponse.internalError() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.internalError('unexpected failure');
     expect(response.status).toBe(500);
   });
 
   it('ErrorResponse.databaseError() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.databaseError('connection lost');
     expect(response.status).toBe(500);
   });
 
   it('ErrorResponse.emailSendFailed() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.emailSendFailed();
     expect(response.status).toBe(500);
   });
 
   it('ErrorResponse.cacheError() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.cacheError();
     expect(response.status).toBe(500);
   });
 
   it('ErrorResponse.fileUploadFailed() → 500', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.fileUploadFailed();
     expect(response.status).toBe(500);
   });
 
   it('ErrorResponse.serviceUnavailable() with message → 503', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.serviceUnavailable('maintenance');
     expect(response.status).toBe(503);
   });
 
   it('ErrorResponse.externalServiceError() → 503', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.externalServiceError('Stripe');
     expect(response.status).toBe(503);
     const body = await response.json();
@@ -737,31 +737,31 @@ describe('ErrorResponse factory status codes - extended', () => {
   });
 
   it('ErrorResponse.securityValidationFailed() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.securityValidationFailed();
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.blockedUrl() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.blockedUrl('http://evil.com');
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.suspiciousActivity() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.suspiciousActivity();
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.ipBlocked() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.ipBlocked('192.168.1.100');
     expect(response.status).toBe(403);
   });
 
   it('ErrorResponse.corsViolation() → 403', async () => {
-    const { ErrorResponse } = await import('@withwiz/error/error-handler');
+    const { ErrorResponse } = await import('@withwiz/next/error/error-handler');
     const response = ErrorResponse.corsViolation('https://evil.com');
     expect(response.status).toBe(403);
   });

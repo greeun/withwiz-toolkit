@@ -1,13 +1,13 @@
 // __tests__/unit/config/registry.test.ts
-import { config, resetConfig } from '../../../src/config/registry';
+import { config, resetConfig } from '../../../src/core/config/registry';
 import { initialize } from '../../../src/initialize';
-import { initializeCommon, getCommonConfig, resetCommon } from '../../../src/config/common';
-import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/auth/config';
-import { initializeLogger, getLoggerConfig, resetLogger } from '../../../src/logger/config';
-import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/cache/config';
-import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/storage/config';
-import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/geolocation/config';
-import { initializeCors, getCorsConfig, resetCors } from '../../../src/middleware/cors-config';
+import { initializeCommon, getCommonConfig, resetCommon } from '../../../src/core/config/common';
+import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/core/auth/config';
+import { initializeLogger, getLoggerConfig, resetLogger } from '../../../src/core/logger/config';
+import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/core/cache/config';
+import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/core/storage/config';
+import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/core/geolocation/config';
+import { initializeCors, getCorsConfig, resetCors } from '../../../src/core/cors';
 
 const FULL_CONFIG = {
   nodeEnv: 'test' as const,

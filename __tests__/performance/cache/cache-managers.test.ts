@@ -6,13 +6,13 @@
  * - NoopCacheManager: Disabled behavior
  */
 
-import { InMemoryCacheManager } from "@withwiz/cache/inmemory-cache-manager";
-import { NoopCacheManager } from "@withwiz/cache/noop-cache-manager";
-import { HybridCacheManager } from "@withwiz/cache/hybrid-cache-manager";
-import { initializeCache, resetCache } from "../../../src/cache/config";
+import { InMemoryCacheManager } from "@withwiz/core/cache/inmemory-cache-manager";
+import { NoopCacheManager } from "@withwiz/core/cache/noop-cache-manager";
+import { HybridCacheManager } from "@withwiz/core/cache/hybrid-cache-manager";
+import { initializeCache, resetCache } from "../../../src/core/cache/config";
 
 // Mock Logger to avoid issues in test environment (e.g., setImmediate missing in jsdom/fakeTimers)
-vi.mock("@withwiz/logger/logger", () => ({
+vi.mock("@withwiz/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

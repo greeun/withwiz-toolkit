@@ -1,6 +1,6 @@
-import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/cache/config';
-import { ConfigurationError } from '../../../src/config/errors';
-import { INMEMORY_CACHE_DEFAULTS, CACHE_TTL_DEFAULTS } from '../../../src/cache/cache-defaults';
+import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/core/cache/config';
+import { ConfigurationError } from '../../../src/core/config/errors';
+import { INMEMORY_CACHE_DEFAULTS, CACHE_TTL_DEFAULTS } from '../../../src/core/cache/cache-defaults';
 
 describe('Cache Config', () => {
   beforeEach(() => { resetCache(); });

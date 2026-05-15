@@ -139,7 +139,7 @@ import {
   logError,
   logApiRequest,
   logApiResponse,
-} from "@withwiz/logger/logger";
+} from "@withwiz/core/logger/logger";
 
 describe("Logger Module", () => {
   beforeEach(() => {

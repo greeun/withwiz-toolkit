@@ -1,5 +1,5 @@
-import { initializeCors, getCorsConfig, resetCors } from '../../../src/middleware/cors-config';
-import { ConfigurationError } from '../../../src/config/errors';
+import { initializeCors, getCorsConfig, resetCors } from '../../../src/core/cors';
+import { ConfigurationError } from '../../../src/core/config/errors';
 
 describe('CORS Config', () => {
   beforeEach(() => { resetCors(); });

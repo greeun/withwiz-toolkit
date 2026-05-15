@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -9,8 +9,8 @@ vi.mock('@withwiz/logger/logger', () => ({
   },
 }));
 
-import { withOptimisticLock } from '@withwiz/utils/optimistic-lock';
-import { AppError } from '@withwiz/error/app-error';
+import { withOptimisticLock } from '@withwiz/core/utils/optimistic-lock';
+import { AppError } from '@withwiz/core/error/app-error';
 
 describe('withOptimisticLock', () => {
   it('succeeds silently when updateFn returns count > 0', async () => {

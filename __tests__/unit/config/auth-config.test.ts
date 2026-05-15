@@ -1,6 +1,6 @@
 // __tests__/unit/config/auth-config.test.ts
-import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/auth/config';
-import { ConfigurationError } from '../../../src/config/errors';
+import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/core/auth/config';
+import { ConfigurationError } from '../../../src/core/config/errors';
 
 describe('Auth Config', () => {
   beforeEach(() => { resetAuth(); });

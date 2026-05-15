@@ -11,7 +11,7 @@
 
 import { NextResponse } from 'next/server';
 
-vi.mock('@withwiz/logger/logger', () => ({
+vi.mock('@withwiz/core/logger/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -20,9 +20,9 @@ vi.mock('@withwiz/logger/logger', () => ({
   },
 }));
 
-import { securityMiddleware, validateSecurityConfiguration, setAllowedOrigins } from '@withwiz/middleware/security';
-import { logger } from '@withwiz/logger/logger';
-import type { IApiContext } from '@withwiz/middleware/types';
+import { securityMiddleware, validateSecurityConfiguration, setAllowedOrigins } from '@withwiz/next/middleware/security';
+import { logger } from '@withwiz/core/logger/logger';
+import type { IApiContext } from '@withwiz/next/middleware/types';
 
 // ============================================================================
 // 테스트 헬퍼

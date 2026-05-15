@@ -13,7 +13,7 @@ import {
   generateShortCode,
   generateUniqueShortCode,
   IShortCodeOptions,
-} from "@withwiz/utils/short-code-generator";
+} from "@withwiz/core/utils/short-code-generator";
 
 describe("Short Code Generator", () => {
   describe("generateShortCode", () => {

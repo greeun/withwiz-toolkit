@@ -1,7 +1,7 @@
 /**
  * Cache Env Tests
  *
- * src/cache/cache-env.ts 유닛 테스트
+ * src/core/cache/cache-env.ts 유닛 테스트
  * 환경 설정 관리 함수들 검증
  */
 
@@ -42,16 +42,16 @@ const mockResolvedConfig = {
   },
 };
 
-vi.mock('@withwiz/cache/config', () => ({
+vi.mock('@withwiz/core/cache/config', () => ({
   getResolvedCacheConfig: vi.fn(() => mockResolvedConfig),
 }));
 
-vi.mock('@withwiz/config/common', () => ({
+vi.mock('@withwiz/core/config/common', () => ({
   getCommonConfig: vi.fn(() => ({ nodeEnv: 'test' })),
 }));
 
-import { getResolvedCacheConfig } from '@withwiz/cache/config';
-import { getCommonConfig } from '@withwiz/config/common';
+import { getResolvedCacheConfig } from '@withwiz/core/cache/config';
+import { getCommonConfig } from '@withwiz/core/config/common';
 
 describe('Cache Env', () => {
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('Cache Env', () => {
 
   describe('getConfig', () => {
     it('should return ISharedEnvConfig with correct env mapping', async () => {
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.env.NODE_ENV).toBe('test');
@@ -72,7 +72,7 @@ describe('Cache Env', () => {
     });
 
     it('should return ISharedEnvConfig with correct ENV.REDIS mapping', async () => {
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.ENV.REDIS.URL).toBe('https://redis.test');
@@ -87,7 +87,7 @@ describe('Cache Env', () => {
         redis: { url: '', token: 'token123', enabled: true },
       });
 
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.ENV.REDIS.IS_AVAILABLE).toBe(false);
@@ -99,14 +99,14 @@ describe('Cache Env', () => {
         redis: { url: 'https://redis.test', token: '', enabled: true },
       });
 
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.ENV.REDIS.IS_AVAILABLE).toBe(false);
     });
 
     it('should return correct CACHE categories in ENV', async () => {
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.ENV.CACHE.ANALYTICS.ENABLED).toBe(true);
@@ -122,14 +122,14 @@ describe('Cache Env', () => {
     });
 
     it('should return isCacheEnabled function that reflects config', async () => {
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.isCacheEnabled()).toBe(true);
     });
 
     it('should return isRedisAvailable function that reflects redis config', async () => {
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.isRedisAvailable()).toBe(true);
@@ -141,7 +141,7 @@ describe('Cache Env', () => {
         redis: undefined,
       });
 
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.ENV.REDIS.URL).toBeUndefined();
@@ -156,7 +156,7 @@ describe('Cache Env', () => {
         throw new Error('Config not initialized');
       });
 
-      const { getConfig } = await import('@withwiz/cache/cache-env');
+      const { getConfig } = await import('@withwiz/core/cache/cache-env');
 
       const config = getConfig();
       expect(config.env.NODE_ENV).toBe('development');
@@ -165,7 +165,7 @@ describe('Cache Env', () => {
 
   describe('getEnv', () => {
     it('should return raw env values from config', async () => {
-      const { getEnv } = await import('@withwiz/cache/cache-env');
+      const { getEnv } = await import('@withwiz/core/cache/cache-env');
 
       const env = getEnv();
       expect(env.NODE_ENV).toBe('test');
@@ -177,7 +177,7 @@ describe('Cache Env', () => {
 
   describe('getENV', () => {
     it('should return structured ENV with REDIS and CACHE sections', async () => {
-      const { getENV } = await import('@withwiz/cache/cache-env');
+      const { getENV } = await import('@withwiz/core/cache/cache-env');
 
       const ENV = getENV();
       expect(ENV.REDIS).toBeDefined();
@@ -202,7 +202,7 @@ describe('Cache Env', () => {
 
   describe('isCacheEnabled', () => {
     it('should return true when config.enabled is true', async () => {
-      const { isCacheEnabled } = await import('@withwiz/cache/cache-env');
+      const { isCacheEnabled } = await import('@withwiz/core/cache/cache-env');
       expect(isCacheEnabled()).toBe(true);
     });
 
@@ -212,14 +212,14 @@ describe('Cache Env', () => {
         enabled: false,
       });
 
-      const { isCacheEnabled } = await import('@withwiz/cache/cache-env');
+      const { isCacheEnabled } = await import('@withwiz/core/cache/cache-env');
       expect(isCacheEnabled()).toBe(false);
     });
   });
 
   describe('validateRedisEnvironment', () => {
     it('should return isValid true when url and token are present', async () => {
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(true);
@@ -232,7 +232,7 @@ describe('Cache Env', () => {
         redis: { url: '', token: 'token123', enabled: true },
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -245,7 +245,7 @@ describe('Cache Env', () => {
         redis: { url: undefined, token: 'token123', enabled: true },
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -258,7 +258,7 @@ describe('Cache Env', () => {
         redis: { url: 'https://redis.test', token: '', enabled: true },
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -271,7 +271,7 @@ describe('Cache Env', () => {
         redis: { url: 'https://redis.test', token: undefined, enabled: true },
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -284,7 +284,7 @@ describe('Cache Env', () => {
         redis: undefined,
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -297,7 +297,7 @@ describe('Cache Env', () => {
         redis: { url: '   ', token: 'token123', enabled: true },
       });
 
-      const { validateRedisEnvironment } = await import('@withwiz/cache/cache-env');
+      const { validateRedisEnvironment } = await import('@withwiz/core/cache/cache-env');
 
       const result = validateRedisEnvironment();
       expect(result.isValid).toBe(false);
@@ -307,7 +307,7 @@ describe('Cache Env', () => {
 
   describe('getCacheFallbackConfig', () => {
     it('should return fallback config with threshold values', async () => {
-      const { getCacheFallbackConfig } = await import('@withwiz/cache/cache-env');
+      const { getCacheFallbackConfig } = await import('@withwiz/core/cache/cache-env');
 
       const fallback = getCacheFallbackConfig();
       expect(fallback.redisErrorThresholdGlobal).toBe(3);
@@ -320,7 +320,7 @@ describe('Cache Env', () => {
 
   describe('getCacheHealthConfig', () => {
     it('should return health config with threshold values', async () => {
-      const { getCacheHealthConfig } = await import('@withwiz/cache/cache-env');
+      const { getCacheHealthConfig } = await import('@withwiz/core/cache/cache-env');
 
       const health = getCacheHealthConfig();
       expect(health.errorRateThreshold).toBe(5);

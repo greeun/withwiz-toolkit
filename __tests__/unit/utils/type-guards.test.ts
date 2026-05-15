@@ -1,5 +1,5 @@
 /**
- * Unit Tests: @withwiz/utils/type-guards tests
+ * Unit Tests: @withwiz/core/utils/type-guards tests
  * Achieve 100% coverage for type guard functions
  */
 
@@ -31,7 +31,7 @@ import {
   isEmptyArray,
   isEmptyObject,
   isEmpty,
-} from "@withwiz/utils/type-guards";
+} from "@withwiz/core/utils/type-guards";
 
 // ============================================================================
 // SC-UNIT-TG-001: Utility Type Guards

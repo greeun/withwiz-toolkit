@@ -4,7 +4,7 @@
  * nodemailer를 모킹하여 SMTP 이메일 발송 로직 검증
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SmtpEmailSender } from '../../../../src/auth/email/sender';
+import { SmtpEmailSender } from '../../../../src/core/auth/email/sender';
 
 // ============================================================================
 // nodemailer mock

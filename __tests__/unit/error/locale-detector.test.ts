@@ -4,7 +4,7 @@ vi.mock('next/server', () => ({
   NextRequest: vi.fn(),
 }));
 
-import { LocaleDetector } from '@withwiz/error/core/locale-detector';
+import { LocaleDetector } from '@withwiz/next/error/locale-detector';
 
 describe('LocaleDetector', () => {
   describe('detectClient', () => {

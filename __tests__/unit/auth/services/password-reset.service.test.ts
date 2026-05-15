@@ -1,5 +1,5 @@
-import { PasswordResetService } from '../../../../src/auth/services/password-reset.service';
-import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/auth/types';
+import { PasswordResetService } from '../../../../src/core/auth/services/password-reset.service';
+import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),

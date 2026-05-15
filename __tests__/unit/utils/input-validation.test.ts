@@ -7,7 +7,7 @@ import {
   sanitizeInput,
   validateFilename,
   validateInput,
-} from '@withwiz/utils/input-validation'
+} from '@withwiz/core/utils/input-validation'
 
 describe('validateURL', () => {
   it('accepts a valid https URL', () => {

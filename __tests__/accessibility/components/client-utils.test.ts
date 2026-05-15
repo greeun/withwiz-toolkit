@@ -6,10 +6,10 @@
  * - copyToClipboard: Clipboard API and fallback support
  */
 
-import { copyToClipboard } from "@withwiz/utils/client/client-utils";
+import { copyToClipboard } from "@withwiz/react/utils/client-utils";
 
 // Mock Logger
-vi.mock("@withwiz/logger/logger", () => ({
+vi.mock("@withwiz/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

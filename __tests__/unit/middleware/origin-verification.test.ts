@@ -7,7 +7,7 @@
  * state-changing 요청(POST/PUT/PATCH/DELETE)의 Origin/Referer를 검증합니다.
  */
 
-import type { IApiContext } from "@withwiz/middleware/types";
+import type { IApiContext } from "@withwiz/next/middleware/types";
 import { NextResponse } from "next/server";
 
 /**
@@ -56,7 +56,7 @@ describe("SC-UNIT-ORIGIN-001: Origin 검증 미들웨어", () => {
   let setAllowedOrigins: any;
 
   beforeAll(async () => {
-    const securityModule = await import("@withwiz/middleware/security");
+    const securityModule = await import("@withwiz/next/middleware/security");
     securityMiddleware = securityModule.securityMiddleware;
     setAllowedOrigins = securityModule.setAllowedOrigins;
   });

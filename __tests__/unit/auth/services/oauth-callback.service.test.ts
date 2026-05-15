@@ -1,5 +1,5 @@
-import { OAuthCallbackService } from '../../../../src/auth/services/oauth-callback.service';
-import type { UserRepository, OAuthAccountRepository } from '../../../../src/auth/types';
+import { OAuthCallbackService } from '../../../../src/core/auth/services/oauth-callback.service';
+import type { UserRepository, OAuthAccountRepository } from '../../../../src/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),
