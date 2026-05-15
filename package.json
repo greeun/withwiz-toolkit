@@ -5,6 +5,20 @@
   "license": "MIT",
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeun/withwiz-toolkit.git"
+  },
+  "homepage": "https://github.com/greeun/withwiz-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/greeun/withwiz-toolkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist"
   ],
@@ -18,7 +32,10 @@
   "exports": {
     "./initialize": "./dist/initialize.js",
 
-    "./core/config": "./dist/core/config/registry.js",
+    "./core/config": {
+      "types": "./dist/core/config/registry.d.ts",
+      "import": "./dist/core/config/registry.js"
+    },
     "./core/config/errors": "./dist/core/config/errors.js",
     "./core/config/common": "./dist/core/config/common.js",
     "./core/auth/config": "./dist/core/auth/config.js",
@@ -94,7 +111,10 @@
     "./next/middleware/cors": "./dist/next/middleware/cors.js",
     "./next/middleware/security": "./dist/next/middleware/security.js",
 
-    "./core/storage": "./dist/core/storage/r2-storage.js",
+    "./core/storage": {
+      "types": "./dist/core/storage/r2-storage.d.ts",
+      "import": "./dist/core/storage/r2-storage.js"
+    },
     "./core/storage/r2-storage": "./dist/core/storage/r2-storage.js",
 
     "./core/system": "./dist/core/system/index.js",
@@ -135,6 +155,7 @@
     "build": "tsup && tsc --emitDeclarationOnly --skipLibCheck",
     "build:js": "tsup",
     "build:types": "tsc --emitDeclarationOnly --skipLibCheck",
+    "prepublishOnly": "npm run build && npm test",
     "test": "vitest run -c __tests__/vitest.config.ts",
     "test:watch": "vitest -c __tests__/vitest.config.ts",
     "test:coverage": "vitest run -c __tests__/vitest.config.ts --coverage",
@@ -160,12 +181,22 @@
   "peerDependencies": {
     "next": ">=15.0.0",
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "@radix-ui/react-select": ">=2.0.0",
+    "@nivo/core": ">=0.99.0",
+    "@nivo/geo": ">=0.99.0",
+    "date-fns": ">=3.0.0",
+    "nodemailer": ">=6.0.0"
   },
   "peerDependenciesMeta": {
     "next": { "optional": true },
     "react": { "optional": true },
-    "react-dom": { "optional": true }
+    "react-dom": { "optional": true },
+    "@radix-ui/react-select": { "optional": true },
+    "@nivo/core": { "optional": true },
+    "@nivo/geo": { "optional": true },
+    "date-fns": { "optional": true },
+    "nodemailer": { "optional": true }
   },
   "devDependencies": {
     "@nivo/core": "^0.99.0",
@@ -183,6 +214,7 @@
     "date-fns": "^4.1.0",
     "jsdom": "^24.1.0",
     "next": "^16.0.0",
+    "nodemailer": "^6.9.0",
     "tsup": "^8.0.0",
     "typescript": "^5",
     "vitest": "^4.0.18"

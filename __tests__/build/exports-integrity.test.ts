@@ -29,12 +29,33 @@ function findFiles(dir: string, pattern: RegExp): string[] {
 }
 const PKG = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8'));
 
+/** An exports entry is either a string path or a conditional object ({ types, import, ... }). */
+type ExportEntry = string | { types?: string; import?: string; default?: string };
+
+/** Runtime JS target for an export entry. */
+function jsTarget(v: ExportEntry): string {
+  return typeof v === 'string' ? v : v.import ?? v.default ?? '';
+}
+
+/** Expected .d.ts target: explicit `types` condition wins, else derived from the .js path. */
+function dtsTarget(v: ExportEntry): string {
+  if (typeof v === 'object' && v.types) return v.types;
+  return jsTarget(v).replace(/\.js$/, '.d.ts');
+}
+
+/** Every string path referenced by an export entry (string or conditional object). */
+function allTargets(v: ExportEntry): string[] {
+  return typeof v === 'string'
+    ? [v]
+    : Object.values(v).filter((x): x is string => typeof x === 'string');
+}
+
 // ============================================================================
 // 1. Export Path Resolution
 // ============================================================================
 
 describe('Export Path Integrity', () => {
-  const exports = PKG.exports as Record<string, string>;
+  const exports = PKG.exports as Record<string, ExportEntry>;
   const wildcardExports: string[] = [];
   const staticExports: [string, string][] = [];
 
@@ -42,7 +63,7 @@ describe('Export Path Integrity', () => {
     if (key.includes('*')) {
       wildcardExports.push(key);
     } else {
-      staticExports.push([key, value]);
+      staticExports.push([key, jsTarget(value)]);
     }
   }
 
@@ -65,7 +86,7 @@ describe('Export Path Integrity', () => {
     if (KNOWN_MISSING.length > 0) {
       it('documents known missing exports (build issues to fix)', () => {
         for (const key of KNOWN_MISSING) {
-          const distPath = exports[key];
+          const distPath = jsTarget(exports[key]);
           const fullPath = resolve(ROOT, distPath);
           if (existsSync(fullPath)) {
             // If it's fixed, remove from KNOWN_MISSING
@@ -78,7 +99,7 @@ describe('Export Path Integrity', () => {
 
   describe('wildcard exports → base directory exists', () => {
     for (const pattern of wildcardExports) {
-      const distPattern = exports[pattern];
+      const distPattern = jsTarget(exports[pattern]);
       it(`${pattern} base dir exists`, () => {
         // Extract the directory portion before the wildcard
         const baseDir = distPattern.split('*')[0];
@@ -97,15 +118,14 @@ describe('Export Path Integrity', () => {
 // ============================================================================
 
 describe('Type Declaration Integrity', () => {
-  const exports = PKG.exports as Record<string, string>;
+  const exports = PKG.exports as Record<string, ExportEntry>;
 
-  const staticExports = Object.entries(exports).filter(
-    ([key]) => !key.includes('*'),
-  );
+  const staticExports = Object.entries(exports)
+    .filter(([key]) => !key.includes('*'))
+    .map(([key, value]) => [key, dtsTarget(value)] as [string, string]);
 
   describe('every .js export has a corresponding .d.ts', () => {
-    it.each(staticExports)('%s has .d.ts', (exportPath, distPath) => {
-      const dtsPath = distPath.replace(/\.js$/, '.d.ts');
+    it.each(staticExports)('%s has .d.ts', (exportPath, dtsPath) => {
       const fullPath = resolve(ROOT, dtsPath);
       expect(
         existsSync(fullPath),
@@ -246,8 +266,10 @@ describe('Package Metadata Consistency', () => {
   });
 
   it('exports do not reference src/ directly', () => {
-    const exports = PKG.exports as Record<string, string>;
-    const srcRefs = Object.entries(exports).filter(([, v]) => v.includes('src/'));
+    const exports = PKG.exports as Record<string, ExportEntry>;
+    const srcRefs = Object.entries(exports).filter(([, v]) =>
+      allTargets(v).some((p) => p.includes('src/')),
+    );
     expect(
       srcRefs.map(([k]) => k),
       'These exports point to src/ instead of dist/',
