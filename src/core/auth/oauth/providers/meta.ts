@@ -45,7 +45,15 @@ export class MetaOAuthProvider implements IOAuthProviderAdapter {
       throw new OAuthError(`Meta token exchange failed: ${errorData}`, 'TOKEN_EXCHANGE_FAILED');
     }
 
-    return response.json();
+    const data = (await response.json()) as Partial<OAuthTokenResponse>;
+
+    // Meta는 오류를 HTTP 200 + { error: {...} } 로 반환할 수 있어 status만으로 부족.
+    // 미검증 캐스팅 방지를 위해 핵심 필드(access_token) 존재를 명시 검증한다.
+    if (!data.access_token) {
+      throw new OAuthError('Invalid Meta response: missing access_token', 'INVALID_RESPONSE');
+    }
+
+    return data as OAuthTokenResponse;
   }
 
   async getUserInfo(accessToken: string): Promise<OAuthUserInfo> {
