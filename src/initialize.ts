@@ -1,19 +1,19 @@
-import { initializeCommon } from './config/common';
-import type { CommonConfig } from './config/common';
-import { initializeAuth } from './auth/config';
-import type { AuthConfig } from './auth/config';
-import { initializeLogger } from './logger/config';
-import type { LoggerConfig } from './logger/config';
-import { initializeCache } from './cache/config';
-import type { CacheConfigInput } from './cache/config';
-import { initializeStorage } from './storage/config';
-import type { StorageConfig } from './storage/config';
-import { initializeGeolocation } from './geolocation/config';
-import type { GeolocationConfig } from './geolocation/config';
-import { initializeCors } from './middleware/cors-config';
-import type { CorsConfig } from './middleware/cors-config';
-import { config } from './config/registry';
-import type { ConfigRegistry } from './config/registry';
+import { initializeCommon } from './core/config/common';
+import type { CommonConfig } from './core/config/common';
+import { initializeAuth } from './core/auth/config';
+import type { AuthConfig } from './core/auth/config';
+import { initializeLogger } from './core/logger/config';
+import type { LoggerConfig } from './core/logger/config';
+import { initializeCache } from './core/cache/config';
+import type { CacheConfigInput } from './core/cache/config';
+import { initializeStorage } from './core/storage/config';
+import type { StorageConfig } from './core/storage/config';
+import { initializeGeolocation } from './core/geolocation/config';
+import type { GeolocationConfig } from './core/geolocation/config';
+import { initializeCors } from './core/cors';
+import type { CorsConfig } from './core/cors';
+import { config } from './core/config/registry';
+import type { ConfigRegistry } from './core/config/registry';
 
 export interface ToolkitConfig {
   nodeEnv?: CommonConfig['nodeEnv'];
@@ -55,5 +55,5 @@ export type {
 };
 
 // Unified config registry
-export { config, resetConfig } from './config/registry';
-export type { ConfigRegistry } from './config/registry';
+export { config, resetConfig } from './core/config/registry';
+export type { ConfigRegistry } from './core/config/registry';
