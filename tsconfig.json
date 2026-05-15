@@ -15,7 +15,10 @@
     "jsx": "react-jsx",
     "incremental": false,
     "paths": {
-      "@withwiz/*": ["./src/*"]
+      "@withwiz/core/*": ["./src/core/*"],
+      "@withwiz/next/*": ["./src/next/*"],
+      "@withwiz/react/*": ["./src/react/*"],
+      "@withwiz/prisma/*": ["./src/prisma/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
