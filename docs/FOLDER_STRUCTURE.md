@@ -219,12 +219,12 @@ __tests__/
 ### 사용 예시
 ```typescript
 // ✅ 올바른 사용
-import { createJWT } from '@withwiz/toolkit/auth/core/jwt'
-import { InMemoryCacheManager } from '@withwiz/toolkit/cache'
-import { Button } from '@withwiz/toolkit/components/ui/Button'
+import { createJWT } from '@withwiz/toolkit/core/auth/jwt'
+import { InMemoryCacheManager } from '@withwiz/toolkit/core/cache'
+import { Button } from '@withwiz/toolkit/react/components/ui/Button'
 
 // ❌ 직접 import 금지
-import { createJWT } from '@withwiz/toolkit/src/auth/core/jwt'
+import { createJWT } from '@withwiz/toolkit/core/auth/jwt'
 ```
 
 ## 폴더 생성 체크리스트
