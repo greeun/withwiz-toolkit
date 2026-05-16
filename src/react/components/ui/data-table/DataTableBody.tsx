@@ -58,15 +58,17 @@ export function DataTableBody<T>({
           <thead>
             <tr className="border-b bg-muted/50">
               {selectable && (
-                <th className="px-1 py-2 text-left font-medium w-8">
-                  <input
-                    data-testid="select-all-checkbox"
-                    type="checkbox"
-                    ref={selectAllRef}
-                    checked={data.length > 0 && localSelectedIds.length === data.length}
-                    onChange={e => onSelectAll(e.target.checked)}
-                    className="h-4 w-4"
-                  />
+                <th className="px-3 py-2 text-center font-medium w-12">
+                  <div className="flex items-center justify-center">
+                    <input
+                      data-testid="select-all-checkbox"
+                      type="checkbox"
+                      ref={selectAllRef}
+                      checked={data.length > 0 && localSelectedIds.length === data.length}
+                      onChange={e => onSelectAll(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                  </div>
                 </th>
               )}
               {visibleColumns.map(column => {
@@ -76,7 +78,7 @@ export function DataTableBody<T>({
                   <th
                     key={column.key}
                     className={cn(
-                      "px-2 py-2 font-medium",
+                      "px-2 py-2 font-medium first:pl-4 last:pr-4",
                       column.sortable && "cursor-pointer",
                       column.className,
                       column.responsive?.sm && "hidden sm:table-cell",
@@ -145,7 +147,7 @@ export function DataTableBody<T>({
                     )}
                   >
                     {selectable && (
-                      <td className="px-1 py-2 w-8">
+                      <td className="px-3 py-3 text-center w-12">
                         <input
                           data-testid={`row-checkbox-${rowId}`}
                           type="checkbox"
@@ -159,7 +161,7 @@ export function DataTableBody<T>({
                       <td
                         key={column.key}
                         className={cn(
-                          "px-2 py-3 overflow-hidden",
+                          "px-2 py-3 overflow-hidden first:pl-4 last:pr-4",
                           column.className,
                           column.responsive?.sm && "hidden sm:table-cell",
                           column.responsive?.md && "hidden md:table-cell",
