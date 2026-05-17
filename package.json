@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.7.0-rc.0",
+  "version": "0.7.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -31,7 +31,6 @@
   },
   "exports": {
     "./initialize": "./dist/initialize.js",
-
     "./core/config": {
       "types": "./dist/core/config/registry.d.ts",
       "import": "./dist/core/config/registry.js"
@@ -44,7 +43,6 @@
     "./core/storage/config": "./dist/core/storage/config.js",
     "./core/geolocation/config": "./dist/core/geolocation/config.js",
     "./core/cors": "./dist/core/cors/index.js",
-
     "./core/auth": "./dist/core/auth/index.js",
     "./core/auth/jwt": "./dist/core/auth/jwt/index.js",
     "./core/auth/jwt/client": "./dist/core/auth/jwt/client.js",
@@ -60,12 +58,9 @@
     "./core/auth/services": "./dist/core/auth/services/index.js",
     "./core/auth/email": "./dist/core/auth/email/index.js",
     "./core/auth/types": "./dist/core/auth/types/index.js",
-
     "./next/auth-handlers": "./dist/next/auth-handlers/index.js",
     "./next/auth-types": "./dist/next/auth-types/index.js",
-
     "./prisma/auth-adapter": "./dist/prisma/auth-adapter/index.js",
-
     "./core/cache": "./dist/core/cache/index.js",
     "./core/cache/cache": "./dist/core/cache/cache.js",
     "./core/cache/cache-factory": "./dist/core/cache/cache-factory.js",
@@ -73,17 +68,14 @@
     "./core/cache/cache-defaults": "./dist/core/cache/cache-defaults.js",
     "./core/cache/cache-env": "./dist/core/cache/cache-env.js",
     "./core/cache/hybrid-cache-manager": "./dist/core/cache/hybrid-cache-manager.js",
-
     "./react/components/ui/*": "./dist/react/components/ui/*.js",
     "./react/components/ui/data-table": "./dist/react/components/ui/data-table/index.js",
     "./react/components/ui/data-table/*": "./dist/react/components/ui/data-table/*.js",
-
     "./core/constants": "./dist/core/constants/index.js",
     "./core/constants/error-codes": "./dist/core/constants/error-codes.js",
     "./core/constants/messages": "./dist/core/constants/messages.js",
     "./core/constants/pagination": "./dist/core/constants/pagination.js",
     "./core/constants/security": "./dist/core/constants/security.js",
-
     "./core/error": "./dist/core/error/index.js",
     "./core/error/app-error": "./dist/core/error/app-error.js",
     "./core/error/messages": "./dist/core/error/messages/index.js",
@@ -91,18 +83,14 @@
     "./next/error/error-handler": "./dist/next/error/error-handler.js",
     "./react/error": "./dist/react/error/index.js",
     "./react/error/error-display": "./dist/react/error/error-display.js",
-
     "./core/geolocation": "./dist/core/geolocation/index.js",
     "./core/geolocation/batch-processor": "./dist/core/geolocation/batch-processor.js",
     "./core/geolocation/providers": "./dist/core/geolocation/providers/index.js",
-
     "./react/hooks/useDataTable": "./dist/react/hooks/useDataTable.js",
     "./react/hooks/useDebounce": "./dist/react/hooks/useDebounce.js",
     "./react/hooks/useExitIntent": "./dist/react/hooks/useExitIntent.js",
     "./react/hooks/useTimezone": "./dist/react/hooks/useTimezone.js",
-
     "./core/logger/logger": "./dist/core/logger/logger.js",
-
     "./next/middleware": "./dist/next/middleware/index.js",
     "./next/middleware/types": "./dist/next/middleware/types.js",
     "./next/middleware/wrappers": "./dist/next/middleware/wrappers.js",
@@ -110,17 +98,14 @@
     "./next/middleware/rate-limit": "./dist/next/middleware/rate-limit.js",
     "./next/middleware/cors": "./dist/next/middleware/cors.js",
     "./next/middleware/security": "./dist/next/middleware/security.js",
-
     "./core/storage": {
       "types": "./dist/core/storage/r2-storage.d.ts",
       "import": "./dist/core/storage/r2-storage.js"
     },
     "./core/storage/r2-storage": "./dist/core/storage/r2-storage.js",
-
     "./core/system": "./dist/core/system/index.js",
     "./core/system/types": "./dist/core/system/types.js",
     "./core/system/health-check": "./dist/core/system/health-check.js",
-
     "./core/types/i18n": "./dist/core/types/i18n.js",
     "./core/types/api": "./dist/core/types/api.js",
     "./core/types/database": "./dist/core/types/database.js",
@@ -128,7 +113,6 @@
     "./core/types/geoip": "./dist/core/types/geoip.js",
     "./core/types/qr-code": "./dist/core/types/qr-code.js",
     "./core/types/user": "./dist/core/types/user.js",
-
     "./core/utils": "./dist/core/utils/index.js",
     "./core/utils/error-message-formatter": "./dist/core/utils/error-message-formatter.js",
     "./core/utils/format-number": "./dist/core/utils/format-number.js",
@@ -147,7 +131,6 @@
     "./next/utils/error-processor": "./dist/next/utils/error-processor.js",
     "./react/utils/client-utils": "./dist/react/utils/client-utils.js",
     "./react/utils/qr-code": "./dist/react/utils/qr-code.js",
-
     "./core/validators": "./dist/core/validators/index.js",
     "./core/validators/password-validator": "./dist/core/validators/password-validator.js"
   },
@@ -187,12 +170,24 @@
     "nodemailer": ">=6.0.0"
   },
   "peerDependenciesMeta": {
-    "next": { "optional": true },
-    "react": { "optional": true },
-    "react-dom": { "optional": true },
-    "@radix-ui/react-select": { "optional": true },
-    "date-fns": { "optional": true },
-    "nodemailer": { "optional": true }
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "@radix-ui/react-select": {
+      "optional": true
+    },
+    "date-fns": {
+      "optional": true
+    },
+    "nodemailer": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@radix-ui/react-select": "^2.2.6",
