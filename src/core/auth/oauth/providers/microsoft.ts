@@ -3,19 +3,25 @@
  *
  * Microsoft Entra v2.0 (common 테넌트, server-side code flow).
  *
- * 신뢰 모델: 이 어댑터의 `getUserInfo`는 동일 어댑터의 `exchangeCodeForToken`이
- * 반환한 토큰만 입력으로 받는다는 가정 하에 동작한다 (HTTPS code-flow 채널 신뢰).
- * 외부에서 받은 id_token을 직접 주입하지 말 것. 클라이언트-사이드 흐름(SPA/PKCE)
- * 지원이 필요해지면 JWKS 기반 서명 검증을 별도 spec으로 추가한다.
+ * 신뢰 모델: id_token 은 Microsoft Entra v2.0 JWKS 로 RS256 서명을
+ * 암호학적으로 검증한 뒤에만 클레임을 신뢰한다(O-2). 따라서 getUserInfo 가
+ * 외부에서 주입된 토큰을 받아도 위조 토큰은 서명 검증에서 거부되며,
+ * 클라이언트-사이드 흐름(SPA/PKCE)에서도 안전하다.
  *
  * 인터페이스 우회: IOAuthProviderAdapter 변경 없이 id_token 클레임을 사용하기
  * 위해, exchangeCodeForToken은 upstream의 `id_token` 값을 OAuthTokenResponse.access_token
- * 필드에 담아 반환한다. getUserInfo는 그 문자열을 jose.decodeJwt로 디코딩한다.
+ * 필드에 담아 반환한다. getUserInfo는 그 문자열을 JWKS 서명 검증 후 사용한다.
  */
 
-import { decodeJwt } from 'jose';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/core/auth/types';
 import { OAuthError } from '@withwiz/core/auth/errors';
+
+// Microsoft Entra v2.0 (multi-tenant 'common') 서명 키 — 원격 JWKS.
+// createRemoteJWKSet 은 키를 캐싱하므로 매 검증마다 네트워크를 타지 않는다.
+const MS_JWKS = createRemoteJWKSet(
+  new URL('https://login.microsoftonline.com/common/discovery/v2.0/keys'),
+);
 
 interface MicrosoftIdTokenClaims {
   iss?: string;
@@ -91,9 +97,8 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
       throw new OAuthError('Missing id_token in Microsoft token response', 'INVALID_RESPONSE');
     }
 
-    // Validate id_token claims (including aud against config.clientId) before returning.
-    const claims = decodeMicrosoftClaims(data.id_token);
-    assertMicrosoftClaims(claims, config.clientId);
+    // JWKS 서명 검증 + 클레임(aud=config.clientId) 검증 후 반환.
+    await verifyMicrosoftClaims(data.id_token, config.clientId);
 
     // Interface workaround: place id_token in the access_token field so getUserInfo can decode it.
     return {
@@ -106,11 +111,9 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
   }
 
   async getUserInfo(idToken: string): Promise<OAuthUserInfo> {
-    const claims = decodeMicrosoftClaims(idToken);
-    // Defensive: re-verify iss/exp/oid here (aud was validated at exchangeCodeForToken time).
-    // This protects against the rare case where a caller invokes getUserInfo with a non-canonical
-    // token. See trust model in the file header JSDoc.
-    assertMicrosoftClaims(claims);
+    // O-2: 외부 입력일 수 있는 idToken 을 JWKS 로 암호학적 서명 검증한다.
+    // aud 는 exchangeCodeForToken 시점에 검증되므로 여기서는 서명 + iss/exp/oid.
+    const claims = await verifyMicrosoftClaims(idToken);
 
     return {
       id: claims.oid as string,
@@ -122,12 +125,30 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
   }
 }
 
-function decodeMicrosoftClaims(token: string): MicrosoftIdTokenClaims {
+/**
+ * Microsoft JWKS 로 RS256 서명을 검증하고 클레임을 반환한다.
+ * 서명 실패/만료/형식 오류는 모두 OAuthError(INVALID_RESPONSE)로 정규화한다.
+ */
+async function verifyMicrosoftClaims(
+  token: string,
+  expectedAud?: string,
+): Promise<MicrosoftIdTokenClaims> {
+  let claims: MicrosoftIdTokenClaims;
   try {
-    return decodeJwt(token) as MicrosoftIdTokenClaims;
-  } catch {
-    throw new OAuthError('Invalid Microsoft id_token: malformed JWT', 'INVALID_RESPONSE');
+    const { payload } = await jwtVerify(token, MS_JWKS, { algorithms: ['RS256'] });
+    claims = payload as MicrosoftIdTokenClaims;
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code;
+    if (code === 'ERR_JWT_EXPIRED') {
+      throw new OAuthError('Invalid Microsoft id_token: expired', 'INVALID_RESPONSE');
+    }
+    throw new OAuthError(
+      'Invalid Microsoft id_token: signature verification failed',
+      'INVALID_RESPONSE',
+    );
   }
+  assertMicrosoftClaims(claims, expectedAud);
+  return claims;
 }
 
 function assertMicrosoftClaims(claims: MicrosoftIdTokenClaims, expectedAud?: string): void {

@@ -7,9 +7,37 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
+
+// 테스트용 RSA 키쌍 — Microsoft JWKS 를 이 키로 모킹한다(네트워크 차단).
+const cryptoFixture = vi.hoisted(async () => {
+  // 실물 jose 사용 — import('jose') 는 아래 mock 을 트리거해 데드락이 된다.
+  const { generateKeyPair } = await vi.importActual<typeof import('jose')>('jose');
+  const { publicKey, privateKey } = await generateKeyPair('RS256');
+  return { publicKey, privateKey };
+});
+
+vi.mock('jose', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('jose')>();
+  const { publicKey } = await cryptoFixture;
+  return {
+    ...actual,
+    // createRemoteJWKSet 만 테스트 공개키 리졸버로 대체. 나머지 jose 는 실물.
+    createRemoteJWKSet: () => () => publicKey,
+  };
+});
+
+import { SignJWT } from 'jose';
 import { MicrosoftOAuthProvider } from '@withwiz/core/auth/oauth/providers/microsoft';
 import { OAuthError } from '@withwiz/core/auth/errors';
 import type { OAuthProviderConfig } from '@withwiz/core/auth/types';
+
+/** 테스트 키로 실제 RS256 서명된 Microsoft id_token */
+async function signIdToken(claims: Record<string, unknown>): Promise<string> {
+  const { privateKey } = await cryptoFixture;
+  return new SignJWT(claims)
+    .setProtectedHeader({ alg: 'RS256' })
+    .sign(privateKey);
+}
 
 function base64url(input: string): string {
   return Buffer.from(input, 'utf8')
@@ -75,7 +103,7 @@ describe('MicrosoftOAuthProvider', () => {
   describe('exchangeCodeForToken()', () => {
     it('POST + form-urlencoded로 token 엔드포인트를 호출하고 id_token을 access_token 자리에 반환한다', async () => {
       const validIss = 'https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0';
-      const idToken = makeIdToken({
+      const idToken = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -154,7 +182,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('id_token의 aud가 clientId와 불일치하면 OAuthError(INVALID_RESPONSE)', async () => {
-      const badToken = makeIdToken({
+      const badToken = await signIdToken({
         iss: 'https://login.microsoftonline.com/tid/v2.0',
         aud: 'wrong-aud',
         exp: FUTURE_EXP,
@@ -176,7 +204,7 @@ describe('MicrosoftOAuthProvider', () => {
     const validIss = 'https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0';
 
     it('정상 claims를 매핑하여 OAuthUserInfo를 반환한다', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -198,7 +226,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('email이 없으면 preferred_username으로 폴백', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -211,7 +239,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('email_verified가 false면 emailVerified: false', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -224,7 +252,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('email_verified가 누락되면 emailVerified: false', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -236,7 +264,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('name이 누락되면 name: null', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -248,7 +276,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('iss 형식이 Microsoft 형식이 아니면 OAuthError(INVALID_RESPONSE)', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: 'https://accounts.google.com',
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -258,7 +286,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('exp 만료 시 OAuthError(INVALID_RESPONSE)', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: PAST_EXP,
@@ -268,7 +296,7 @@ describe('MicrosoftOAuthProvider', () => {
     });
 
     it('oid 누락 시 OAuthError(INVALID_RESPONSE) — sub 폴백 안 함', async () => {
-      const token = makeIdToken({
+      const token = await signIdToken({
         iss: validIss,
         aud: 'test-ms-app-id',
         exp: FUTURE_EXP,
@@ -280,6 +308,21 @@ describe('MicrosoftOAuthProvider', () => {
 
     it('형식이 깨진 JWT는 OAuthError(INVALID_RESPONSE)', async () => {
       await expect(provider.getUserInfo('not.a.jwt')).rejects.toThrow('Invalid Microsoft id_token');
+    });
+
+    it('Microsoft 서명이 없는(위조) id_token 은 거부한다 (O-2)', async () => {
+      // 공격자가 유효한 클레임을 채워도 Microsoft 개인키로 서명할 수 없다.
+      const forged = makeIdToken({
+        iss: validIss,
+        aud: 'test-ms-app-id',
+        exp: FUTURE_EXP,
+        oid: 'attacker-oid',
+        email: 'attacker@evil.com',
+        email_verified: true,
+      });
+      await expect(provider.getUserInfo(forged)).rejects.toThrow(
+        'Invalid Microsoft id_token',
+      );
     });
   });
 });
