@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { OAuthManager } from '@withwiz/core/auth/oauth';
+import {
+  generateOAuthState,
+  setOAuthStateCookie,
+} from '@withwiz/core/auth/oauth/state-cookie';
 import type { AuthHandlerOptions } from '../auth-types/handler-types';
 
 export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
@@ -22,10 +26,16 @@ export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
 
       const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
       const manager = new OAuthManager({ providers }, options.dependencies.logger ?? noopLogger);
-      const state = crypto.randomUUID();
+      const state = generateOAuthState();
       const loginUrl = manager.getLoginUrl(provider, state);
 
-      return NextResponse.json({ success: true, loginUrl, state });
+      const response = NextResponse.json({ success: true, loginUrl, state });
+      setOAuthStateCookie(response, state, {
+        secure: options.cookie?.secure,
+        sameSite: options.cookie?.sameSite,
+        domain: options.cookie?.domain,
+      });
+      return response;
     } catch {
       return NextResponse.json({ success: false, error: 'OAuth initialization failed' }, { status: 500 });
     }
