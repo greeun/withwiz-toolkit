@@ -81,3 +81,49 @@ describe('O-1 authorize: sets oauth_state HttpOnly cookie', () => {
     expect(setCookie.toLowerCase()).toContain('httponly');
   });
 });
+
+describe('O-1 callback: state validation (always strict)', () => {
+  it('rejects with 400 and does NOT exchange code when state cookie is absent', async () => {
+    const handler = createOAuthCallbackHandler(options());
+    const req = callbackReq(
+      'http://localhost/api/auth/oauth/callback?code=abc&provider=google&state=S1',
+      {}, // no oauth_state cookie
+    );
+    const res = await handler(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('Invalid OAuth state');
+    expect(mockExchangeCodeForToken).not.toHaveBeenCalled();
+  });
+
+  it('rejects with 400 when cookie and query state mismatch', async () => {
+    const handler = createOAuthCallbackHandler(options());
+    const req = callbackReq(
+      'http://localhost/api/auth/oauth/callback?code=abc&provider=google&state=S1',
+      { oauth_state: 'S2' },
+    );
+    const res = await handler(req);
+    expect(res.status).toBe(400);
+    expect(mockExchangeCodeForToken).not.toHaveBeenCalled();
+  });
+
+  it('proceeds when cookie matches query state', async () => {
+    mockExchangeCodeForToken.mockResolvedValue('tok');
+    mockGetUserInfo.mockResolvedValue({
+      id: 'gid', email: 'u@example.com', name: 'U', image: null,
+    });
+    mockHandleCallback.mockResolvedValue({
+      user: { id: 'u1', email: 'u@example.com', name: 'U', role: 'USER' },
+      tokens: { accessToken: 'at', refreshToken: 'rt' },
+      isNewUser: false,
+    });
+    const handler = createOAuthCallbackHandler(options());
+    const req = callbackReq(
+      'http://localhost/api/auth/oauth/callback?code=abc&provider=google&state=S1',
+      { oauth_state: 'S1' },
+    );
+    const res = await handler(req);
+    expect(res.status).toBe(307);
+    expect(mockExchangeCodeForToken).toHaveBeenCalledWith('google', 'abc');
+  });
+});

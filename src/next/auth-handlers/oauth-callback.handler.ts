@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { OAuthManager } from '@withwiz/core/auth/oauth';
+// state-cookie 는 서브모듈 경로에서 import — handlers.test.ts 가 oauth
+// 인덱스를 OAuthManager 만으로 mock 하므로 인덱스 경유 시 가려진다.
+import {
+  OAUTH_STATE_COOKIE,
+  validateOAuthState,
+  clearOAuthStateCookie,
+} from '@withwiz/core/auth/oauth/state-cookie';
 import { OAuthCallbackService } from '@withwiz/core/auth/services/oauth-callback.service';
 import { setTokenCookies } from '@withwiz/core/auth/jwt/cookie';
 import { AuthError } from '@withwiz/core/auth/errors';
@@ -18,6 +25,11 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
   });
 
   return async (request: NextRequest): Promise<Response> => {
+    const stateCookieOpts = {
+      secure: cookie?.secure,
+      sameSite: cookie?.sameSite,
+      domain: cookie?.domain,
+    };
     try {
       const url = new URL(request.url);
       const code = url.searchParams.get('code');
@@ -25,6 +37,17 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
 
       if (!code || !provider || !oauth?.[provider]) {
         return NextResponse.json({ success: false, error: 'Invalid callback' }, { status: 400 });
+      }
+
+      // O-1: 코드 교환 이전에 state(query) 와 쿠키를 strict 검증.
+      const stateParam = url.searchParams.get('state');
+      const stateCookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
+      if (!validateOAuthState(stateCookie, stateParam)) {
+        const res = NextResponse.json(
+          { success: false, error: 'Invalid OAuth state' },
+          { status: 400 },
+        );
+        return clearOAuthStateCookie(res, stateCookieOpts);
       }
 
       const providers: Record<string, { clientId: string; clientSecret: string; redirectUri: string }> = {};
@@ -39,7 +62,10 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
 
       if (hooks?.allowEmail) {
         const allowed = await hooks.allowEmail(userInfo.email);
-        if (!allowed) return NextResponse.json({ success: false, error: 'Email not allowed' }, { status: 403 });
+        if (!allowed) {
+          const res = NextResponse.json({ success: false, error: 'Email not allowed' }, { status: 403 });
+          return clearOAuthStateCookie(res, stateCookieOpts);
+        }
       }
 
       const result = await callbackService.handleCallback({
@@ -58,19 +84,21 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
         if (redirect) {
           const response = NextResponse.redirect(redirect);
           setTokenCookies(response, result.tokens, { secure: cookie?.secure });
-          return response;
+          return clearOAuthStateCookie(response, stateCookieOpts);
         }
       }
 
       const redirectUrl = urls.afterOAuth ?? urls.afterLogin ?? '/';
       const response = NextResponse.redirect(new URL(redirectUrl, urls.baseUrl));
       setTokenCookies(response, result.tokens, { secure: cookie?.secure });
-      return response;
+      return clearOAuthStateCookie(response, stateCookieOpts);
     } catch (error) {
       if (error instanceof AuthError) {
-        return NextResponse.json({ success: false, error: error.message }, { status: error.statusCode });
+        const res = NextResponse.json({ success: false, error: error.message }, { status: error.statusCode });
+        return clearOAuthStateCookie(res, stateCookieOpts);
       }
-      return NextResponse.json({ success: false, error: 'OAuth callback failed' }, { status: 500 });
+      const res = NextResponse.json({ success: false, error: 'OAuth callback failed' }, { status: 500 });
+      return clearOAuthStateCookie(res, stateCookieOpts);
     }
   };
 }
