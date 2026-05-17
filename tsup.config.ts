@@ -39,8 +39,6 @@ export default defineConfig({
     "zod",
     "date-fns",
     "@radix-ui/react-select",
-    "@nivo/geo",
-    "@nivo/core",
     "nodemailer",
   ],
 });

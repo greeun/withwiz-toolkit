@@ -137,7 +137,7 @@ describe('Type Declaration Integrity', () => {
   it('no .js file in dist/ lacks a .d.ts counterpart', () => {
     const jsFiles = findFiles(DIST, /\.js$/)
       .map((f) => f.replace(ROOT + '/', ''))
-      .filter((f) => !f.includes('chunk-') && !f.includes('world_countries'));
+      .filter((f) => !f.includes('chunk-'));
 
     const missing: string[] = [];
     for (const js of jsFiles) {
@@ -174,11 +174,10 @@ describe('Bundle Contamination Check', () => {
     'nodemailer',
   ];
 
-  it('dist/ total size is reasonable (< 20MB excluding world map)', () => {
+  it('dist/ total size is reasonable (< 5MB)', () => {
     const allFiles = findFiles(DIST, /\.js$/).map((f) => f.replace(ROOT + '/', ''));
     let totalSize = 0;
     for (const f of allFiles) {
-      if (f.includes('world_countries')) continue;
       totalSize += statSync(resolve(ROOT, f)).size;
     }
     const totalMB = totalSize / 1024 / 1024;
@@ -220,12 +219,11 @@ describe('Bundle Contamination Check', () => {
     }
   });
 
-  it('chunk files do not exceed 100KB individually (except world map)', () => {
+  it('chunk files do not exceed 100KB individually', () => {
     const chunks = findFiles(DIST, /^chunk-.*\.js$/).map((f) => f.replace(ROOT + '/', ''));
     const oversized: string[] = [];
 
     for (const chunk of chunks) {
-      if (chunk.includes('world_countries')) continue;
       const size = statSync(resolve(ROOT, chunk)).size;
       if (size > 100 * 1024) {
         oversized.push(`${chunk} (${(size / 1024).toFixed(1)}KB)`);
