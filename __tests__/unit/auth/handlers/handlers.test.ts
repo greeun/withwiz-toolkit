@@ -1281,9 +1281,7 @@ describe('Auth Handlers', () => {
         isNewUser: false,
       });
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       // Should redirect (307 or 302)
@@ -1304,9 +1302,7 @@ describe('Auth Handlers', () => {
         image: null,
       });
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(403);
@@ -1325,9 +1321,7 @@ describe('Auth Handlers', () => {
       });
       mockHandleCallback.mockRejectedValue(new AuthError('Account linking failed', 'OAUTH_ERROR', 409));
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(409);
@@ -1339,9 +1333,7 @@ describe('Auth Handlers', () => {
       const options = createMockOptions(oauthOptions);
       mockExchangeCodeForToken.mockRejectedValue(new Error('Network error'));
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(500);
@@ -1368,9 +1360,7 @@ describe('Auth Handlers', () => {
         isNewUser: false,
       });
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       await handler(req);
       expect(onAfterOAuth).toHaveBeenCalledWith(
@@ -1399,9 +1389,7 @@ describe('Auth Handlers', () => {
         isNewUser: true,
       });
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(307);
@@ -1427,9 +1415,7 @@ describe('Auth Handlers', () => {
         isNewUser: false,
       });
       const handler = createOAuthCallbackHandler(options);
-      const req = new Request('http://localhost/api/auth/oauth/callback?code=abc123&provider=google', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback?code=abc123&provider=google&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(307);
@@ -1452,9 +1438,7 @@ describe('Auth Handlers', () => {
       });
       const handler = createOAuthCallbackHandler(options);
       // provider is the last segment of the path
-      const req = new Request('http://localhost/api/auth/oauth/callback/google?code=abc123', {
-        method: 'GET',
-      }) as any;
+      const req = makeRequestWithCookies('http://localhost/api/auth/oauth/callback/google?code=abc123&state=test-state', { oauth_state: 'test-state' }, { method: 'GET' });
 
       const res = await handler(req);
       expect(res.status).toBe(307);

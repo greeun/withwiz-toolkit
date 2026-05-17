@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { OAuthManager } from '@withwiz/core/auth/oauth';
+// state-cookie 는 서브모듈 경로에서 import — handlers.test.ts 가 oauth
+// 인덱스를 OAuthManager 만으로 mock 하므로 인덱스 경유 시 가려진다.
 import {
   generateOAuthState,
   setOAuthStateCookie,
