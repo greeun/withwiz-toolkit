@@ -17,6 +17,16 @@ import { MetaOAuthProvider } from './providers/meta';
 // Re-export OAUTH_PROVIDERS
 export { OAUTH_PROVIDERS };
 
+// Re-export OAuth state-cookie (CSRF) 유틸 — 소비자 커스텀 흐름 재사용
+export {
+  OAUTH_STATE_COOKIE,
+  generateOAuthState,
+  setOAuthStateCookie,
+  clearOAuthStateCookie,
+  validateOAuthState,
+} from './state-cookie';
+export type { OAuthStateCookieOptions } from './state-cookie';
+
 // Re-export provider adapters
 export {
   GoogleOAuthProvider,
