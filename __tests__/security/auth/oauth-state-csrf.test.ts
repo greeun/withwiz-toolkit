@@ -104,6 +104,8 @@ describe('O-1 callback: state validation (always strict)', () => {
     );
     const res = await handler(req);
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('Invalid OAuth state');
     expect(mockExchangeCodeForToken).not.toHaveBeenCalled();
   });
 
@@ -125,5 +127,9 @@ describe('O-1 callback: state validation (always strict)', () => {
     const res = await handler(req);
     expect(res.status).toBe(307);
     expect(mockExchangeCodeForToken).toHaveBeenCalledWith('google', 'abc');
+    // single-use: state 쿠키는 성공 경로에서도 소거된다
+    const setCookie = res.headers.get('set-cookie') ?? '';
+    expect(setCookie).toContain('oauth_state=');
+    expect(setCookie.toLowerCase()).toContain('max-age=0');
   });
 });
