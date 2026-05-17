@@ -100,7 +100,7 @@ export class MicrosoftOAuthProvider implements IOAuthProviderAdapter {
     // JWKS 서명 검증 + 클레임(aud=config.clientId) 검증 후 반환.
     await verifyMicrosoftClaims(data.id_token, config.clientId);
 
-    // Interface workaround: place id_token in the access_token field so getUserInfo can decode it.
+    // Interface workaround: place id_token in the access_token field so getUserInfo can verify it.
     return {
       access_token: data.id_token,
       token_type: data.token_type ?? 'Bearer',
