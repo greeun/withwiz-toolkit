@@ -62,7 +62,12 @@ export interface ColumnDef<T> {
   accessorKey?: keyof T;
   cell?: (item: T) => React.ReactNode;
   sortable?: boolean;
+  /** 컬럼 선호 폭. 미지정 시 minWidth 의 fallback 으로도 사용됨 — "fill remaining" 컬럼(예: width:"100%")에서는 minWidth 를 명시(예: "0")해서 sibling 컬럼이 짜부라지지 않도록 할 것. */
   width?: string;
+  /** th 의 min-width. 미지정 시 width 값으로 fallback. "fill remaining" 컬럼은 "0" 명시 권장. */
+  minWidth?: string;
+  /** th/td 의 max-width. td 는 maxWidth ?? width 로 적용 — overflow:hidden 콘텐츠와 함께 쓰면 ellipsize 가능. */
+  maxWidth?: string;
   className?: string;
   hidden?: boolean;
   responsive?: {
