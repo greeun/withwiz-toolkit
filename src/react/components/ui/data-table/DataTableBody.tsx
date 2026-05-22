@@ -73,7 +73,6 @@ export function DataTableBody<T>({
               )}
               {visibleColumns.map(column => {
                 const width = column.width === 'auto' ? undefined : column.width;
-                const minWidth = (column as any).minWidth;
                 return (
                   <th
                     key={column.key}
@@ -88,8 +87,8 @@ export function DataTableBody<T>({
                     )}
                     style={{
                       width: width,
-                      minWidth: minWidth || width || undefined,
-                      maxWidth: (column as any).maxWidth || undefined,
+                      minWidth: column.minWidth || width || undefined,
+                      maxWidth: column.maxWidth || undefined,
                     }}
                     onClick={column.sortable ? () => onSort(column.key) : undefined}
                   >
@@ -169,7 +168,7 @@ export function DataTableBody<T>({
                           column.responsive?.xl && "hidden xl:table-cell"
                         )}
                         style={{
-                          maxWidth: (column as any).maxWidth || column.width || undefined,
+                          maxWidth: column.maxWidth || column.width || undefined,
                         }}
                       >
                         {column.cell ?
