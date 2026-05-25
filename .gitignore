@@ -18,3 +18,4 @@ docs/01-plan/
 docs/modules/
 docs/superpowers/
 logs/
+.harness-audit/

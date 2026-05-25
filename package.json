@@ -138,6 +138,8 @@
     "build": "tsup && tsc --emitDeclarationOnly --skipLibCheck",
     "build:js": "tsup",
     "build:types": "tsc --emitDeclarationOnly --skipLibCheck",
+    "build:watch": "tsup --watch",
+    "build:types:watch": "tsc --emitDeclarationOnly --skipLibCheck --watch --preserveWatchOutput",
     "prepublishOnly": "npm run build && npm test",
     "test": "vitest run -c __tests__/vitest.config.ts",
     "test:watch": "vitest -c __tests__/vitest.config.ts",
