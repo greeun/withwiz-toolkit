@@ -5,9 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.0] - Unreleased
-
-> **상태**: `npm publish --tag rc` 관찰 단계. 안정성 확인 후 `latest` 승격 시 날짜 확정.
+## [0.7.0] - 2026-05-26
 
 ### Breaking — 프레임워크 티어 재구조화
 
@@ -32,6 +30,11 @@ prisma/ ← Prisma 어댑터
 - **`"type": "module"`**: ESM-only 출력에 맞춘 선언 (기존 누락으로 인한 bare-node `MODULE_TYPELESS_PACKAGE_JSON` 경고·reparse 오버헤드 제거).
 - **`docs/FRAMEWORK_TIERS.md`** 신설: 티어 모델·규칙·티어별 모듈표·마이그레이션 매핑.
 - OAuth provider `microsoft`/`meta` subpath 추가 (기존 누락분).
+- **dev 스크립트**: `build:watch` (tsup --watch), `build:types:watch` (tsc --watch) 추가 — 소비처에서 link 사용 시 변경 감지 빌드 편의.
+
+### Fixed
+
+- **DataTable `ColumnDef`** 에 `minWidth` / `maxWidth` 정식 선언, `as any` 캐스트 제거. 컬럼 폭 제약을 타입 시스템 안으로 끌어들여 컴파일 타임 검증 가능.
 
 ### Migration
 

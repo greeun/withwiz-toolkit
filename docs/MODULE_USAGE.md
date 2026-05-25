@@ -1,6 +1,6 @@
 # @withwiz/toolkit 모듈 사용 가이드
 
-> **v0.6.2** | Next.js >= 15 | React >= 18 | TypeScript 5 (strict)
+> **v0.7.0** | Next.js >= 15 | React >= 18 | TypeScript 5 (strict)
 
 ---
 
