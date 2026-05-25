@@ -4,18 +4,20 @@ Shared utility library for [withwiz](https://github.com/greeun) projects — a c
 
 ## Features
 
-- **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), Prisma adapter
-- **Cache** — Redis-backed caching with factory, invalidation, and defaults
+- **Composition root** — 단일 `initialize()`로 모든 티어 설정을 한 번에 조립
+- **Framework tiers** — `core` / `next` / `react` / `prisma` 4개 티어로 의존성 분리 (0.7+)
+- **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF 바인딩, Prisma adapter
+- **Cache** — Redis / in-memory / hybrid / noop 백엔드, factory, invalidation, defaults
 - **Constants** — Error codes, messages, pagination, security constants
-- **Error** — Typed `AppError`, centralized error handler and display
+- **Error** — Typed `AppError`, framework-aware error handler / display (core · next · react)
 - **Geolocation** — GeoIP lookup, batch processing, provider factory
 - **Hooks** — `useDataTable`, `useDebounce`, `useExitIntent`, `useTimezone`
 - **Logger** — Winston-based structured logger with daily rotation
-- **Middleware** — Auth, rate-limiting, CORS, security middleware wrappers
+- **Middleware** — Auth, rate-limiting, CORS, security middleware wrappers (Next.js)
 - **Storage** — Cloudflare R2 (AWS S3-compatible) storage
-- **System** — Health check endpoint
+- **System** — Health check, system monitoring
 - **Types** — Shared TypeScript types (API, DB, env, GeoIP, user, i18n, QR)
-- **Utils** — Sanitizer, validators, CSV export, URL normalizer, timezone, IP utils, and more
+- **Utils** — Sanitizer, type-guards, CSV export, URL normalizer, timezone, IP utils, ...
 - **Validators** — Password strength validator
 
 ## Installation
@@ -28,10 +30,19 @@ pnpm add @withwiz/toolkit
 yarn add @withwiz/toolkit
 ```
 
-### Peer dependencies
+### Peer dependencies (optional)
+
+`next` / `react` / `react-dom` 은 **optional** peer입니다 — 사용하는 티어가 요구하는 peer만 설치하세요.
 
 ```bash
-npm install next react react-dom
+# next 티어를 쓸 때
+npm install next
+
+# react 티어를 쓸 때
+npm install react react-dom
+
+# core 티어만 쓰는 백엔드 / CLI
+# (별도 peer 설치 불필요)
 ```
 
 ## Quick start
@@ -90,53 +101,84 @@ import { normalizeUrl }  from '@withwiz/toolkit/core/utils/url-normalizer'
 
 ## Module reference
 
+0.7부터 모든 subpath는 프레임워크 의존성에 따라 4개 티어로 분리됩니다.
+자세한 티어 모델·규칙·마이그레이션 매핑은 [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md)
+및 [`CHANGELOG.md`](CHANGELOG.md) 의 0.7.0 항목을 참조하세요.
+
+### Composition root
+
 | Subpath | Description |
 |---|---|
-| `/auth` | Full auth module (JWT + password + OAuth + Prisma adapter) |
-| `/auth/core/jwt` | JWT sign / verify |
-| `/auth/core/password` | bcrypt helpers |
-| `/auth/core/oauth` | OAuth utilities (Google / GitHub / Kakao / Microsoft / Meta) |
-| `/auth/adapters/prisma` | Prisma-based session adapter |
-| `/cache` | Redis cache (get / set / delete / withCache) |
-| `/cache/cache-factory` | Cache factory for multiple backends |
-| `/cache/cache-invalidation` | Pattern-based cache invalidation |
-| `/constants` | All shared constants |
-| `/constants/error-codes` | Application error codes |
-| `/constants/messages` | Shared user-facing messages |
-| `/constants/pagination` | Default pagination settings |
-| `/constants/security` | Security-related constants |
-| `/error` | AppError, error handler, error display |
-| `/geolocation` | GeoIP lookup & batch processor |
-| `/hooks/useDataTable` | Table state management hook |
-| `/hooks/useDebounce` | Debounce hook |
-| `/hooks/useExitIntent` | Exit intent detection hook |
-| `/hooks/useTimezone` | Timezone detection hook |
-| `/logger/logger` | Structured Winston logger |
-| `/middleware` | Next.js middleware helpers |
-| `/middleware/auth` | Auth middleware |
-| `/middleware/rate-limit` | Rate limiting middleware |
-| `/middleware/cors` | CORS middleware |
-| `/middleware/security` | Security headers middleware |
-| `/storage` | Cloudflare R2 / S3 storage client |
-| `/system/health-check` | Health check handler |
-| `/types/api` | API response types |
-| `/types/database` | Database entity types |
-| `/types/env` | Environment variable types |
-| `/types/user` | User types |
-| `/types/geoip` | GeoIP types |
-| `/utils` | All utility functions |
-| `/utils/sanitizer` | Input sanitization |
-| `/utils/url-normalizer` | URL normalization |
-| `/utils/timezone` | Timezone formatting helpers |
-| `/utils/csv-export` | CSV export helper |
-| `/validators/password-validator` | Password strength validator |
+| `/initialize` | 모든 티어 설정을 단일 객체로 조립하는 통합 진입점 |
+
+### `core` — 프레임워크 독립 (pure TS)
+
+| Subpath | Description |
+|---|---|
+| `/core/auth` | Full auth (JWT + password + OAuth + services + email + types) |
+| `/core/auth/jwt` | JWT sign / verify |
+| `/core/auth/password` | bcrypt helpers |
+| `/core/auth/oauth` | OAuth utilities (Google / GitHub / Kakao / Microsoft / Meta) |
+| `/core/auth/oauth/providers/{google,github,kakao,microsoft,meta}` | Individual OAuth providers |
+| `/core/auth/services` | Login / token-refresh / oauth-callback services |
+| `/core/auth/email` | Email token generation |
+| `/core/auth/types` | Framework-independent auth types |
+| `/core/cache` | Cache facade (get / set / delete / withCache) |
+| `/core/cache/cache-factory` | Cache backend factory (Redis / in-memory / hybrid / noop) |
+| `/core/cache/cache-invalidation` | Pattern-based cache invalidation |
+| `/core/config` | Config registry |
+| `/core/constants/{error-codes,messages,pagination,security}` | Shared constants |
+| `/core/cors` | Framework-independent CORS config |
+| `/core/error` | `AppError`, error codes, i18n messages, `extractErrorInfo` |
+| `/core/geolocation` | GeoIP lookup, batch processor, provider factory |
+| `/core/logger/logger` | Winston-based structured logger |
+| `/core/storage` | Cloudflare R2 / S3-compatible storage |
+| `/core/system` | Health check, system monitoring |
+| `/core/types/{api,database,env,geoip,i18n,qr-code,user}` | Shared TypeScript types |
+| `/core/utils` | `sanitizer`, `type-guards`, `format-number`, `ip-utils`, `timezone`, ... |
+| `/core/validators` | Password strength validator |
+
+### `next` — Next.js 의존
+
+| Subpath | Description |
+|---|---|
+| `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
+| `/next/auth-handlers` | Route handlers (login / refresh / oauth callback / me) |
+| `/next/auth-types` | Handler types (`NextRequest` signatures) |
+| `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
+| `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
+
+### `react` — React 의존
+
+| Subpath | Description |
+|---|---|
+| `/react/components/ui/*` | Button, Table, Badge, DataTable, ... |
+| `/react/hooks/{useDataTable,useDebounce,useExitIntent,useTimezone}` | React hooks |
+| `/react/error` | `error-display` (sonner toast) |
+| `/react/utils/{client-utils,qr-code}` | Browser-context utilities |
+
+### `prisma` — Prisma 의존
+
+| Subpath | Description |
+|---|---|
+| `/prisma/auth-adapter` | `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` Prisma 구현체 |
 
 ## Requirements
 
 - Node.js >= 18
-- Next.js >= 14
-- React >= 18
 - TypeScript >= 5
+
+### Optional peers
+
+`next` / `react` / `react-dom` 은 `optional` peer dependency입니다.
+사용하는 티어가 요구하는 peer만 설치하세요:
+
+- `core` 티어만 쓰는 백엔드 / CLI: peer 불필요
+- `next` 티어: Next.js >= 15
+- `react` 티어: React >= 18, React-DOM >= 18
+- `prisma` 티어: Prisma 호환 클라이언트 (덕 타이핑)
+- Prisma 어댑터의 `EmailTokenRepository` 등 일부 모듈: `date-fns >= 3` (optional)
+- 이메일 전송: `nodemailer >= 6` (optional)
 
 ## Development
 
