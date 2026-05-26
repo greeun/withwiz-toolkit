@@ -9,7 +9,6 @@
  * @created 2025-11-27
  */
 
-import { format as dateFnsFormat } from 'date-fns';
 import { NextResponse } from 'next/server';
 import { logger } from '@withwiz/core/logger/logger';
 
@@ -235,17 +234,6 @@ export const dateFormatter = {
   english: (date: Date | null | undefined): string => {
     if (!date) return '';
     return date.toLocaleString('en-US');
-  },
-
-  /** 커스텀 형식 (date-fns 사용) */
-  custom: (date: Date | null | undefined, formatStr: string): string => {
-    if (!date) return '';
-    // date-fns format 사용 시
-    try {
-      return dateFnsFormat(date, formatStr);
-    } catch {
-      return date.toISOString();
-    }
   }
 };
 
