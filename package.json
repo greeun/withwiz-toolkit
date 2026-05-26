@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -128,6 +128,7 @@
     "./next/utils/api-helpers": "./dist/next/utils/api-helpers.js",
     "./next/utils/cors": "./dist/next/utils/cors.js",
     "./next/utils/csv-export": "./dist/next/utils/csv-export.js",
+    "./next/utils/csv-export-format": "./dist/next/utils/csv-export-format.js",
     "./next/utils/error-processor": "./dist/next/utils/error-processor.js",
     "./react/utils/client-utils": "./dist/react/utils/client-utils.js",
     "./react/utils/qr-code": "./dist/react/utils/qr-code.js",
