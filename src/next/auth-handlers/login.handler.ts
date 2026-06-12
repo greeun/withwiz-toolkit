@@ -6,6 +6,7 @@ import { JWTService } from '@withwiz/core/auth/jwt';
 import { setTokenCookies } from '@withwiz/core/auth/jwt/cookie';
 import { AuthError } from '@withwiz/core/auth/errors';
 import type { AuthHandlerOptions } from '../auth-types/handler-types';
+import { resolveTokenDelivery } from '../auth-types/handler-types';
 import { JWT_DEFAULTS } from '@withwiz/core/constants/security';
 
 const loginSchema = z.object({
@@ -14,7 +15,7 @@ const loginSchema = z.object({
 });
 
 export function createLoginHandler(options: AuthHandlerOptions) {
-  const { dependencies, jwt, hooks, features, cookie } = options;
+  const { dependencies, jwt, hooks, features, cookie, tokenDelivery } = options;
   const jwtService = new JWTService({
     secret: jwt.secret,
     accessTokenExpiry: jwt.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
@@ -90,8 +91,15 @@ export function createLoginHandler(options: AuthHandlerOptions) {
         userResponse = { ...userResponse, ...(await hooks.extendUserResponse(user)) };
       }
 
-      const response = NextResponse.json({ success: true, user: userResponse, tokens });
-      setTokenCookies(response, tokens, { secure: cookie?.secure });
+      const mode = resolveTokenDelivery(tokenDelivery);
+      const responseBody: Record<string, unknown> = { success: true, user: userResponse };
+      if (mode !== 'cookie') {
+        responseBody.tokens = tokens;
+      }
+      const response = NextResponse.json(responseBody);
+      if (mode !== 'header') {
+        setTokenCookies(response, tokens, { secure: cookie?.secure });
+      }
       return response;
     } catch (error) {
       if (error instanceof AuthError) {
