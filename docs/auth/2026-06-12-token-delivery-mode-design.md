@@ -45,8 +45,9 @@ toolkit 의 인증은 항상 "하이브리드"로 동작한다.
 
 **비목표**
 
-- 커스텀 전달 전략 주입(전략 객체 패턴) — 3모드 고정 수요에 과설계. 4번째 모드
-  수요가 생기면 그때 리팩터링한다.
+- 커스텀 전달 전략의 **공개 주입** (`tokenDeliveryStrategy` 옵션) — 소비
+  프로젝트 조사에서 커스텀 전달 수요 0. 수요가 생기면 그때 공개한다.
+  (내부 구현은 전략 객체로 정리 — §8 개정 이력 참조)
 - refresh token rotation 변경 — 현행 유지(동일 refreshToken 재사용).
 - OAuth callback 의 header 모드 토큰 전달 — redirect 응답엔 body 가 없고,
   URL 토큰 전달은 히스토리/로그 노출 위험으로 배제.
@@ -126,8 +127,9 @@ OAuth 가 필요한 앱은 `'hybrid'` 사용을 권장한다. README 에 명시�
 | `src/next/auth-handlers/oauth-callback.handler.ts` | 변경 없음 (모든 모드에서 쿠키) |
 | `src/core/auth/jwt/cookie.ts` | 변경 없음 |
 
-구현 접근은 "모드 필드 + 내부 분기"(A안). 전략 객체(B안)는 과설계,
-모드별 팩토리 분리(C안)는 API 표면 3배 증가로 배제했다.
+구현 접근은 "모드 필드 + 내부 분기"(A안)로 최초 구현 후, 같은 날 전략
+객체(B안의 내부 한정판)로 개정했다 — §8 참조. 모드별 팩토리 분리(C안)는
+API 표면 3배 증가로 배제.
 
 ## 4. 호환성·버전
 
@@ -161,3 +163,26 @@ OAuth 가 필요한 앱은 `'hybrid'` 사용을 권장한다. README 에 명시�
 | agent-extensions, blp-ai-poc, lms-mvp, cms-kit | `'cookie'` | 설정 1줄 | login 응답 body `tokens` 를 읽는 코드가 없는지 사전 확인 — cookie 모드에서 body 토큰이 사라짐 |
 | academic-affairs, profilehub, job-sync | `'header'` | 설정 1줄. academic-affairs 는 자체 refresh 라우트를 toolkit 핸들러로 교체 가능 | — |
 | showcasehub 등 혼재 | `'hybrid'` (기본) | 없음 | — |
+
+## 8. 개정 이력
+
+### 2026-06-12: 모드 분기 → 전략 객체 주입 (행위 보존 리팩터)
+
+A안(내부 if 분기) 구현 결과 분기 조건이 10곳 4파일에 분산되어, 토큰 발급
+핸들러 추가 시마다 분기 복제가 필요한 드리프트 위험이 확인됐다. 사용자
+검토 요청에 따라 `src/core/auth/token-delivery.ts` 의 전략 객체로 개정:
+
+- `TokenDeliveryStrategy` — `extractAccessToken` / `extractRefreshToken` /
+  `buildTokenResponse` / `attachCookies` 4메서드. 모드별 구현체 3개.
+- `TokenSource` 구조적 타입(cookies/headers/json)으로 NextRequest 미의존 —
+  core 티어 규칙 충족. `resolveTokenDelivery` 도 core 로 이동
+  (next/auth-types 는 re-export 로 하위호환 유지, §3.1 의 위치 결정을 대체).
+- Authorization 헤더 파싱은 전략이 소유하지 않고 호출측 위임
+  (`parseHeader` 파라미터) — 기존 테스트의 JWTService mock 의존 유지 목적.
+- 공개 API(`tokenDelivery: 'cookie' | 'header' | 'hybrid'`) 불변.
+  전략 모듈은 package exports 에 미등록(내부 모듈).
+- oauth-callback 은 redirect 특성상 전략 비적용 유지.
+- 검증: 기존 테스트 무수정 전체 통과 (2,389건) = 행위 보존 증명.
+
+패키지의 기존 DI 문화(repository/blacklistChecker/logger 주입,
+CacheFactory·ProviderFactory)와 정합. 공개 전략 주입은 여전히 비목표.
