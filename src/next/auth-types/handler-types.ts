@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import type { BaseUser, OAuthProviderName, UserRepository, OAuthAccountRepository, EmailTokenRepository, EmailSender, Logger } from '@withwiz/core/auth/types';
+import { getAuthConfig } from '@withwiz/core/auth/config';
+import type { TokenDelivery } from '@withwiz/core/auth/config';
 
 export interface AuthHandlerDependencies {
   userRepository: UserRepository;
@@ -50,9 +52,25 @@ export interface AuthHandlerOptions {
     sameSite?: 'lax' | 'strict' | 'none';
     domain?: string;
   };
+  /** 토큰 전달 모드. 미지정 시 전역 AuthConfig → 'hybrid' 순으로 해석 */
+  tokenDelivery?: TokenDelivery;
 }
 
 export interface AuthHandlerResult {
   GET: (req: NextRequest) => Promise<Response>;
   POST: (req: NextRequest) => Promise<Response>;
+}
+
+/**
+ * tokenDelivery 모드 해석.
+ * 우선순위: 핸들러 옵션 > 전역 AuthConfig > 'hybrid'
+ * 요청 시점에 호출할 것 — 핸들러 팩토리는 initialize() 이전에 실행될 수 있다.
+ */
+export function resolveTokenDelivery(optionValue?: TokenDelivery): TokenDelivery {
+  if (optionValue) return optionValue;
+  try {
+    return getAuthConfig().tokenDelivery;
+  } catch {
+    return 'hybrid';
+  }
 }
