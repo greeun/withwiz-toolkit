@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { JWTService } from '@withwiz/core/auth/jwt';
+import { getTokenDeliveryStrategy } from '@withwiz/core/auth/token-delivery';
 import type { AuthHandlerOptions } from '../auth-types/handler-types';
-import { resolveTokenDelivery } from '../auth-types/handler-types';
 import { JWT_DEFAULTS } from '@withwiz/core/constants/security';
 
 export function createMeHandler(options: AuthHandlerOptions) {
@@ -16,16 +16,10 @@ export function createMeHandler(options: AuthHandlerOptions) {
 
   return async (request: NextRequest): Promise<Response> => {
     try {
-      const mode = resolveTokenDelivery(options.tokenDelivery);
-      let token: string | null | undefined;
-      if (mode !== 'header') {
-        token = request.cookies.get('access_token')?.value;
-      }
-      if (!token && mode !== 'cookie') {
-        token = jwtService.extractTokenFromHeader(
-          request.headers.get('authorization') ?? undefined,
-        );
-      }
+      const token = getTokenDeliveryStrategy(options.tokenDelivery).extractAccessToken(
+        request,
+        (header) => jwtService.extractTokenFromHeader(header ?? undefined),
+      );
 
       if (!token) {
         return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
