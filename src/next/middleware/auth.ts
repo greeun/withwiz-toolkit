@@ -10,12 +10,13 @@
  * @withwiz/core/auth/jwt를 사용하여 비즈니스 로직에 의존하지 않음
  */
 
-import type { TApiMiddleware } from "./types";
+import type { TApiMiddleware, IApiContext } from "./types";
 import { AppError } from "@withwiz/core/error/app-error";
 import { ERROR_CODES } from "@withwiz/core/constants/error-codes";
 import { JWTManager } from "@withwiz/core/auth/jwt";
 import { logger as winstonLogger } from "@withwiz/core/logger/logger";
 import { getAuthConfig } from "@withwiz/core/auth/config";
+import { resolveTokenDelivery } from "../auth-types/handler-types";
 
 // ============================================================================
 // Access Token Blacklist Checker (의존성 주입 방식)
@@ -144,6 +145,26 @@ export function initializeAuthMiddleware(): boolean {
 // ============================================================================
 
 /**
+ * tokenDelivery 모드에 따라 요청에서 access token 추출.
+ * cookie: 쿠키만 / header: Authorization 헤더만 / hybrid: 쿠키 → 헤더 폴백
+ */
+function extractRequestToken(
+  context: IApiContext,
+  jwtManager: JWTManager,
+): string | null {
+  const mode = resolveTokenDelivery();
+  let token: string | null = null;
+  if (mode !== "header") {
+    token = context.request.cookies.get("access_token")?.value ?? null;
+  }
+  if (!token && mode !== "cookie") {
+    const authHeader = context.request.headers.get("authorization");
+    token = jwtManager.extractTokenFromHeader(authHeader);
+  }
+  return token;
+}
+
+/**
  * 인증 미들웨어
  *
  * 쿠키(access_token) 또는 Authorization 헤더에서 JWT 토큰을 추출하고 검증합니다.
@@ -171,12 +192,8 @@ export const authMiddleware: TApiMiddleware = async (context, next) => {
       );
     }
 
-    // 쿠키에서 토큰 추출 (Authorization 헤더 폴백 — OAPI 호환)
-    let token: string | null = context.request.cookies.get("access_token")?.value ?? null;
-    if (!token) {
-      const authHeader = context.request.headers.get("authorization");
-      token = jwtManager.extractTokenFromHeader(authHeader);
-    }
+    // tokenDelivery 모드에 따라 토큰 추출 (기본 hybrid: 쿠키 → 헤더 폴백)
+    const token = extractRequestToken(context, jwtManager);
 
     if (!token) {
       throw new AppError(ERROR_CODES.UNAUTHORIZED.code);
@@ -249,12 +266,8 @@ export const optionalAuthMiddleware: TApiMiddleware = async (context, next) => {
     const jwtManager = getJWTManager();
 
     if (jwtManager) {
-      // 쿠키에서 토큰 추출 (Authorization 헤더 폴백 — OAPI 호환)
-      let token: string | null = context.request.cookies.get("access_token")?.value ?? null;
-      if (!token) {
-        const authHeader = context.request.headers.get("authorization");
-        token = jwtManager.extractTokenFromHeader(authHeader);
-      }
+      // tokenDelivery 모드에 따라 토큰 추출 (기본 hybrid: 쿠키 → 헤더 폴백)
+      const token = extractRequestToken(context, jwtManager);
 
       if (token) {
         // Access Token 블랙리스트 체크
