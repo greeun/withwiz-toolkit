@@ -31,37 +31,10 @@ The project uses a two-stage build:
 
 ### Package Exports
 
-The package uses conditional exports in `package.json`:
-
+The package uses conditional exports in `package.json` (the source of truth).
 Since 0.7, every subpath is namespaced under a framework tier
-(`core` / `next` / `react` / `prisma`). See `docs/FRAMEWORK_TIERS.md`.
-
-```
-exports:
-  ./initialize → dist/initialize.js (composition root, all tiers)
-
-  # core — zero framework dependency (pure TS)
-  ./core/auth → dist/core/auth/index.js (jwt, password, oauth, services, email, types subpaths)
-  ./core/cache → dist/core/cache/index.js (factory, invalidation, defaults, env subpaths)
-  ./core/config, ./core/constants, ./core/cors, ./core/error, ./core/geolocation,
-  ./core/logger/logger, ./core/storage, ./core/system, ./core/types/*,
-  ./core/utils, ./core/validators
-
-  # next — Next.js dependent
-  ./next/middleware → dist/next/middleware/index.js (+ auth, rate-limit, cors, security, types, wrappers)
-  ./next/auth-handlers, ./next/auth-types,
-  ./next/error → dist/next/error/index.js (+ ./next/error/error-handler)
-  ./next/utils → dist/next/utils/index.js (api-helpers, cors, csv-export, error-processor)
-
-  # react — React dependent
-  ./react/components/ui/* → dist/react/components/ui/*.js
-  ./react/hooks/* → Individual hooks as separate exports
-  ./react/error → dist/react/error/index.js (+ ./react/error/error-display)
-  ./react/utils/* → client-utils, qr-code
-
-  # prisma — Prisma adapter
-  ./prisma/auth-adapter → dist/prisma/auth-adapter/index.js
-```
+(`core` / `next` / `react` / `prisma`). See `docs/FRAMEWORK_TIERS.md` for the
+tier breakdown and `docs/MODULE_STRUCTURE.md` for the full export map.
 
 **Tier rule**: `core` imports no framework; `next`/`react`/`prisma` may import
 `core` only, never each other. `initialize.ts` is the composition root exception.
@@ -70,43 +43,8 @@ exports:
 
 ## Module Structure
 
-Source is organized by framework tier (see `docs/FRAMEWORK_TIERS.md`):
-
-```
-src/
-├── initialize.ts      # composition root (root-level, assembles all tiers)
-│
-├── core/              # zero framework dependency (pure TS)
-│   ├── auth/          #   jwt, password, oauth, services, email, types, config
-│   ├── cache/         #   Redis + in-memory caching with factory
-│   ├── config/        #   config registry (common, errors, warn)
-│   ├── constants/     #   error codes, messages, pagination, security
-│   ├── cors/          #   pure CORS config (← old middleware/cors-config)
-│   ├── error/         #   AppError, error codes, i18n messages, extractErrorInfo
-│   ├── geolocation/   #   GeoIP lookup, batch processor, provider factory
-│   ├── logger/        #   Winston-based structured logging
-│   ├── storage/       #   Cloudflare R2 / S3 storage
-│   ├── system/        #   health checks, system monitoring
-│   ├── types/         #   shared TypeScript types
-│   ├── utils/         #   pure utils (sanitizer, type-guards, format-number, …)
-│   └── validators/    #   password strength validation
-│
-├── next/              # Next.js dependent
-│   ├── middleware/    #   auth, rate-limit, cors, security, wrappers
-│   ├── auth-handlers/ #   Next.js route handlers (← old auth/handlers)
-│   ├── auth-types/    #   handler types (NextRequest signatures)
-│   ├── error/         #   error-handler (NextResponse), LocaleDetector, ErrorBoundary
-│   └── utils/         #   api-helpers, cors, csv-export, error-processor
-│
-├── react/             # React dependent
-│   ├── components/ui/ #   Button, Table, Badge, DataTable, etc.
-│   ├── hooks/         #   useDataTable, useDebounce, useExitIntent, useTimezone
-│   ├── error/         #   error-display (sonner toast)
-│   └── utils/         #   client-utils, qr-code (browser context)
-│
-└── prisma/            # Prisma dependent
-    └── auth-adapter/  #   Prisma auth repository adapter
-```
+Source is organized by framework tier. See `docs/MODULE_STRUCTURE.md` for the
+annotated source-directory tree and `docs/FRAMEWORK_TIERS.md` for tier rules.
 
 ## Testing
 
@@ -132,37 +70,9 @@ npm run test:integration # Integration tests only
 
 ### Test Organization
 
-Tests are organized by type and category:
-
-```
-__tests__/
-├── unit/                          # Unit tests by module
-│   ├── auth/
-│   ├── cache/
-│   ├── components/
-│   ├── error/
-│   ├── geolocation/
-│   ├── hooks/
-│   ├── logger/
-│   ├── middleware/
-│   ├── system/
-│   ├── utils/
-│   └── validators/
-├── integration/                   # Integration tests
-│   └── cache.integration.test.ts
-├── security/                      # Security-focused tests
-│   ├── auth/
-│   ├── utils/ (sanitizer)
-│   └── validators/
-├── performance/                   # Performance tests
-│   └── cache/
-├── accessibility/                 # Accessibility tests
-│   ├── components/
-│   └── hooks/
-└── docs/                          # Test documentation
-```
-
-**Naming**: `<module>.test.ts` or `.test.tsx` for React components
+Test directory layout (by type/category) and naming conventions live in
+`docs/DEVELOPMENT.md`. Unit tests mirror source structure; test dirs are not
+tier-prefixed.
 
 **TDD Approach**: Write tests before implementation. Use meaningful descriptions focusing on behavior, not implementation.
 
@@ -214,43 +124,8 @@ logError('Failed to fetch', { error, userId, context: 'payment' })
 
 ## Common Development Tasks
 
-### Running a Single Test
-
-```bash
-npm test -- __tests__/unit/error/app-error.test.ts
-# or watch mode
-npm run test:watch -- app-error.test.ts
-```
-
-### Running Tests for a Category
-
-```bash
-npm test -- __tests__/security/
-npm test -- __tests__/performance/
-npm test -- __tests__/accessibility/
-```
-
-### Debugging Tests
-
-```bash
-npm run test:watch -- --inspect-brk
-# Then use Chrome DevTools: chrome://inspect
-```
-
-### Building Locally
-
-```bash
-npm run build        # Full build (JS + types)
-npm run build:js     # Only JS (tsup)
-npm run build:types  # Only types (tsc)
-```
-
-### Checking Type Coverage
-
-TypeScript strict mode is enforced. Run tsc to catch type errors:
-```bash
-npm run build:types
-```
+Recipes for running a single test, category tests, debugging, local builds, and
+type-coverage checks live in `docs/DEVELOPMENT.md`.
 
 ## Communication Guidelines
 
@@ -371,4 +246,7 @@ All major dependencies are marked `external` to avoid bundling. This ensures:
 - **README.md**: Quick start examples and module reference
 - **CONTRIBUTING.md**: Detailed contribution guidelines
 - **CHANGELOG.md**: Release notes and breaking changes
+- **docs/FRAMEWORK_TIERS.md**: Tier model, rules, per-tier module table
+- **docs/MODULE_STRUCTURE.md**: Annotated source tree + export map
+- **docs/DEVELOPMENT.md**: Test organization + dev task recipes
 - **docs/**: Additional documentation and architecture diagrams
