@@ -145,3 +145,54 @@ describe('login 핸들러 tokenDelivery', () => {
     expect(mockSetTokenCookies).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('refresh 핸들러 tokenDelivery', () => {
+  it('cookie 모드: 쿠키 입력 + body 에 accessToken 없음 + 쿠키 재설정', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'cookie' }));
+    const res = await handler(createMockRequest({ cookies: { refresh_token: 'rt-456' } }));
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.accessToken).toBeUndefined();
+    expect(mockSetTokenCookies).toHaveBeenCalledTimes(1);
+  });
+
+  it('header 모드: body {refreshToken} 입력 + body accessToken 반환 + 쿠키 미설정', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'header' }));
+    const res = await handler(createMockRequest({ body: { refreshToken: 'rt-456' } }));
+    const body = await res.json();
+    expect(body.accessToken).toBe('new-at');
+    expect(mockSetTokenCookies).not.toHaveBeenCalled();
+    expect(mockRefresh).toHaveBeenCalledWith('rt-456');
+  });
+
+  it('header 모드: 쿠키는 무시한다', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'header' }));
+    const res = await handler(createMockRequest({ cookies: { refresh_token: 'rt-456' } }));
+    expect(res.status).toBe(401);
+  });
+
+  it('hybrid 모드: 쿠키 없으면 body 로 폴백한다 (신규 동작)', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'hybrid' }));
+    const res = await handler(createMockRequest({ body: { refreshToken: 'rt-456' } }));
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.accessToken).toBe('new-at');
+  });
+
+  it('hybrid 모드: 쿠키가 body 보다 우선한다', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'hybrid' }));
+    await handler(
+      createMockRequest({
+        cookies: { refresh_token: 'rt-cookie' },
+        body: { refreshToken: 'rt-body' },
+      }),
+    );
+    expect(mockRefresh).toHaveBeenCalledWith('rt-cookie');
+  });
+
+  it('토큰이 어디에도 없으면 401', async () => {
+    const handler = createRefreshHandler(createMockOptions({ tokenDelivery: 'hybrid' }));
+    const res = await handler(createMockRequest({}));
+    expect(res.status).toBe(401);
+  });
+});
