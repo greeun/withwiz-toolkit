@@ -3,10 +3,9 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { compare } from 'bcryptjs';
 import { JWTService } from '@withwiz/core/auth/jwt';
-import { setTokenCookies } from '@withwiz/core/auth/jwt/cookie';
+import { getTokenDeliveryStrategy } from '@withwiz/core/auth/token-delivery';
 import { AuthError } from '@withwiz/core/auth/errors';
 import type { AuthHandlerOptions } from '../auth-types/handler-types';
-import { resolveTokenDelivery } from '../auth-types/handler-types';
 import { JWT_DEFAULTS } from '@withwiz/core/constants/security';
 
 const loginSchema = z.object({
@@ -91,15 +90,11 @@ export function createLoginHandler(options: AuthHandlerOptions) {
         userResponse = { ...userResponse, ...(await hooks.extendUserResponse(user)) };
       }
 
-      const mode = resolveTokenDelivery(tokenDelivery);
-      const responseBody: Record<string, unknown> = { success: true, user: userResponse };
-      if (mode !== 'cookie') {
-        responseBody.tokens = tokens;
-      }
-      const response = NextResponse.json(responseBody);
-      if (mode !== 'header') {
-        setTokenCookies(response, tokens, { secure: cookie?.secure });
-      }
+      const strategy = getTokenDeliveryStrategy(tokenDelivery);
+      const response = NextResponse.json(
+        strategy.buildTokenResponse({ success: true, user: userResponse }, { tokens }),
+      );
+      strategy.attachCookies(response, tokens, { secure: cookie?.secure });
       return response;
     } catch (error) {
       if (error instanceof AuthError) {

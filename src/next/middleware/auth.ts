@@ -16,7 +16,7 @@ import { ERROR_CODES } from "@withwiz/core/constants/error-codes";
 import { JWTManager } from "@withwiz/core/auth/jwt";
 import { logger as winstonLogger } from "@withwiz/core/logger/logger";
 import { getAuthConfig } from "@withwiz/core/auth/config";
-import { resolveTokenDelivery } from "../auth-types/handler-types";
+import { getTokenDeliveryStrategy } from "@withwiz/core/auth/token-delivery";
 
 // ============================================================================
 // Access Token Blacklist Checker (의존성 주입 방식)
@@ -145,23 +145,16 @@ export function initializeAuthMiddleware(): boolean {
 // ============================================================================
 
 /**
- * tokenDelivery 모드에 따라 요청에서 access token 추출.
+ * tokenDelivery 모드 전략에 위임해 요청에서 access token 추출.
  * cookie: 쿠키만 / header: Authorization 헤더만 / hybrid: 쿠키 → 헤더 폴백
  */
 function extractRequestToken(
   context: IApiContext,
   jwtManager: JWTManager,
 ): string | null {
-  const mode = resolveTokenDelivery();
-  let token: string | null = null;
-  if (mode !== "header") {
-    token = context.request.cookies.get("access_token")?.value ?? null;
-  }
-  if (!token && mode !== "cookie") {
-    const authHeader = context.request.headers.get("authorization");
-    token = jwtManager.extractTokenFromHeader(authHeader);
-  }
-  return token;
+  return getTokenDeliveryStrategy().extractAccessToken(context.request, (header) =>
+    jwtManager.extractTokenFromHeader(header),
+  );
 }
 
 /**
