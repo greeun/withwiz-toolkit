@@ -99,6 +99,35 @@ import { formatNumber }  from '@withwiz/toolkit/core/utils/format-number'
 import { normalizeUrl }  from '@withwiz/toolkit/core/utils/url-normalizer'
 ```
 
+### 토큰 전달 모드 (tokenDelivery)
+
+인증 토큰 전달 방식을 초기화 시 선택할 수 있습니다. 기본값은 `'hybrid'`(쿠키 + 헤더 동시 지원, 기존 동작)입니다.
+
+```typescript
+import { initialize } from '@withwiz/toolkit/initialize';
+
+initialize({
+  auth: {
+    jwtSecret: process.env.JWT_SECRET!,
+    tokenDelivery: 'cookie', // 'cookie' | 'header' | 'hybrid' (기본)
+  },
+});
+```
+
+핸들러별로 덮어쓸 수도 있습니다 (옵션 > 전역 > `'hybrid'` 순):
+
+```typescript
+createAuthHandlers({ ...options, tokenDelivery: 'header' });
+```
+
+| 모드 | 토큰 위치 | 특징 |
+|---|---|---|
+| `cookie` | HttpOnly 쿠키 전용 | 응답 body 에서 토큰 제거 — XSS 노출 면 최소. 브라우저 앱 권장 |
+| `header` | `Authorization: Bearer` + body | refresh 는 body `{ refreshToken }` 으로 전달. 클라이언트 저장소는 XSS 에 상대적으로 취약 — 비브라우저 클라이언트용 |
+| `hybrid` | 둘 다 | 기존 동작. 쿠키 우선, 헤더/body 폴백 |
+
+**제약**: OAuth callback 은 redirect 응답이라 모드와 무관하게 쿠키로만 토큰을 전달합니다. OAuth 를 쓰는 앱은 `'cookie'` 또는 `'hybrid'` 를 사용하세요.
+
 ## Module reference
 
 0.7부터 모든 subpath는 프레임워크 의존성에 따라 4개 티어로 분리됩니다.

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-12
+
+### Added
+
+- **tokenDelivery 모드** — 인증 토큰 전달 방식을 `'cookie' | 'header' | 'hybrid'` 중 선택 가능 (`AuthConfig.tokenDelivery`, `AuthHandlerOptions.tokenDelivery`). 우선순위: 핸들러 옵션 > 전역 config > `'hybrid'`(기존 동작, non-breaking).
+  - `cookie`: 응답 body 에서 토큰 제거, HttpOnly 쿠키 전용. 미들웨어 헤더 폴백 비활성.
+  - `header`: 쿠키 미설정, body/Authorization 헤더 전용. refresh 가 body `{ refreshToken }` 입력 지원 (신규).
+  - `hybrid`: 기존 동작 + refresh 의 body 폴백 추가 (쿠키 우선, additive).
+- 설계 문서: `docs/auth/2026-06-12-token-delivery-mode-design.md`
+
+### Notes
+
+- 기본값이 `'hybrid'` 이므로 기존 소비 프로젝트는 무수정 동작.
+- OAuth callback 은 redirect 특성상 모드와 무관하게 쿠키 전달 — header 모드 앱은 hybrid 권장.
+
+## [0.7.1] - 2026-06-11
+
+### Fixed
+
+- `next/utils` csv-export 의 date-fns optional peer 정합 수정.
+
 ## [0.7.0] - 2026-05-26
 
 ### Breaking — 프레임워크 티어 재구조화
