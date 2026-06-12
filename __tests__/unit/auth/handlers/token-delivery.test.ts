@@ -196,3 +196,36 @@ describe('refresh 핸들러 tokenDelivery', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('me 핸들러 tokenDelivery', () => {
+  it('cookie 모드: 쿠키 토큰으로 조회된다', async () => {
+    const handler = createMeHandler(createMockOptions({ tokenDelivery: 'cookie' }));
+    const res = await handler(createMockRequest({ cookies: { access_token: 'at-123' } }));
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.user.id).toBe('u1');
+  });
+
+  it('cookie 모드: Authorization 헤더는 무시된다', async () => {
+    const handler = createMeHandler(createMockOptions({ tokenDelivery: 'cookie' }));
+    const res = await handler(
+      createMockRequest({ headers: { authorization: 'Bearer at-123' } }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('header 모드: 헤더 토큰으로 조회된다', async () => {
+    const handler = createMeHandler(createMockOptions({ tokenDelivery: 'header' }));
+    const res = await handler(
+      createMockRequest({ headers: { authorization: 'Bearer at-123' } }),
+    );
+    const body = await res.json();
+    expect(body.success).toBe(true);
+  });
+
+  it('header 모드: 쿠키는 무시된다', async () => {
+    const handler = createMeHandler(createMockOptions({ tokenDelivery: 'header' }));
+    const res = await handler(createMockRequest({ cookies: { access_token: 'at-123' } }));
+    expect(res.status).toBe(401);
+  });
+});
