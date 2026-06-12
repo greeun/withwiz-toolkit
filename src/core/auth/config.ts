@@ -2,11 +2,14 @@ import { ConfigurationError } from '../config/errors';
 import { configWarn } from '../config/warn';
 import { JWT_DEFAULTS } from '../constants/security';
 
+export type TokenDelivery = 'cookie' | 'header' | 'hybrid';
+
 export interface AuthConfig {
   jwtSecret: string;
   accessTokenExpiry?: string;
   refreshTokenExpiry?: string;
   cookieSecure?: boolean;
+  tokenDelivery?: TokenDelivery;
 }
 
 export interface ResolvedAuthConfig {
@@ -14,6 +17,7 @@ export interface ResolvedAuthConfig {
   accessTokenExpiry: string;
   refreshTokenExpiry: string;
   cookieSecure: boolean;
+  tokenDelivery: TokenDelivery;
 }
 
 export function initializeAuth(config: AuthConfig): void {
@@ -33,6 +37,7 @@ export function initializeAuth(config: AuthConfig): void {
     accessTokenExpiry: config.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
     refreshTokenExpiry: config.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
     cookieSecure: config.cookieSecure ?? false,
+    tokenDelivery: config.tokenDelivery ?? 'hybrid',
   };
 }
 
