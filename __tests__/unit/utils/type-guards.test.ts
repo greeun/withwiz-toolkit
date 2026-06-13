@@ -31,7 +31,7 @@ import {
   isEmptyArray,
   isEmptyObject,
   isEmpty,
-} from "@withwiz/core/utils/type-guards";
+} from "@withwiz/toolkit/core/utils/type-guards";
 
 // ============================================================================
 // SC-UNIT-TG-001: Utility Type Guards

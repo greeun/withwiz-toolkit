@@ -5,9 +5,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import type { TApiMiddleware } from './types';
-import { logger } from '@withwiz/core/logger/logger';
-import { getCorsConfig } from '@withwiz/core/cors';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { getCorsConfig } from '@withwiz/toolkit/core/cors';
 
 /**
  * CORS 미들웨어 설정
@@ -125,7 +125,7 @@ export const corsMiddleware: TApiMiddleware = createCorsMiddleware({
  * @example
  * ```typescript
  * // instrumentation.ts
- * import { validateCorsConfiguration } from '@withwiz/next/middleware/cors';
+ * import { validateCorsConfiguration } from '@withwiz/toolkit/next/middleware/cors';
  *
  * export async function register() {
  *   validateCorsConfiguration({

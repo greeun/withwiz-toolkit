@@ -8,8 +8,8 @@
 import React, { Component, type ReactNode } from 'react';
 import { AlertCircle, RefreshCw, Home, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
-import { getErrorDisplayInfo } from '@withwiz/core/error/friendly-messages-v2';
-import { extractErrorInfo } from '@withwiz/core/error/extract-error-info';
+import { getErrorDisplayInfo } from '@withwiz/toolkit/core/error/friendly-messages-v2';
+import { extractErrorInfo } from '@withwiz/toolkit/core/error/extract-error-info';
 
 interface IProps {
   children: ReactNode;

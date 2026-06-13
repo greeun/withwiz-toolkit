@@ -1,4 +1,4 @@
-import type { EmailSender } from '../types';
+import type { EmailSender } from '@withwiz/toolkit/core/auth/types';
 
 export interface SmtpConfig {
   host: string;

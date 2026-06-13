@@ -152,6 +152,49 @@ describe('Type Declaration Integrity', () => {
       `These .js files have no .d.ts:\n${missing.join('\n')}`,
     ).toHaveLength(0);
   });
+
+  it('no .d.ts file references unpublished @withwiz/core/* imports', () => {
+    const bareAliasImports: string[] = [];
+    const importPattern =
+      /^\s*(import|export)\b.*\bfrom\s+['"]@withwiz\/(core|next|react|prisma)\//;
+
+    for (const dtsPath of findFiles(DIST, /\.d\.ts$/)) {
+      const rel = dtsPath.replace(ROOT + '/', '');
+      const content = readFileSync(dtsPath, 'utf-8');
+      for (const line of content.split('\n')) {
+        if (importPattern.test(line)) {
+          bareAliasImports.push(`${rel}: ${line.trim()}`);
+        }
+      }
+    }
+
+    expect(
+      bareAliasImports,
+      `Published .d.ts must not use unpublished internal aliases:\n${bareAliasImports.join('\n')}`,
+    ).toHaveLength(0);
+  });
+
+  it('every @withwiz/toolkit/* import in .d.ts is listed in package exports', () => {
+    const exportKeys = new Set(Object.keys(PKG.exports as Record<string, ExportEntry>));
+    const specifierPattern = /from\s+['"](@withwiz\/toolkit\/[^'"]+)['"]/g;
+    const missing: string[] = [];
+
+    for (const dtsPath of findFiles(DIST, /\.d\.ts$/)) {
+      const rel = dtsPath.replace(ROOT + '/', '');
+      const content = readFileSync(dtsPath, 'utf-8');
+      for (const match of content.matchAll(specifierPattern)) {
+        const subpath = './' + match[1].replace('@withwiz/toolkit/', '');
+        if (!exportKeys.has(subpath)) {
+          missing.push(`${rel}: ${match[1]}`);
+        }
+      }
+    }
+
+    expect(
+      [...new Set(missing)].sort(),
+      'Add missing subpaths to package.json exports',
+    ).toHaveLength(0);
+  });
 });
 
 // ============================================================================

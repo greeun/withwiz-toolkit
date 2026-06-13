@@ -1,5 +1,5 @@
-import { LoginService } from '../../../../src/core/auth/services/login.service';
-import type { UserRepository, Logger } from '../../../../src/core/auth/types';
+import { LoginService } from '@withwiz/toolkit/core/auth/services/login.service';
+import type { UserRepository, Logger } from '@withwiz/toolkit/core/auth/types';
 import { hash } from 'bcryptjs';
 
 const mockUserRepo: UserRepository = {

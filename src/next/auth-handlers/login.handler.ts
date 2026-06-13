@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { compare } from 'bcryptjs';
-import { JWTService } from '@withwiz/core/auth/jwt';
-import { getTokenDeliveryStrategy } from '@withwiz/core/auth/token-delivery';
-import { AuthError } from '@withwiz/core/auth/errors';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
-import { JWT_DEFAULTS } from '@withwiz/core/constants/security';
+import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
+import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 const loginSchema = z.object({
   email: z.string().email(),

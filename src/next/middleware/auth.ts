@@ -7,16 +7,16 @@
  * - 인증 실패 시 401 에러
  *
  * 완전 독립적 패키지:
- * @withwiz/core/auth/jwt를 사용하여 비즈니스 로직에 의존하지 않음
+ * @withwiz/toolkit/core/auth/jwt를 사용하여 비즈니스 로직에 의존하지 않음
  */
 
-import type { TApiMiddleware, IApiContext } from "./types";
-import { AppError } from "@withwiz/core/error/app-error";
-import { ERROR_CODES } from "@withwiz/core/constants/error-codes";
-import { JWTManager } from "@withwiz/core/auth/jwt";
-import { logger as winstonLogger } from "@withwiz/core/logger/logger";
-import { getAuthConfig } from "@withwiz/core/auth/config";
-import { getTokenDeliveryStrategy } from "@withwiz/core/auth/token-delivery";
+import type { TApiMiddleware, IApiContext } from "@withwiz/toolkit/next/middleware/types";
+import { AppError } from "@withwiz/toolkit/core/error/app-error";
+import { ERROR_CODES } from "@withwiz/toolkit/core/constants/error-codes";
+import { JWTManager } from "@withwiz/toolkit/core/auth/jwt";
+import { logger as winstonLogger } from "@withwiz/toolkit/core/logger/logger";
+import { getAuthConfig } from "@withwiz/toolkit/core/auth/config";
+import { getTokenDeliveryStrategy } from "@withwiz/toolkit/core/auth/token-delivery";
 
 // ============================================================================
 // Access Token Blacklist Checker (의존성 주입 방식)
@@ -128,7 +128,7 @@ function getJWTManager(): JWTManager | null {
  * @example
  * ```typescript
  * // instrumentation.ts
- * import { initializeAuthMiddleware } from '@withwiz/next/middleware/auth';
+ * import { initializeAuthMiddleware } from '@withwiz/toolkit/next/middleware/auth';
  *
  * export async function register() {
  *   initializeAuthMiddleware();

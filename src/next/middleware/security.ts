@@ -7,8 +7,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import type { TApiMiddleware } from './types';
-import { logger } from '@withwiz/core/logger/logger';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 // ============================================================================
 // Origin 검증 (CSRF 방어)

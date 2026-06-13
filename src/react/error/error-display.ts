@@ -4,13 +4,13 @@
  */
 
 import { toast } from 'sonner';
-import { getErrorCategory } from '@withwiz/core/constants/error-codes';
-import { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from '@withwiz/core/error/friendly-messages-v2';
-import { AppError } from '@withwiz/core/error/app-error';
+import { getErrorCategory } from '@withwiz/toolkit/core/constants/error-codes';
+import { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from '@withwiz/toolkit/core/error/friendly-messages-v2';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
 
 // Re-export from core for external use (하위 호환)
-export { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from '@withwiz/core/error/friendly-messages-v2';
-export { extractErrorInfo } from '@withwiz/core/error/extract-error-info';
+export { getFriendlyMessage, getErrorDisplayInfo, type IErrorDisplay } from '@withwiz/toolkit/core/error/friendly-messages-v2';
+export { extractErrorInfo } from '@withwiz/toolkit/core/error/extract-error-info';
 
 type TLocale = 'ko' | 'en';
 

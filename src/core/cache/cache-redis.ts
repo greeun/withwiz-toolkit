@@ -6,8 +6,8 @@
  * - 에러 발생 시 즉시 폴백 지원
  */
 import { Redis } from '@upstash/redis';
-import { logger } from '@withwiz/core/logger/logger';
-import { getEnv, getConfig, isCacheEnabled, validateRedisEnvironment, getCacheFallbackConfig } from './cache-env';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { getEnv, getConfig, isCacheEnabled, validateRedisEnvironment, getCacheFallbackConfig } from '@withwiz/toolkit/core/cache/cache-env';
 
 // ============================================================================
 // 전역 Redis 에러 상태 관리 (싱글톤)

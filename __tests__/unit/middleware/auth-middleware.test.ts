@@ -14,17 +14,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
-import { JWTService } from '@withwiz/core/auth/jwt';
-import type { JWTConfig } from '@withwiz/core/auth/types';
-import type { IApiContext } from '@withwiz/next/middleware/types';
+import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
+import type { JWTConfig } from '@withwiz/toolkit/core/auth/types';
+import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 // NOTE: We don't use `instanceof AppError` checks because vi.resetModules()
 // causes different class references. Instead we check error.name and error.code.
-import { ERROR_CODES } from '@withwiz/core/constants/error-codes';
+import { ERROR_CODES } from '@withwiz/toolkit/core/constants/error-codes';
 import { NextResponse } from 'next/server';
-import { initializeAuth, resetAuth } from '../../../src/core/auth/config';
+import { initializeAuth, resetAuth } from '@withwiz/toolkit/core/auth/config';
 
 // Suppress logger output during tests
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
@@ -143,7 +143,7 @@ describe('authMiddleware: JWT not configured', () => {
 
   it('should throw UNAUTHORIZED when auth is not initialized', async () => {
     // Re-import after reset to get fresh module state
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext({ authHeader: `Bearer ${validAccessToken}` });
 
     try {
@@ -174,7 +174,7 @@ describe('authMiddleware: no token', () => {
   });
 
   it('should throw UNAUTHORIZED when no cookie and no Authorization header', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext(); // no auth
 
     try {
@@ -205,7 +205,7 @@ describe('authMiddleware: valid token', () => {
   });
 
   it('should set context.user for valid token in Authorization header', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext({ authHeader: `Bearer ${validAccessToken}` });
 
     await authMiddleware(context, mockNext);
@@ -217,7 +217,7 @@ describe('authMiddleware: valid token', () => {
   });
 
   it('should set context.user for valid token in cookie', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext({ cookieToken: validAccessToken });
 
     await authMiddleware(context, mockNext);
@@ -227,7 +227,7 @@ describe('authMiddleware: valid token', () => {
   });
 
   it('should prefer cookie over Authorization header', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     // Set both cookie and header, cookie should win
     const context = createMockContext({
       cookieToken: validAccessToken,
@@ -259,7 +259,7 @@ describe('authMiddleware: blacklisted token', () => {
 
   it('should throw INVALID_TOKEN when token is revoked', async () => {
     const { authMiddleware, setAccessTokenBlacklistChecker } = await import(
-      '@withwiz/next/middleware/auth'
+      '@withwiz/toolkit/next/middleware/auth'
     );
 
     // Set up blacklist checker that marks all tokens as revoked
@@ -286,7 +286,7 @@ describe('authMiddleware: blacklisted token', () => {
 
   it('should pass when token is not revoked', async () => {
     const { authMiddleware, setAccessTokenBlacklistChecker } = await import(
-      '@withwiz/next/middleware/auth'
+      '@withwiz/toolkit/next/middleware/auth'
     );
 
     setAccessTokenBlacklistChecker({
@@ -319,7 +319,7 @@ describe('authMiddleware: expired token', () => {
   });
 
   it('should throw TOKEN_EXPIRED for expired access token', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext({ authHeader: `Bearer ${expiredAccessToken}` });
 
     try {
@@ -350,7 +350,7 @@ describe('authMiddleware: invalid token', () => {
   });
 
   it('should throw INVALID_TOKEN for completely invalid token string', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext({ authHeader: 'Bearer this-is-not-a-jwt' });
 
     try {
@@ -363,7 +363,7 @@ describe('authMiddleware: invalid token', () => {
   });
 
   it('should throw INVALID_TOKEN for token signed with wrong secret', async () => {
-    const { authMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { authMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const otherService = new JWTService({
       ...testConfig,
       secret: 'a-completely-different-secret-that-is-32-chars-long!',
@@ -403,14 +403,14 @@ describe('initializeAuthMiddleware', () => {
       refreshTokenExpiry: '7d',
     });
 
-    const { initializeAuthMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { initializeAuthMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const result = initializeAuthMiddleware();
     expect(result).toBe(true);
   });
 
   it('should return false when auth is not initialized', async () => {
     // Do NOT call initializeAuth
-    const { initializeAuthMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { initializeAuthMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const result = initializeAuthMiddleware();
     expect(result).toBe(false);
   });
@@ -434,7 +434,7 @@ describe('createRoleMiddleware and adminMiddleware', () => {
   });
 
   it('adminMiddleware should throw UNAUTHORIZED when no user', async () => {
-    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext();
     // context.user is undefined
 
@@ -448,7 +448,7 @@ describe('createRoleMiddleware and adminMiddleware', () => {
   });
 
   it('adminMiddleware should throw FORBIDDEN when user is not ADMIN', async () => {
-    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext();
     context.user = { id: 'user-1', email: 'user@test.com', role: 'USER' };
 
@@ -462,7 +462,7 @@ describe('createRoleMiddleware and adminMiddleware', () => {
   });
 
   it('adminMiddleware should pass for ADMIN user', async () => {
-    const { adminMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { adminMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const context = createMockContext();
     context.user = { id: 'admin-1', email: 'admin@test.com', role: 'ADMIN' };
 
@@ -471,7 +471,7 @@ describe('createRoleMiddleware and adminMiddleware', () => {
   });
 
   it('createRoleMiddleware should allow specified roles', async () => {
-    const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { createRoleMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const editorMiddleware = createRoleMiddleware('EDITOR', 'ADMIN');
     const context = createMockContext();
     context.user = { id: 'editor-1', email: 'editor@test.com', role: 'EDITOR' };
@@ -481,7 +481,7 @@ describe('createRoleMiddleware and adminMiddleware', () => {
   });
 
   it('createRoleMiddleware should reject non-matching roles', async () => {
-    const { createRoleMiddleware } = await import('@withwiz/next/middleware/auth');
+    const { createRoleMiddleware } = await import('@withwiz/toolkit/next/middleware/auth');
     const editorMiddleware = createRoleMiddleware('EDITOR', 'ADMIN');
     const context = createMockContext();
     context.user = { id: 'user-1', email: 'user@test.com', role: 'USER' };

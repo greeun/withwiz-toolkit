@@ -6,7 +6,7 @@ import {
   isWebUrl,
   isAppScheme,
   getUrlType,
-} from '@withwiz/core/utils/url-normalizer'
+} from '@withwiz/toolkit/core/utils/url-normalizer'
 
 describe('hasValidScheme', () => {
   it('returns true for http URL', () => {

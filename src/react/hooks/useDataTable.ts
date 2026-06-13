@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from 'react';
-import { useDebounce } from './useDebounce';
+import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce';
 
 export interface DataTableFilters {
   search?: string;

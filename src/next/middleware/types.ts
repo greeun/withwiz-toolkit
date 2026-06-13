@@ -3,7 +3,7 @@
  */
 
 import type { NextRequest, NextResponse } from 'next/server';
-import type { TLocale } from '@withwiz/core/error/messages';
+import type { TLocale } from '@withwiz/toolkit/core/error/messages';
 
 /**
  * 사용자 정보 (JWT 토큰에서 추출)

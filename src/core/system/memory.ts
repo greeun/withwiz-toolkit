@@ -5,9 +5,9 @@
  * - System
  */
 import os from 'os';
-import { runCommand, runMacCommand } from './utils';
-import { IMemoryInfo } from './types';
-import { logger } from '@withwiz/core/logger/logger';
+import { runCommand, runMacCommand } from '@withwiz/toolkit/core/system/utils';
+import { IMemoryInfo } from '@withwiz/toolkit/core/system/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 // bytes를 MB로 변환하는 헬퍼 함수
 function bytesToMB(bytes: number): number {

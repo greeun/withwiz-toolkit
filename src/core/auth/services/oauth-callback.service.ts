@@ -1,7 +1,7 @@
-import { JWTService } from '../jwt';
-import { AuthError } from '../errors';
-import type { UserRepository, OAuthAccountRepository, BaseUser, TokenPair, Logger } from '../types';
-import { JWT_DEFAULTS } from '../../constants/security';
+import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { UserRepository, OAuthAccountRepository, BaseUser, TokenPair, Logger } from '@withwiz/toolkit/core/auth/types';
+import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export interface OAuthCallbackServiceConfig {
   userRepository: UserRepository;

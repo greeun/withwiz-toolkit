@@ -1,5 +1,5 @@
-import { OAuthCallbackService } from '../../../../src/core/auth/services/oauth-callback.service';
-import type { UserRepository, OAuthAccountRepository } from '../../../../src/core/auth/types';
+import { OAuthCallbackService } from '@withwiz/toolkit/core/auth/services/oauth-callback.service';
+import type { UserRepository, OAuthAccountRepository } from '@withwiz/toolkit/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),

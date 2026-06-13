@@ -3,9 +3,9 @@
  * 에러 코드에 대한 다중 언어 메시지 제공
  */
 
-import type { IErrorMessage, TLocale, TErrorMessages, IDefaultMessages } from './types';
-import { koMessages } from './ko';
-import { enMessages } from './en';
+import type { IErrorMessage, TLocale, TErrorMessages, IDefaultMessages } from '@withwiz/toolkit/core/error/messages/types';
+import { koMessages } from '@withwiz/toolkit/core/error/messages/ko';
+import { enMessages } from '@withwiz/toolkit/core/error/messages/en';
 
 /**
  * 메시지 레지스트리
@@ -87,4 +87,4 @@ export function isLocaleSupported(locale: string): locale is TLocale {
 }
 
 // Re-export types
-export type { IErrorMessage, TLocale, TErrorMessages, IDefaultMessages } from './types';
+export type { IErrorMessage, TLocale, TErrorMessages, IDefaultMessages } from '@withwiz/toolkit/core/error/messages/types';

@@ -7,15 +7,15 @@
  * - 메모리 제한: 최대 항목 수 및 메모리 크기 제한
  */
 
-import { logger } from '@withwiz/core/logger/logger';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 import type {
   InMemoryCacheConfig,
   CacheEntry,
   InMemoryCacheMetrics,
   InMemoryCacheStats,
   IUnifiedCacheManager,
-} from './cache-types';
-import { DEFAULT_INMEMORY_CONFIG } from './cache-types';
+} from '@withwiz/toolkit/core/cache/cache-types';
+import { DEFAULT_INMEMORY_CONFIG } from '@withwiz/toolkit/core/cache/cache-types';
 
 /**
  * 인메모리 캐시 매니저 클래스

@@ -4,8 +4,8 @@
  * Redis 기반 캐시 매니저 클래스
  * - 전역 Redis 에러 상태와 연동
  */
-import { logger } from "@withwiz/core/logger/logger";
-import { getENV, isCacheEnabled } from "./cache-env";
+import { logger } from "@withwiz/toolkit/core/logger/logger";
+import { getENV, isCacheEnabled } from "@withwiz/toolkit/core/cache/cache-env";
 import {
   getRedisClient,
   CacheMetrics,
@@ -13,8 +13,8 @@ import {
   notifyRedisError,
   resetRedisGlobalState,
   isRedisGloballyDisabled,
-} from "./cache-redis";
-import type { IUnifiedCacheManager } from "./cache-types";
+} from "@withwiz/toolkit/core/cache/cache-redis";
+import type { IUnifiedCacheManager } from "@withwiz/toolkit/core/cache/cache-types";
 
 // ============================================================================
 // RedisCacheManager 클래스

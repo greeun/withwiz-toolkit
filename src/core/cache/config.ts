@@ -10,8 +10,8 @@ import {
   CACHE_DURATION_DEFAULTS,
   CACHE_FALLBACK_DEFAULTS,
   CACHE_HEALTH_DEFAULTS,
-} from './cache-defaults';
-import { ConfigurationError } from '../config/errors';
+} from '@withwiz/toolkit/core/cache/cache-defaults';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 // ============================================================================
 // Input Interface

@@ -6,8 +6,8 @@
  */
 
 import { SignJWT, jwtVerify } from "jose";
-import type { JWTConfig, JWTPayload, TokenPair, Logger } from "@withwiz/core/auth/types";
-import { JWTError } from "@withwiz/core/auth/errors";
+import type { JWTConfig, JWTPayload, TokenPair, Logger } from "@withwiz/toolkit/core/auth/types";
+import { JWTError } from "@withwiz/toolkit/core/auth/errors";
 
 // ============================================================================
 // JWT Manager Class
@@ -365,8 +365,8 @@ export class JWTService {
 }
 
 // Cookie utilities
-export { setTokenCookies, clearTokenCookies } from './cookie';
-export type { CookieOptions } from './cookie';
+export { setTokenCookies, clearTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
+export type { CookieOptions } from '@withwiz/toolkit/core/auth/jwt/cookie';
 
 // Export types
 export type { JWTConfig, JWTPayload, TokenPair };

@@ -1,6 +1,6 @@
 // 독립적인 Skeleton 컴포넌트
 import React from 'react';
-import { cn } from '@withwiz/react/utils/client-utils';
+import { cn } from '@withwiz/toolkit/react/utils/client-utils';
 
 export interface ISkeletonProps {
   className?: string;

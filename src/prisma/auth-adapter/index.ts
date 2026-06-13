@@ -22,7 +22,7 @@ import type {
   UpdateOAuthAccountData,
   EmailToken,
   TokenType,
-} from '@withwiz/core/auth/types';
+} from '@withwiz/toolkit/core/auth/types';
 
 export interface PrismaAdapterConfig {
   tokenTables?: {

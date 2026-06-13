@@ -5,10 +5,10 @@
  * - 프로젝트 독립적
  * - 로컬 데이터베이스 사용 (현재 미구현)
  */
-import type { IGeoIPApiResponse } from '@withwiz/core/types/geoip';
-import type { IGeoLocationData } from '@withwiz/core/types/database';
-import { BaseGeoIPProvider } from './base-provider';
-import { getGeolocationConfig } from '../config';
+import type { IGeoIPApiResponse } from '@withwiz/toolkit/core/types/geoip';
+import type { IGeoLocationData } from '@withwiz/toolkit/core/types/database';
+import { BaseGeoIPProvider } from '@withwiz/toolkit/core/geolocation/providers/base-provider';
+import { getGeolocationConfig } from '@withwiz/toolkit/core/geolocation/config';
 
 export class MaxMindProvider extends BaseGeoIPProvider {
   name = 'maxmind';

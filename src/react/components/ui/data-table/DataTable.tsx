@@ -7,15 +7,15 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Alert, AlertDescription } from "../Alert";
-import { cn } from "@withwiz/react/utils/client-utils";
-import { DataTableSearch } from "./DataTableSearch";
-import { DataTableFilters } from "./DataTableFilters";
-import { DataTableBulkActions } from "./DataTableBulkActions";
-import { DataTableBody } from "./DataTableBody";
-import { DataTablePagination } from "./DataTablePagination";
-import { DEFAULT_LABELS } from "./types";
-import type { DataTableProps, BulkAction, FilterConfig } from "./types";
+import { Alert, AlertDescription } from "@withwiz/toolkit/react/components/ui/Alert";
+import { cn } from "@withwiz/toolkit/react/utils/client-utils";
+import { DataTableSearch } from "@withwiz/toolkit/react/components/ui/data-table/DataTableSearch";
+import { DataTableFilters } from "@withwiz/toolkit/react/components/ui/data-table/DataTableFilters";
+import { DataTableBulkActions } from "@withwiz/toolkit/react/components/ui/data-table/DataTableBulkActions";
+import { DataTableBody } from "@withwiz/toolkit/react/components/ui/data-table/DataTableBody";
+import { DataTablePagination } from "@withwiz/toolkit/react/components/ui/data-table/DataTablePagination";
+import { DEFAULT_LABELS } from "@withwiz/toolkit/react/components/ui/data-table/types";
+import type { DataTableProps, BulkAction, FilterConfig } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 // 안정적 기본값 (매 호출마다 새 참조 생성 방지)
 const EMPTY_ARRAY: readonly never[] = [];

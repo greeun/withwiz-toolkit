@@ -16,8 +16,8 @@ import {
   getErrorCodesByCategory,
   formatErrorMessage,
   classifyError,
-} from "@withwiz/core/constants/error-codes";
-import type { ErrorCodeKey } from "@withwiz/core/constants/error-codes";
+} from "@withwiz/toolkit/core/constants/error-codes";
+import type { ErrorCodeKey } from "@withwiz/toolkit/core/constants/error-codes";
 
 // ============================================================================
 // SC-CONST-ERR-001: Error Code Structure

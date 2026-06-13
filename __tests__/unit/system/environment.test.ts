@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import os from 'os';
 
 // Mock logger
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -21,10 +21,10 @@ vi.mock('@withwiz/core/logger/logger', () => ({
 
 describe('Environment - Redis config present', () => {
   beforeEach(async () => {
-    const { resetCommon } = await import('../../../src/core/config/common');
-    const { resetAuth } = await import('../../../src/core/auth/config');
-    const { resetCache } = await import('../../../src/core/cache/config');
-    const { resetGeolocation } = await import('../../../src/core/geolocation/config');
+    const { resetCommon } = await import('@withwiz/toolkit/core/config/common');
+    const { resetAuth } = await import('@withwiz/toolkit/core/auth/config');
+    const { resetCache } = await import('@withwiz/toolkit/core/cache/config');
+    const { resetGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     resetCommon();
     resetAuth();
     resetCache();
@@ -32,7 +32,7 @@ describe('Environment - Redis config present', () => {
   });
 
   it('should mark REDIS_REST_URL and REDIS_REST_TOKEN as ok when redis config is present', async () => {
-    const { initializeCache } = await import('../../../src/core/cache/config');
+    const { initializeCache } = await import('@withwiz/toolkit/core/cache/config');
     initializeCache({
       enabled: true,
       redis: {
@@ -41,7 +41,7 @@ describe('Environment - Redis config present', () => {
       },
     });
 
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const cacheEnabled = results.find((r) => r.key === 'CACHE_ENABLED');
@@ -62,13 +62,13 @@ describe('Environment - Redis config present', () => {
   });
 
   it('should mark REDIS_REST_URL and REDIS_REST_TOKEN as not ok when redis config is absent', async () => {
-    const { initializeCache } = await import('../../../src/core/cache/config');
+    const { initializeCache } = await import('@withwiz/toolkit/core/cache/config');
     initializeCache({
       enabled: true,
       // No redis config
     });
 
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const redisUrl = results.find((r) => r.key === 'REDIS_REST_URL');
@@ -81,7 +81,7 @@ describe('Environment - Redis config present', () => {
   });
 
   it('should show short REDIS_REST_URL without truncation when url <= 20 chars', async () => {
-    const { initializeCache } = await import('../../../src/core/cache/config');
+    const { initializeCache } = await import('@withwiz/toolkit/core/cache/config');
     initializeCache({
       enabled: true,
       redis: {
@@ -90,7 +90,7 @@ describe('Environment - Redis config present', () => {
       },
     });
 
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const redisUrl = results.find((r) => r.key === 'REDIS_REST_URL');
@@ -103,10 +103,10 @@ describe('Environment - Redis config present', () => {
 
 describe('Environment - Geolocation config present', () => {
   beforeEach(async () => {
-    const { resetCommon } = await import('../../../src/core/config/common');
-    const { resetAuth } = await import('../../../src/core/auth/config');
-    const { resetCache } = await import('../../../src/core/cache/config');
-    const { resetGeolocation } = await import('../../../src/core/geolocation/config');
+    const { resetCommon } = await import('@withwiz/toolkit/core/config/common');
+    const { resetAuth } = await import('@withwiz/toolkit/core/auth/config');
+    const { resetCache } = await import('@withwiz/toolkit/core/cache/config');
+    const { resetGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     resetCommon();
     resetAuth();
     resetCache();
@@ -114,13 +114,13 @@ describe('Environment - Geolocation config present', () => {
   });
 
   it('should mark geo API keys as ok when both are present', async () => {
-    const { initializeGeolocation } = await import('../../../src/core/geolocation/config');
+    const { initializeGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     initializeGeolocation({
       ipgeolocationApiKey: 'ipgeo-api-key-123',
       maxmindLicenseKey: 'maxmind-license-key-456',
     });
 
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const ipgeoResult = results.find((r) => r.key === 'IPGEOLOCATION_API_KEY');
@@ -133,13 +133,13 @@ describe('Environment - Geolocation config present', () => {
   });
 
   it('should mark geo API keys as not ok when keys are empty/undefined', async () => {
-    const { initializeGeolocation } = await import('../../../src/core/geolocation/config');
+    const { initializeGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     initializeGeolocation({
       ipgeolocationApiKey: '',
       maxmindLicenseKey: undefined,
     });
 
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const ipgeoResult = results.find((r) => r.key === 'IPGEOLOCATION_API_KEY');
@@ -154,10 +154,10 @@ describe('Environment - Geolocation config present', () => {
 
 describe('Environment - Platform-specific branches', () => {
   beforeEach(async () => {
-    const { resetCommon } = await import('../../../src/core/config/common');
-    const { resetAuth } = await import('../../../src/core/auth/config');
-    const { resetCache } = await import('../../../src/core/cache/config');
-    const { resetGeolocation } = await import('../../../src/core/geolocation/config');
+    const { resetCommon } = await import('@withwiz/toolkit/core/config/common');
+    const { resetAuth } = await import('@withwiz/toolkit/core/auth/config');
+    const { resetCache } = await import('@withwiz/toolkit/core/cache/config');
+    const { resetGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     resetCommon();
     resetAuth();
     resetCache();
@@ -166,12 +166,12 @@ describe('Environment - Platform-specific branches', () => {
 
   it('should include MACOS_VERSION on darwin platform', async () => {
     // Mock getPlatform to return darwin
-    vi.doMock('@withwiz/core/system/utils', () => ({
+    vi.doMock('../../../src/core/system/utils', () => ({
       getPlatform: () => 'darwin',
     }));
 
     // Re-import environment after mocking
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const currentPlatform = os.platform();
@@ -187,11 +187,11 @@ describe('Environment - Platform-specific branches', () => {
       expect(linuxDistro!.value).toBe(os.release());
     }
 
-    vi.doUnmock('@withwiz/core/system/utils');
+    vi.doUnmock('@withwiz/toolkit/core/system/utils');
   });
 
   it('should include system info (HOSTNAME, USER_HOME, TEMP_DIR)', async () => {
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const hostname = results.find((r) => r.key === 'HOSTNAME');
@@ -211,7 +211,7 @@ describe('Environment - Platform-specific branches', () => {
   });
 
   it('should include NODE_VERSION', async () => {
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const nodeVersion = results.find((r) => r.key === 'NODE_VERSION');
@@ -222,7 +222,7 @@ describe('Environment - Platform-specific branches', () => {
 
   it('should fallback NODE_ENV to development when commonConfig is not initialized', async () => {
     // resetCommon is already called in beforeEach (no initialization)
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const nodeEnvResult = results.find((r) => r.key === 'NODE_ENV');
@@ -234,10 +234,10 @@ describe('Environment - Platform-specific branches', () => {
 
 describe('Environment - Cache config error handling', () => {
   beforeEach(async () => {
-    const { resetCommon } = await import('../../../src/core/config/common');
-    const { resetAuth } = await import('../../../src/core/auth/config');
-    const { resetCache } = await import('../../../src/core/cache/config');
-    const { resetGeolocation } = await import('../../../src/core/geolocation/config');
+    const { resetCommon } = await import('@withwiz/toolkit/core/config/common');
+    const { resetAuth } = await import('@withwiz/toolkit/core/auth/config');
+    const { resetCache } = await import('@withwiz/toolkit/core/cache/config');
+    const { resetGeolocation } = await import('@withwiz/toolkit/core/geolocation/config');
     resetCommon();
     resetAuth();
     resetCache();
@@ -246,7 +246,7 @@ describe('Environment - Cache config error handling', () => {
 
   it('should mark all cache keys as not ok when cache config throws', async () => {
     // Without initializeCache, getResolvedCacheConfig will throw
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const cacheEnabled = results.find((r) => r.key === 'CACHE_ENABLED');
@@ -264,7 +264,7 @@ describe('Environment - Cache config error handling', () => {
 
   it('should mark geo keys as not ok when geolocation config throws', async () => {
     // Without initializeGeolocation, getGeolocationConfig will throw
-    const { checkEnvironmentVariables } = await import('@withwiz/core/system/environment');
+    const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
     const results = checkEnvironmentVariables();
 
     const ipgeoResult = results.find((r) => r.key === 'IPGEOLOCATION_API_KEY');

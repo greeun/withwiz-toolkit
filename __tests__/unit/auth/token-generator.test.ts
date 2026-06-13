@@ -4,7 +4,7 @@
  * crypto 기반 토큰 생성 유틸리티 테스트
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TokenGenerator } from '../../../src/core/auth/email/token-generator';
+import { TokenGenerator } from '@withwiz/toolkit/core/auth/email/token-generator';
 
 describe('TokenGenerator', () => {
   describe('generate', () => {

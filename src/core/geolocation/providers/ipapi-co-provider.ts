@@ -5,9 +5,9 @@
  * - 프로젝트 독립적
  * - HTTPS 지원
  */
-import type { IGeoIPApiResponse } from '@withwiz/core/types/geoip';
-import type { IGeoLocationData } from '@withwiz/core/types/database';
-import { BaseGeoIPProvider, truncateString } from './base-provider';
+import type { IGeoIPApiResponse } from '@withwiz/toolkit/core/types/geoip';
+import type { IGeoLocationData } from '@withwiz/toolkit/core/types/database';
+import { BaseGeoIPProvider, truncateString } from '@withwiz/toolkit/core/geolocation/providers/base-provider';
 
 export class IPApiCoProvider extends BaseGeoIPProvider {
   name = 'ipapi.co';

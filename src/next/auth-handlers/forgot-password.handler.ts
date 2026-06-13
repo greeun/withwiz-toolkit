@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { PasswordResetService } from '@withwiz/core/auth/services/password-reset.service';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
+import { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 const schema = z.object({ email: z.string().email() });
 

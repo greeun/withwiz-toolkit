@@ -15,10 +15,8 @@
     "jsx": "react-jsx",
     "incremental": false,
     "paths": {
-      "@withwiz/core/*": ["./src/core/*"],
-      "@withwiz/next/*": ["./src/next/*"],
-      "@withwiz/react/*": ["./src/react/*"],
-      "@withwiz/prisma/*": ["./src/prisma/*"]
+      "@withwiz/toolkit/*": ["./src/*"],
+      "@withwiz/toolkit/initialize": ["./src/initialize.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

@@ -6,9 +6,9 @@
  */
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { AppError } from '@withwiz/core/error/app-error';
-import { getStorageConfig } from './config';
-import type { ResolvedStorageConfig } from './config';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import { getStorageConfig } from '@withwiz/toolkit/core/storage/config';
+import type { ResolvedStorageConfig } from '@withwiz/toolkit/core/storage/config';
 
 export interface R2Config {
   accountId: string;

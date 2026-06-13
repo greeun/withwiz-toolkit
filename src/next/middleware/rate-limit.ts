@@ -9,10 +9,10 @@
  * 외부에서 Rate Limit 어댑터를 설정해야 합니다.
  */
 
-import type { TApiMiddleware } from "./types";
-import { AppError } from "@withwiz/core/error/app-error";
-import { ERROR_CODES } from "@withwiz/core/constants/error-codes";
-import { logger } from "@withwiz/core/logger/logger";
+import type { TApiMiddleware } from "@withwiz/toolkit/next/middleware/types";
+import { AppError } from "@withwiz/toolkit/core/error/app-error";
+import { ERROR_CODES } from "@withwiz/toolkit/core/constants/error-codes";
+import { logger } from "@withwiz/toolkit/core/logger/logger";
 
 // ============================================================================
 // Rate Limit 어댑터 인터페이스 (의존성 주입)
@@ -61,7 +61,7 @@ function _setWarningLogged(value: boolean): void {
  *
  * @example
  * ```typescript
- * import { setRateLimitAdapter } from '@withwiz/next/middleware/rate-limit';
+ * import { setRateLimitAdapter } from '@withwiz/toolkit/next/middleware/rate-limit';
  * // 프로젝트에서 구현한 Rate Limit 유틸리티를 import하세요
  * import { rateLimiters, extractClientIp } from '<your-project>/rateLimiter';
  *
@@ -100,7 +100,7 @@ export function setRateLimitAdapter(adapter: IRateLimitAdapter): void {
  * @example
  * ```typescript
  * // In instrumentation.ts (optional)
- * import { setRateLimitAdapter } from '@withwiz/next/middleware/rate-limit';
+ * import { setRateLimitAdapter } from '@withwiz/toolkit/next/middleware/rate-limit';
  * import { rateLimiters, extractClientIp } from '<your-project>/rateLimiter';
  *
  * setRateLimitAdapter({ rateLimiters, extractClientIp });

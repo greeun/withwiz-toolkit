@@ -1,5 +1,5 @@
-import { configWarn } from './warn';
-import { ConfigurationError } from './errors';
+import { configWarn } from '@withwiz/toolkit/core/config/warn';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 export interface CommonConfig {
   nodeEnv?: 'development' | 'production' | 'test';

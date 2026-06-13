@@ -1,5 +1,5 @@
-import { resolveTokenDelivery } from '../../../src/next/auth-types/handler-types';
-import { initializeAuth, resetAuth } from '../../../src/core/auth/config';
+import { resolveTokenDelivery } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { initializeAuth, resetAuth } from '@withwiz/toolkit/core/auth/config';
 
 const SECRET = 'test-secret-key-that-is-at-least-32-characters-long';
 

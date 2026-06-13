@@ -5,18 +5,18 @@
  * - 순수 HTTP 클라이언트
  * - 외부 의존성 없음
  */
-import type { IGeoIPProvider } from '@withwiz/core/types/geoip';
-import { IPApiProvider } from './ip-api-provider';
-import { IPApiCoProvider } from './ipapi-co-provider';
-import { IPGeolocationProvider } from './ipgeolocation-provider';
-import { MaxMindProvider } from './maxmind-provider';
+import type { IGeoIPProvider } from '@withwiz/toolkit/core/types/geoip';
+import { IPApiProvider } from '@withwiz/toolkit/core/geolocation/providers/ip-api-provider';
+import { IPApiCoProvider } from '@withwiz/toolkit/core/geolocation/providers/ipapi-co-provider';
+import { IPGeolocationProvider } from '@withwiz/toolkit/core/geolocation/providers/ipgeolocation-provider';
+import { MaxMindProvider } from '@withwiz/toolkit/core/geolocation/providers/maxmind-provider';
 
 // Re-exports
-export { BaseGeoIPProvider, truncateString } from './base-provider';
-export { IPApiProvider } from './ip-api-provider';
-export { IPApiCoProvider } from './ipapi-co-provider';
-export { IPGeolocationProvider } from './ipgeolocation-provider';
-export { MaxMindProvider } from './maxmind-provider';
+export { BaseGeoIPProvider, truncateString } from '@withwiz/toolkit/core/geolocation/providers/base-provider';
+export { IPApiProvider } from '@withwiz/toolkit/core/geolocation/providers/ip-api-provider';
+export { IPApiCoProvider } from '@withwiz/toolkit/core/geolocation/providers/ipapi-co-provider';
+export { IPGeolocationProvider } from '@withwiz/toolkit/core/geolocation/providers/ipgeolocation-provider';
+export { MaxMindProvider } from '@withwiz/toolkit/core/geolocation/providers/maxmind-provider';
 
 /**
  * GeoIP 제공자 팩토리

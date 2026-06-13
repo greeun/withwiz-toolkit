@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../config/errors';
-import { configWarn } from '../config/warn';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
+import { configWarn } from '@withwiz/toolkit/core/config/warn';
 
 export interface GeolocationConfig {
   ipgeolocationApiKey?: string;

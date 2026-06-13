@@ -4,21 +4,21 @@
  * 캐시 매니저 인스턴스 팩토리 및 기본 인스턴스
  * - 전역 Redis 상태와 연동
  */
-import { logger } from '@withwiz/core/logger/logger';
-import type { CacheBackendType } from '@withwiz/core/types/env';
-import { configWarn } from '../config/warn';
-import { getENV, isCacheEnabled } from './cache-env';
-import { isCacheConfigInitialized } from './config';
-import { isRedisAvailableNow, isRedisGloballyDisabled, getRedisGlobalStatus } from './cache-redis';
-import { getCacheConfig } from './cache-config';
-import { RedisCacheManager } from './redis-cache-manager';
-import { NoopCacheManager } from './noop-cache-manager';
-import { InMemoryCacheManager } from './inmemory-cache-manager';
-import { HybridCacheManager } from './hybrid-cache-manager';
-import type { InMemoryCacheConfig } from './cache-types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import type { CacheBackendType } from '@withwiz/toolkit/core/types/env';
+import { configWarn } from '@withwiz/toolkit/core/config/warn';
+import { getENV, isCacheEnabled } from '@withwiz/toolkit/core/cache/cache-env';
+import { isCacheConfigInitialized } from '@withwiz/toolkit/core/cache/config';
+import { isRedisAvailableNow, isRedisGloballyDisabled, getRedisGlobalStatus } from '@withwiz/toolkit/core/cache/cache-redis';
+import { getCacheConfig } from '@withwiz/toolkit/core/cache/cache-config';
+import { RedisCacheManager } from '@withwiz/toolkit/core/cache/redis-cache-manager';
+import { NoopCacheManager } from '@withwiz/toolkit/core/cache/noop-cache-manager';
+import { InMemoryCacheManager } from '@withwiz/toolkit/core/cache/inmemory-cache-manager';
+import { HybridCacheManager } from '@withwiz/toolkit/core/cache/hybrid-cache-manager';
+import type { InMemoryCacheConfig } from '@withwiz/toolkit/core/cache/cache-types';
 
 // Re-export 전역 Redis 상태 함수
-export { isRedisGloballyDisabled, getRedisGlobalStatus } from './cache-redis';
+export { isRedisGloballyDisabled, getRedisGlobalStatus } from '@withwiz/toolkit/core/cache/cache-redis';
 
 // ============================================================================
 // 인메모리 캐시 설정

@@ -10,7 +10,7 @@ import {
   PasswordStrength,
   defaultPasswordSchema,
   strongPasswordSchema,
-} from "@withwiz/core/validators/password-validator";
+} from "@withwiz/toolkit/core/validators/password-validator";
 
 // ============================================================================
 // SC-UNIT-VAL-001: PasswordValidator Class Tests

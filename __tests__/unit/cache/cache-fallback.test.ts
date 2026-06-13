@@ -5,7 +5,7 @@
  * Redis가 실패할 때 시스템이 정상적으로 degradation되는지 확인
  */
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -14,13 +14,13 @@ vi.mock('@withwiz/core/logger/logger', () => ({
   },
 }));
 
-vi.mock('@withwiz/core/cache/cache-redis', () => ({
+vi.mock('@withwiz/toolkit/core/cache/cache-redis', () => ({
   isRedisGloballyDisabled: vi.fn(() => false),
   notifyRedisError: vi.fn(),
   resetRedisGlobalState: vi.fn(),
 }));
 
-vi.mock('@withwiz/core/cache/cache-env', () => ({
+vi.mock('@withwiz/toolkit/core/cache/cache-env', () => ({
   getCacheFallbackConfig: vi.fn(() => ({
     redisErrorThresholdGlobal: 3,
     redisErrorThresholdLocal: 3,
@@ -30,8 +30,8 @@ vi.mock('@withwiz/core/cache/cache-env', () => ({
   })),
 }));
 
-import { logger } from '@withwiz/core/logger/logger';
-import { isRedisGloballyDisabled, notifyRedisError } from '@withwiz/core/cache/cache-redis';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { isRedisGloballyDisabled, notifyRedisError } from '@withwiz/toolkit/core/cache/cache-redis';
 
 /**
  * Mock Redis Manager that can be configured to fail
@@ -116,7 +116,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
 
   describe('Redis get failure → fallback to in-memory', () => {
     it('should return null when Redis get fails and no in-memory data exists', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get'] });
       const manager = new HybridCacheManager('test-fallback-get', {
@@ -139,7 +139,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should fallback to in-memory cache when Redis get throws', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get'] });
       const manager = new HybridCacheManager('test-fallback-get-mem', {
@@ -170,7 +170,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
 
   describe('Redis set failure → graceful handling', () => {
     it('should not crash when Redis set throws', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['set'] });
       const manager = new HybridCacheManager('test-fallback-set', {
@@ -191,7 +191,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should log error when Redis set fails', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['set'] });
       const manager = new HybridCacheManager('test-fallback-set-log', {
@@ -212,7 +212,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should notify global Redis error state when set fails', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['set'] });
       const manager = new HybridCacheManager('test-fallback-set-notify', {
@@ -235,7 +235,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
 
   describe('Redis connection lost → operations degrade gracefully', () => {
     it('should disable Redis temporarily after error threshold is reached', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get', 'set'] });
       const manager = new HybridCacheManager('test-threshold', {
@@ -262,7 +262,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should fall back to memory backend when Redis is disabled', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get', 'set'] });
       const manager = new HybridCacheManager('test-degrade', {
@@ -289,7 +289,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should attempt reconnection after reconnect interval', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get'] });
       failingRedis.checkConnection.mockResolvedValue(true);
@@ -322,7 +322,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should keep retrying reconnection if it fails', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get'] });
       failingRedis.checkConnection.mockResolvedValue(false);
@@ -355,7 +355,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should use memory mode when Redis is globally disabled', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
@@ -381,7 +381,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
 
   describe('delete/deletePattern with Redis failure', () => {
     it('should not crash when Redis delete fails in hybrid mode', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['delete'] });
       const manager = new HybridCacheManager('test-delete-fail', {
@@ -396,7 +396,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
     });
 
     it('should not crash when Redis deletePattern fails in hybrid mode', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['deletePattern'] });
       const manager = new HybridCacheManager('test-deletepattern-fail', {
@@ -413,7 +413,7 @@ describe('Cache Fallback - HybridCacheManager', () => {
 
   describe('Metrics tracking during fallback', () => {
     it('should track Redis fallback count in metrics', async () => {
-      const { HybridCacheManager } = await import('@withwiz/core/cache/hybrid-cache-manager');
+      const { HybridCacheManager } = await import('@withwiz/toolkit/core/cache/hybrid-cache-manager');
 
       const failingRedis = createMockRedisManager({ failOn: ['get'] });
       const manager = new HybridCacheManager('test-metrics-fallback', {

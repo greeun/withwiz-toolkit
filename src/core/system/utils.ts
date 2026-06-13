@@ -7,7 +7,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
-import { logger } from '@withwiz/core/logger/logger';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 const execAsync = promisify(exec);
 

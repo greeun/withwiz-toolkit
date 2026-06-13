@@ -1,6 +1,6 @@
 // __tests__/unit/config/auth-config.test.ts
-import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/core/auth/config';
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { initializeAuth, getAuthConfig, resetAuth } from '@withwiz/toolkit/core/auth/config';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('Auth Config', () => {
   beforeEach(() => { resetAuth(); });

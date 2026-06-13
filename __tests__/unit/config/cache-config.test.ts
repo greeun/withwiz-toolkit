@@ -1,6 +1,6 @@
-import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/core/cache/config';
-import { ConfigurationError } from '../../../src/core/config/errors';
-import { INMEMORY_CACHE_DEFAULTS, CACHE_TTL_DEFAULTS } from '../../../src/core/cache/cache-defaults';
+import { initializeCache, getResolvedCacheConfig, resetCache } from '@withwiz/toolkit/core/cache/config';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
+import { INMEMORY_CACHE_DEFAULTS, CACHE_TTL_DEFAULTS } from '@withwiz/toolkit/core/cache/cache-defaults';
 
 describe('Cache Config', () => {
   beforeEach(() => { resetCache(); });

@@ -4,8 +4,8 @@
  * NextResponse 타입을 제네릭으로 처리하여
  * symlink 환경에서의 next 패키지 경로 충돌을 방지합니다.
  */
-import type { TokenPair } from '@withwiz/core/auth/types';
-import { getAuthConfig } from '../config';
+import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
+import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
 
 /** cookies.set()을 지원하는 Response 타입 */
 interface CookieSettableResponse {

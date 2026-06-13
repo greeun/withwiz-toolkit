@@ -1,17 +1,17 @@
-export { LoginService } from './login.service';
-export type { LoginServiceConfig, LoginResult } from './login.service';
+export { LoginService } from '@withwiz/toolkit/core/auth/services/login.service';
+export type { LoginServiceConfig, LoginResult } from '@withwiz/toolkit/core/auth/services/login.service';
 
-export { RegisterService } from './register.service';
-export type { RegisterServiceConfig, RegisterInput, RegisterResult } from './register.service';
+export { RegisterService } from '@withwiz/toolkit/core/auth/services/register.service';
+export type { RegisterServiceConfig, RegisterInput, RegisterResult } from '@withwiz/toolkit/core/auth/services/register.service';
 
-export { OAuthCallbackService } from './oauth-callback.service';
-export type { OAuthCallbackServiceConfig, OAuthCallbackInput, OAuthCallbackResult } from './oauth-callback.service';
+export { OAuthCallbackService } from '@withwiz/toolkit/core/auth/services/oauth-callback.service';
+export type { OAuthCallbackServiceConfig, OAuthCallbackInput, OAuthCallbackResult } from '@withwiz/toolkit/core/auth/services/oauth-callback.service';
 
-export { TokenRefreshService } from './token-refresh.service';
-export type { TokenRefreshServiceConfig, RefreshResult } from './token-refresh.service';
+export { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+export type { TokenRefreshServiceConfig, RefreshResult } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
 
-export { PasswordResetService } from './password-reset.service';
-export type { PasswordResetServiceConfig } from './password-reset.service';
+export { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
+export type { PasswordResetServiceConfig } from '@withwiz/toolkit/core/auth/services/password-reset.service';
 
-export { EmailVerificationService } from './email-verification.service';
-export type { EmailVerificationServiceConfig } from './email-verification.service';
+export { EmailVerificationService } from '@withwiz/toolkit/core/auth/services/email-verification.service';
+export type { EmailVerificationServiceConfig } from '@withwiz/toolkit/core/auth/services/email-verification.service';

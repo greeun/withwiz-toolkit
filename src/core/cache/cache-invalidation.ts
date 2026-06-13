@@ -4,13 +4,13 @@
  * 프로젝트에 독립적인 범용 캐시 무효화 헬퍼 함수들입니다.
  * 도메인 특화 캐시 무효화는 소비 프로젝트의 extension 영역에서 정의하세요.
  */
-import { cache, geoCache } from "./cache-factory";
+import { cache, geoCache } from "@withwiz/toolkit/core/cache/cache-factory";
 import type {
   RedisCacheManager,
   HybridCacheManager,
   InMemoryCacheManager,
   NoopCacheManager,
-} from "./index";
+} from "@withwiz/toolkit/core/cache";
 
 type CacheManager =
   | RedisCacheManager
@@ -97,7 +97,7 @@ export const invalidateCache = {
  * @example
  * ```typescript
  * import { getCacheManager } from '@withwiz/cache';
- * import { deleteFromCache } from '@withwiz/core/cache/cache-invalidation';
+ * import { deleteFromCache } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const myCache = getCacheManager('my-prefix');
  * await deleteFromCache(myCache, 'my-key');
@@ -116,7 +116,7 @@ export async function deleteFromCache(
  * @example
  * ```typescript
  * import { getCacheManager } from '@withwiz/cache';
- * import { deletePatternFromCache } from '@withwiz/core/cache/cache-invalidation';
+ * import { deletePatternFromCache } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const myCache = getCacheManager('my-prefix');
  * await deletePatternFromCache(myCache, 'user:*');
@@ -135,7 +135,7 @@ export async function deletePatternFromCache(
  * @example
  * ```typescript
  * import { getCacheManager } from '@withwiz/cache';
- * import { deletePatternFromMultipleCaches } from '@withwiz/core/cache/cache-invalidation';
+ * import { deletePatternFromMultipleCaches } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const cache1 = getCacheManager('prefix1');
  * const cache2 = getCacheManager('prefix2');

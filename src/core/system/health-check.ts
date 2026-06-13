@@ -7,11 +7,11 @@
  *
  * ⚠️ CONDITIONAL: prismaClient가 제공되지 않으면 DB 체크 스킵
  */
-import { IServiceInfo } from './types';
-import { getPlatform } from './utils';
-import { formatRedisError, formatDatabaseError } from '@withwiz/core/utils/error-message-formatter';
-import { logger } from '@withwiz/core/logger/logger';
-import { getResolvedCacheConfig } from '../cache/config';
+import { IServiceInfo } from '@withwiz/toolkit/core/system/types';
+import { getPlatform } from '@withwiz/toolkit/core/system/utils';
+import { formatRedisError, formatDatabaseError } from '@withwiz/toolkit/core/utils/error-message-formatter';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { getResolvedCacheConfig } from '@withwiz/toolkit/core/cache/config';
 
 /**
  * 서비스 헬스 체크
@@ -22,7 +22,7 @@ import { getResolvedCacheConfig } from '../cache/config';
  * @example
  * ```typescript
  * // From your project
- * import { checkServiceHealth } from '@withwiz/core/system/health-check';
+ * import { checkServiceHealth } from '@withwiz/toolkit/core/system/health-check';
  * import { prisma } from '<your-project>/prisma';
  *
  * const status = await checkServiceHealth(prisma);
@@ -111,7 +111,7 @@ export async function checkServiceHealth(prismaClient?: any): Promise<IServiceIn
     } else if (redisUrl && redisToken && redisUrl.trim() !== '' && redisToken.trim() !== '') {
       try {
         // Redis 연결 테스트 (checkRedisConnection 함수 사용)
-        const { checkRedisConnection } = await import('@withwiz/core/cache/cache');
+        const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache');
         const redisStatus = await checkRedisConnection();
 
         if (redisStatus.success) {

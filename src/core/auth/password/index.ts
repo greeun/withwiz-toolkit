@@ -6,8 +6,8 @@
 
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import type { PasswordConfig } from '@withwiz/core/auth/types';
-import { PasswordStrength, type PasswordValidationResult as BasePasswordValidationResult } from '@withwiz/core/auth/types';
+import type { PasswordConfig } from '@withwiz/toolkit/core/auth/types';
+import { PasswordStrength, type PasswordValidationResult as BasePasswordValidationResult } from '@withwiz/toolkit/core/auth/types';
 
 // ============================================================================
 // Types
@@ -323,4 +323,4 @@ export const strongPasswordSchema = z
   );
 
 // Export types
-export type { PasswordConfig, PasswordStrength } from '@withwiz/core/auth/types';
+export type { PasswordConfig, PasswordStrength } from '@withwiz/toolkit/core/auth/types';

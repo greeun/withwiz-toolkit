@@ -5,8 +5,8 @@
  * - 외부 의존성 없음 (Prisma, CacheKeys 등)
  * - 순수 HTTP 클라이언트
  */
-import type { IGeoIPProvider, IGeoIPApiResponse } from '@withwiz/core/types/geoip';
-import type { IGeoLocationData } from '@withwiz/core/types/database';
+import type { IGeoIPProvider, IGeoIPApiResponse } from '@withwiz/toolkit/core/types/geoip';
+import type { IGeoLocationData } from '@withwiz/toolkit/core/types/database';
 
 /**
  * 문자열 길이를 제한하는 유틸리티 함수

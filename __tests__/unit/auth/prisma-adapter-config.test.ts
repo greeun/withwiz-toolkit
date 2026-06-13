@@ -10,8 +10,8 @@ import {
   PrismaUserRepository,
   PrismaEmailTokenRepository,
   PrismaOAuthAccountRepository,
-} from '@withwiz/prisma/auth-adapter';
-import type { PrismaAdapterConfig } from '@withwiz/prisma/auth-adapter';
+} from '@withwiz/toolkit/prisma/auth-adapter';
+import type { PrismaAdapterConfig } from '@withwiz/toolkit/prisma/auth-adapter';
 
 // ============================================================================
 // Mock Prisma Client Factory

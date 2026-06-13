@@ -11,7 +11,7 @@ import {
   NUMERIC,
   DATE,
   FILE_UPLOAD,
-} from "@withwiz/core/constants/validation";
+} from "@withwiz/toolkit/core/constants/validation";
 
 // ============================================================================
 // SC-CONST-VAL-001: PASSWORD Constants

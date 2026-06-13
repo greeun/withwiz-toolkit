@@ -9,11 +9,11 @@
  * - 토큰이 없거나 유효하지 않아도 에러 없이 next() 호출
  */
 
-import { JWTService } from "@withwiz/core/auth/jwt";
-import type { JWTConfig } from "@withwiz/core/auth/types";
-import type { IApiContext } from "@withwiz/next/middleware/types";
+import { JWTService } from "@withwiz/toolkit/core/auth/jwt";
+import type { JWTConfig } from "@withwiz/toolkit/core/auth/types";
+import type { IApiContext } from "@withwiz/toolkit/next/middleware/types";
 import { NextResponse } from "next/server";
-import { initializeAuth, resetAuth } from "../../../src/core/auth/config";
+import { initializeAuth, resetAuth } from "@withwiz/toolkit/core/auth/config";
 
 // JWT 설정 (테스트용)
 const testConfig: JWTConfig = {
@@ -130,7 +130,7 @@ describe("SC-UNIT-OPTAUTH-001: optionalAuthMiddleware 단위 테스트", () => {
 
   beforeAll(async () => {
     // JWT_SECRET 환경변수가 설정된 후 import
-    const authModule = await import("@withwiz/next/middleware/auth");
+    const authModule = await import("@withwiz/toolkit/next/middleware/auth");
     optionalAuthMiddleware = authModule.optionalAuthMiddleware;
   });
 
@@ -242,7 +242,7 @@ describe("optionalAuthMiddleware vs authMiddleware 동작 차이", () => {
   let authMiddleware: any;
 
   beforeAll(async () => {
-    const authModule = await import("@withwiz/next/middleware/auth");
+    const authModule = await import("@withwiz/toolkit/next/middleware/auth");
     optionalAuthMiddleware = authModule.optionalAuthMiddleware;
     authMiddleware = authModule.authMiddleware;
   });

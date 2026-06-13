@@ -4,15 +4,15 @@
  * index
  * - System
  */
-import { ISystemInfo } from './types';
-import { getCpuInfo } from './cpu';
-import { getMemoryInfo } from './memory';
-import { getDiskInfo } from './disk';
-import { getNetworkInfo } from './network';
-import { checkEnvironmentVariables } from './environment';
-import { checkServiceHealth } from './health-check';
-import { getPlatform, getRecommendedCommands } from './utils';
-import { logger } from '@withwiz/core/logger/logger';
+import { ISystemInfo } from '@withwiz/toolkit/core/system/types';
+import { getCpuInfo } from '@withwiz/toolkit/core/system/cpu';
+import { getMemoryInfo } from '@withwiz/toolkit/core/system/memory';
+import { getDiskInfo } from '@withwiz/toolkit/core/system/disk';
+import { getNetworkInfo } from '@withwiz/toolkit/core/system/network';
+import { checkEnvironmentVariables } from '@withwiz/toolkit/core/system/environment';
+import { checkServiceHealth } from '@withwiz/toolkit/core/system/health-check';
+import { getPlatform, getRecommendedCommands } from '@withwiz/toolkit/core/system/utils';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 import os from 'os';
 
         /**
@@ -172,12 +172,12 @@ export async function getSimpleSystemInfo() {
 /**
  * 특정 시스템 리소스만 조회하는 함수들
  */
-export { getCpuInfo } from './cpu';
-export { getMemoryInfo } from './memory';
-export { getDiskInfo } from './disk';
-export { getNetworkInfo } from './network';
-export { checkEnvironmentVariables } from './environment';
-export { checkServiceHealth } from './health-check';
+export { getCpuInfo } from '@withwiz/toolkit/core/system/cpu';
+export { getMemoryInfo } from '@withwiz/toolkit/core/system/memory';
+export { getDiskInfo } from '@withwiz/toolkit/core/system/disk';
+export { getNetworkInfo } from '@withwiz/toolkit/core/system/network';
+export { checkEnvironmentVariables } from '@withwiz/toolkit/core/system/environment';
+export { checkServiceHealth } from '@withwiz/toolkit/core/system/health-check';
 
 // 헬퍼 함수들
 function formatUptime(seconds: number): string {

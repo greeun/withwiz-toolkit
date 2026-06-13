@@ -3,9 +3,9 @@
  *
  * CACHE_ENABLED=false일 때 사용되는 비활성화된 캐시 매니저
  */
-import { getENV } from './cache-env';
-import { getCacheConfig } from './cache-config';
-import type { IUnifiedCacheManager } from './cache-types';
+import { getENV } from '@withwiz/toolkit/core/cache/cache-env';
+import { getCacheConfig } from '@withwiz/toolkit/core/cache/cache-config';
+import type { IUnifiedCacheManager } from '@withwiz/toolkit/core/cache/cache-types';
 
 // ============================================================================
 // NoopCacheManager 클래스

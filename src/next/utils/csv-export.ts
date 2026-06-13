@@ -10,7 +10,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { logger } from '@withwiz/core/logger/logger';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 // ==================== Types ====================
 

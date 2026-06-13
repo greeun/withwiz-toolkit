@@ -4,12 +4,12 @@
  * 핸들러는 state-cookie 를 서브모듈 경로에서 import 하므로 여기서는
  * OAuthManager / OAuthCallbackService / jwt cookie 만 mock 한다.
  */
-import type { AuthHandlerOptions } from '../../../src/next/auth-types/handler-types';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 const mockGetLoginUrl = vi.fn();
 const mockExchangeCodeForToken = vi.fn();
 const mockGetUserInfo = vi.fn();
-vi.mock('../../../src/core/auth/oauth', () => ({
+vi.mock('@withwiz/toolkit/core/auth/oauth', () => ({
   OAuthManager: vi.fn().mockImplementation(function (this: any) {
     this.getLoginUrl = mockGetLoginUrl;
     this.exchangeCodeForToken = mockExchangeCodeForToken;
@@ -18,20 +18,20 @@ vi.mock('../../../src/core/auth/oauth', () => ({
 }));
 
 const mockHandleCallback = vi.fn();
-vi.mock('../../../src/core/auth/services/oauth-callback.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/oauth-callback.service', () => ({
   OAuthCallbackService: vi.fn().mockImplementation(function (this: any) {
     this.handleCallback = mockHandleCallback;
   }),
 }));
 
 const mockSetTokenCookies = vi.fn();
-vi.mock('../../../src/core/auth/jwt/cookie', () => ({
+vi.mock('@withwiz/toolkit/core/auth/jwt/cookie', () => ({
   setTokenCookies: (...a: any[]) => mockSetTokenCookies(...a),
   clearTokenCookies: vi.fn(),
 }));
 
-import { createOAuthAuthorizeHandler } from '../../../src/next/auth-handlers/oauth-authorize.handler';
-import { createOAuthCallbackHandler } from '../../../src/next/auth-handlers/oauth-callback.handler';
+import { createOAuthAuthorizeHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-authorize.handler';
+import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-callback.handler';
 
 function options(overrides: Partial<AuthHandlerOptions> = {}): AuthHandlerOptions {
   return {

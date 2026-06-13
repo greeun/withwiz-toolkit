@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { OAuthManager } from '@withwiz/core/auth/oauth';
+import { OAuthManager } from '@withwiz/toolkit/core/auth/oauth';
 // state-cookie 는 서브모듈 경로에서 import — handlers.test.ts 가 oauth
 // 인덱스를 OAuthManager 만으로 mock 하므로 인덱스 경유 시 가려진다.
 import {
   OAUTH_STATE_COOKIE,
   validateOAuthState,
   clearOAuthStateCookie,
-} from '@withwiz/core/auth/oauth/state-cookie';
-import { OAuthCallbackService } from '@withwiz/core/auth/services/oauth-callback.service';
-import { setTokenCookies } from '@withwiz/core/auth/jwt/cookie';
-import { AuthError } from '@withwiz/core/auth/errors';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
+} from '@withwiz/toolkit/core/auth/oauth/state-cookie';
+import { OAuthCallbackService } from '@withwiz/toolkit/core/auth/services/oauth-callback.service';
+import { setTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
   const { dependencies, jwt, oauth, hooks, cookie, urls } = options;

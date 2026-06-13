@@ -1,15 +1,15 @@
 import type { NextRequest } from 'next/server';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
-import { createLoginHandler } from './login.handler';
-import { createRegisterHandler } from './register.handler';
-import { createLogoutHandler } from './logout.handler';
-import { createRefreshHandler } from './refresh.handler';
-import { createMeHandler } from './me.handler';
-import { createOAuthAuthorizeHandler } from './oauth-authorize.handler';
-import { createOAuthCallbackHandler } from './oauth-callback.handler';
-import { createForgotPasswordHandler } from './forgot-password.handler';
-import { createResetPasswordHandler } from './reset-password.handler';
-import { createVerifyEmailHandler } from './verify-email.handler';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createLoginHandler } from '@withwiz/toolkit/next/auth-handlers/login.handler';
+import { createRegisterHandler } from '@withwiz/toolkit/next/auth-handlers/register.handler';
+import { createLogoutHandler } from '@withwiz/toolkit/next/auth-handlers/logout.handler';
+import { createRefreshHandler } from '@withwiz/toolkit/next/auth-handlers/refresh.handler';
+import { createMeHandler } from '@withwiz/toolkit/next/auth-handlers/me.handler';
+import { createOAuthAuthorizeHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-authorize.handler';
+import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-callback.handler';
+import { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
+import { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
+import { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
 
 export interface AuthRouteHandlers {
   login: (req: NextRequest) => Promise<Response>;
@@ -39,13 +39,13 @@ export function createAuthHandlers(options: AuthHandlerOptions): AuthRouteHandle
   };
 }
 
-export { createLoginHandler } from './login.handler';
-export { createRegisterHandler } from './register.handler';
-export { createLogoutHandler } from './logout.handler';
-export { createRefreshHandler } from './refresh.handler';
-export { createMeHandler } from './me.handler';
-export { createOAuthAuthorizeHandler } from './oauth-authorize.handler';
-export { createOAuthCallbackHandler } from './oauth-callback.handler';
-export { createForgotPasswordHandler } from './forgot-password.handler';
-export { createResetPasswordHandler } from './reset-password.handler';
-export { createVerifyEmailHandler } from './verify-email.handler';
+export { createLoginHandler } from '@withwiz/toolkit/next/auth-handlers/login.handler';
+export { createRegisterHandler } from '@withwiz/toolkit/next/auth-handlers/register.handler';
+export { createLogoutHandler } from '@withwiz/toolkit/next/auth-handlers/logout.handler';
+export { createRefreshHandler } from '@withwiz/toolkit/next/auth-handlers/refresh.handler';
+export { createMeHandler } from '@withwiz/toolkit/next/auth-handlers/me.handler';
+export { createOAuthAuthorizeHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-authorize.handler';
+export { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-callback.handler';
+export { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
+export { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
+export { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';

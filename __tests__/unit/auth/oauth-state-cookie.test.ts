@@ -7,7 +7,7 @@ import {
   clearOAuthStateCookie,
   generateOAuthState,
   OAUTH_STATE_COOKIE,
-} from '@withwiz/core/auth/oauth/state-cookie';
+} from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 
 describe('validateOAuthState', () => {
   it('returns true only when both are equal non-empty strings', () => {

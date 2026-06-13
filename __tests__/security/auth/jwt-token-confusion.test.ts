@@ -14,9 +14,9 @@
  *   시 기존 발급 토큰 대량 무효화 방지).
  */
 import { SignJWT, decodeJwt } from 'jose';
-import { JWTService } from '@withwiz/core/auth/jwt';
-import { JWTError } from '@withwiz/core/auth/errors';
-import type { JWTConfig } from '@withwiz/core/auth/types';
+import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
+import { JWTError } from '@withwiz/toolkit/core/auth/errors';
+import type { JWTConfig } from '@withwiz/toolkit/core/auth/types';
 
 const testConfig: JWTConfig = {
   secret: 'test-secret-key-that-is-at-least-32-characters-long',

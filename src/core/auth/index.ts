@@ -12,16 +12,16 @@
 // Types & Errors
 // ============================================================================
 
-export * from './types';
-export * from './errors';
+export * from '@withwiz/toolkit/core/auth/types';
+export * from '@withwiz/toolkit/core/auth/errors';
 
 // ============================================================================
 // Core Modules
 // ============================================================================
 
 // JWT
-export { JWTManager, JWTService } from './jwt';
-export type { JWTConfig, JWTPayload, TokenPair } from './types';
+export { JWTManager, JWTService } from '@withwiz/toolkit/core/auth/jwt';
+export type { JWTConfig, JWTPayload, TokenPair } from '@withwiz/toolkit/core/auth/types';
 
 // JWT Client (Browser)
 export {
@@ -39,7 +39,7 @@ export {
   isTokenExpiringSoon,
   getTokenExpirationString,
   getTokenIssuedAtString,
-} from './jwt/client';
+} from '@withwiz/toolkit/core/auth/jwt/client';
 
 // Password
 export {
@@ -47,8 +47,8 @@ export {
   PasswordHasher,
   defaultPasswordSchema,
   strongPasswordSchema,
-} from './password';
-export type { PasswordValidationResult, PasswordConfig } from './password';
+} from '@withwiz/toolkit/core/auth/password';
+export type { PasswordValidationResult, PasswordConfig } from '@withwiz/toolkit/core/auth/password';
 
 // Password Client Helper
 export {
@@ -59,16 +59,16 @@ export {
   createPasswordSchema,
   passwordValidator,
   createPasswordHasher,
-} from './password/client-helper';
+} from '@withwiz/toolkit/core/auth/password/client-helper';
 
 // OAuth
-export { OAuthManager, GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from './oauth';
+export { OAuthManager, GoogleOAuthProvider, GitHubOAuthProvider, KakaoOAuthProvider } from '@withwiz/toolkit/core/auth/oauth';
 
 // Email
-export { TokenGenerator } from './email/token-generator';
+export { TokenGenerator } from '@withwiz/toolkit/core/auth/email/token-generator';
 
 // ============================================================================
 // Re-exports for Convenience
 // ============================================================================
 
-export { PasswordStrength, OAUTH_PROVIDERS, TokenType } from './types';
+export { PasswordStrength, OAUTH_PROVIDERS, TokenType } from '@withwiz/toolkit/core/auth/types';

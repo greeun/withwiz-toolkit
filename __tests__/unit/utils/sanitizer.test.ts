@@ -16,7 +16,7 @@ import {
   sanitizeArray,
   sanitizeObjectFields,
   removeEventHandlers,
-} from "@withwiz/core/utils/sanitizer";
+} from "@withwiz/toolkit/core/utils/sanitizer";
 
 describe("Sanitizer", () => {
   describe("sanitizeHtml", () => {

@@ -10,14 +10,14 @@
  */
 
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useDebounce } from "@withwiz/react/hooks/useDebounce";
-import { useTimezone, useSimpleTimezone } from "@withwiz/react/hooks/useTimezone";
-import { useExitIntent } from "@withwiz/react/hooks/useExitIntent";
-import { useDataTable } from "@withwiz/react/hooks/useDataTable";
-import * as timezoneUtils from "@withwiz/core/utils/timezone";
+import { useDebounce } from "@withwiz/toolkit/react/hooks/useDebounce";
+import { useTimezone, useSimpleTimezone } from "@withwiz/toolkit/react/hooks/useTimezone";
+import { useExitIntent } from "@withwiz/toolkit/react/hooks/useExitIntent";
+import { useDataTable } from "@withwiz/toolkit/react/hooks/useDataTable";
+import * as timezoneUtils from "@withwiz/toolkit/core/utils/timezone";
 
 // Mock timezone utils
-vi.mock("@withwiz/core/utils/timezone", () => ({
+vi.mock("@withwiz/toolkit/core/utils/timezone", () => ({
   getUserTimezone: vi.fn(() => "Asia/Seoul"),
   getTimezoneOffset: vi.fn(() => -540), // UTC+9 = -540 minutes
 }));

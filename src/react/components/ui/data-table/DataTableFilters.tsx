@@ -5,13 +5,13 @@
  */
 "use client";
 
-import { Button } from "../Button";
-import { Input } from "../Input";
-import { Label } from "../Label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Select";
+import { Button } from "@withwiz/toolkit/react/components/ui/Button";
+import { Input } from "@withwiz/toolkit/react/components/ui/Input";
+import { Label } from "@withwiz/toolkit/react/components/ui/Label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@withwiz/toolkit/react/components/ui/Select";
 import { RefreshCw } from 'lucide-react';
-import { cn } from "@withwiz/react/utils/client-utils";
-import type { FilterConfig } from "./types";
+import { cn } from "@withwiz/toolkit/react/utils/client-utils";
+import type { FilterConfig } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 export interface DataTableFiltersProps {
   filters: FilterConfig[];

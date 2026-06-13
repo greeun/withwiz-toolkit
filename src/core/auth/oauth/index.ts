@@ -5,14 +5,14 @@
  * 플러그인 기반 프로바이더 레지스트리 패턴
  */
 
-import type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse, Logger, IOAuthProviderAdapter, OAuthProviderConfig } from '@withwiz/core/auth/types';
-import { OAUTH_PROVIDERS } from '@withwiz/core/auth/types';
-import { OAuthError } from '@withwiz/core/auth/errors';
-import { GoogleOAuthProvider } from './providers/google';
-import { GitHubOAuthProvider } from './providers/github';
-import { KakaoOAuthProvider } from './providers/kakao';
-import { MicrosoftOAuthProvider } from './providers/microsoft';
-import { MetaOAuthProvider } from './providers/meta';
+import type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse, Logger, IOAuthProviderAdapter, OAuthProviderConfig } from '@withwiz/toolkit/core/auth/types';
+import { OAUTH_PROVIDERS } from '@withwiz/toolkit/core/auth/types';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
+import { GoogleOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/google';
+import { GitHubOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/github';
+import { KakaoOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/kakao';
+import { MicrosoftOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/microsoft';
+import { MetaOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/meta';
 
 // Re-export OAUTH_PROVIDERS
 export { OAUTH_PROVIDERS };
@@ -24,8 +24,8 @@ export {
   setOAuthStateCookie,
   clearOAuthStateCookie,
   validateOAuthState,
-} from './state-cookie';
-export type { OAuthStateCookieOptions } from './state-cookie';
+} from '@withwiz/toolkit/core/auth/oauth/state-cookie';
+export type { OAuthStateCookieOptions } from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 
 // Re-export provider adapters
 export {
@@ -34,7 +34,7 @@ export {
   KakaoOAuthProvider,
   MicrosoftOAuthProvider,
   MetaOAuthProvider,
-} from './providers';
+} from '@withwiz/toolkit/core/auth/oauth/providers';
 
 // ============================================================================
 // OAuth Manager Class
@@ -135,4 +135,4 @@ export class OAuthManager {
 }
 
 // Export types
-export type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse, IOAuthProviderAdapter, OAuthProviderConfig } from '@withwiz/core/auth/types';
+export type { OAuthConfig, OAuthUserInfo, OAuthTokenResponse, IOAuthProviderAdapter, OAuthProviderConfig } from '@withwiz/toolkit/core/auth/types';

@@ -8,9 +8,9 @@
  * - OAuthConfig 새 구조 (providers: Record<string, ...>)
  */
 
-import { OAuthManager } from '@withwiz/core/auth/oauth';
-import { OAuthError } from '@withwiz/core/auth/errors';
-import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthTokenResponse, OAuthUserInfo, OAuthConfig } from '@withwiz/core/auth/types';
+import { OAuthManager } from '@withwiz/toolkit/core/auth/oauth';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthTokenResponse, OAuthUserInfo, OAuthConfig } from '@withwiz/toolkit/core/auth/types';
 
 // ============================================================================
 // 공통 설정
@@ -485,7 +485,7 @@ describe('OAuthManager — Microsoft / Meta 자동 등록', () => {
   });
 
   it('OAUTH_PROVIDERS 상수의 모든 값이 자동 등록되어야 한다 (lint)', async () => {
-    const { OAUTH_PROVIDERS } = await import('@withwiz/core/auth/types');
+    const { OAUTH_PROVIDERS } = await import('@withwiz/toolkit/core/auth/types');
 
     const allProviderConfigs: Record<string, OAuthProviderConfig> = {};
     for (const name of Object.values(OAUTH_PROVIDERS)) {

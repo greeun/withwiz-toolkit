@@ -5,10 +5,10 @@
  * - 프로젝트 독립적
  * - API 키 필요
  */
-import type { IGeoIPApiResponse } from '@withwiz/core/types/geoip';
-import type { IGeoLocationData } from '@withwiz/core/types/database';
-import { BaseGeoIPProvider, truncateString } from './base-provider';
-import { getGeolocationConfig } from '../config';
+import type { IGeoIPApiResponse } from '@withwiz/toolkit/core/types/geoip';
+import type { IGeoLocationData } from '@withwiz/toolkit/core/types/database';
+import { BaseGeoIPProvider, truncateString } from '@withwiz/toolkit/core/geolocation/providers/base-provider';
+import { getGeolocationConfig } from '@withwiz/toolkit/core/geolocation/config';
 
 export class IPGeolocationProvider extends BaseGeoIPProvider {
   name = 'ipgeolocation.io';

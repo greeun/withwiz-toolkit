@@ -8,21 +8,21 @@
  * - 전역 Redis 에러 상태와 연동
  */
 
-import { logger } from '@withwiz/core/logger/logger';
-import { InMemoryCacheManager } from './inmemory-cache-manager';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { InMemoryCacheManager } from '@withwiz/toolkit/core/cache/inmemory-cache-manager';
 import {
   isRedisGloballyDisabled,
   notifyRedisError,
   resetRedisGlobalState,
-} from './cache-redis';
-import { getCacheFallbackConfig } from './cache-env';
+} from '@withwiz/toolkit/core/cache/cache-redis';
+import { getCacheFallbackConfig } from '@withwiz/toolkit/core/cache/cache-env';
 import type {
   CacheBackendType,
   HybridCacheMetrics,
   HybridConnectionStatus,
   IUnifiedCacheManager,
   InMemoryCacheConfig,
-} from './cache-types';
+} from '@withwiz/toolkit/core/cache/cache-types';
 
 /**
  * Redis 캐시 매니저 인터페이스 (RedisCacheManager와 호환)

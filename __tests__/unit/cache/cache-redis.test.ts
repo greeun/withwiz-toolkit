@@ -24,7 +24,7 @@ vi.mock('@upstash/redis', () => {
   };
 });
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('@withwiz/core/logger/logger', () => ({
 }));
 
 // Mock the cache-env module at the correct path (relative to the source file)
-vi.mock('@withwiz/core/cache/cache-env', () => ({
+vi.mock('@withwiz/toolkit/core/cache/cache-env', () => ({
   getEnv: vi.fn(() => ({
     NODE_ENV: 'test',
     REDIS_REST_URL: 'https://test-redis.upstash.io',
@@ -54,8 +54,8 @@ vi.mock('@withwiz/core/cache/cache-env', () => ({
   })),
 }));
 
-import { logger } from '@withwiz/core/logger/logger';
-import { isCacheEnabled, getEnv, getConfig, validateRedisEnvironment, getCacheFallbackConfig } from '@withwiz/core/cache/cache-env';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { isCacheEnabled, getEnv, getConfig, validateRedisEnvironment, getCacheFallbackConfig } from '@withwiz/toolkit/core/cache/cache-env';
 
 describe('Cache Redis - Global State Management', () => {
   beforeEach(async () => {
@@ -90,14 +90,14 @@ describe('Cache Redis - Global State Management', () => {
 
   describe('isRedisGloballyDisabled', () => {
     it('should return false by default', async () => {
-      const { isRedisGloballyDisabled } = await import('@withwiz/core/cache/cache-redis');
+      const { isRedisGloballyDisabled } = await import('@withwiz/toolkit/core/cache/cache-redis');
       expect(isRedisGloballyDisabled()).toBe(false);
     });
   });
 
   describe('notifyRedisError', () => {
     it('should increment error count', async () => {
-      const { notifyRedisError, getRedisGlobalStatus } = await import('@withwiz/core/cache/cache-redis');
+      const { notifyRedisError, getRedisGlobalStatus } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       notifyRedisError(new Error('Connection refused'), 'test');
       const status = getRedisGlobalStatus();
@@ -108,7 +108,7 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should disable Redis globally after threshold is reached', async () => {
-      const { notifyRedisError, isRedisGloballyDisabled } = await import('@withwiz/core/cache/cache-redis');
+      const { notifyRedisError, isRedisGloballyDisabled } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       // Default threshold is 3
       notifyRedisError(new Error('err1'), 'test');
@@ -127,7 +127,7 @@ describe('Cache Redis - Global State Management', () => {
 
   describe('resetRedisGlobalState', () => {
     it('should reset all error state', async () => {
-      const { notifyRedisError, resetRedisGlobalState, getRedisGlobalStatus } = await import('@withwiz/core/cache/cache-redis');
+      const { notifyRedisError, resetRedisGlobalState, getRedisGlobalStatus } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       // Accumulate errors
       notifyRedisError(new Error('err1'), 'test');
@@ -146,7 +146,7 @@ describe('Cache Redis - Global State Management', () => {
 
   describe('getRedisGlobalStatus', () => {
     it('should return current state snapshot', async () => {
-      const { getRedisGlobalStatus } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisGlobalStatus } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const status = getRedisGlobalStatus();
       expect(status).toEqual({
@@ -160,7 +160,7 @@ describe('Cache Redis - Global State Management', () => {
 
   describe('isRedisAvailableNow', () => {
     it('should return false when Redis is globally disabled', async () => {
-      const { notifyRedisError, isRedisAvailableNow } = await import('@withwiz/core/cache/cache-redis');
+      const { notifyRedisError, isRedisAvailableNow } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       // Trigger global disable
       notifyRedisError(new Error('err1'), 'test');
@@ -171,7 +171,7 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should return true when cache is enabled and Redis is available', async () => {
-      const { isRedisAvailableNow } = await import('@withwiz/core/cache/cache-redis');
+      const { isRedisAvailableNow } = await import('@withwiz/toolkit/core/cache/cache-redis');
       expect(isRedisAvailableNow()).toBe(true);
     });
   });
@@ -180,7 +180,7 @@ describe('Cache Redis - Global State Management', () => {
     it('should return failure when cache is disabled', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -188,7 +188,7 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should return failure when Redis environment validation fails', async () => {
-      const { validateRedisEnvironment, getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { validateRedisEnvironment, getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       // Ensure isCacheEnabled and getConfig().isRedisAvailable pass
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -199,7 +199,7 @@ describe('Cache Redis - Global State Management', () => {
         errors: ['Redis URL is not configured.'],
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -207,14 +207,14 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should return failure when Redis backend is disabled', async () => {
-      const { getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       // Ensure isCacheEnabled passes but getConfig().isRedisAvailable fails
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => false,
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -224,7 +224,7 @@ describe('Cache Redis - Global State Management', () => {
 
   describe('getRedisClient', () => {
     it('should return null when Redis is globally disabled', async () => {
-      const { notifyRedisError, getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { notifyRedisError, getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       // Trigger global disable
       notifyRedisError(new Error('err1'), 'test');
@@ -236,7 +236,7 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should return cached client when already initialized', async () => {
-      const { getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       // First call initializes
       const client1 = getRedisClient();
@@ -248,19 +248,19 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should return null when isRedisAvailableNow returns false', async () => {
-      const { getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => false,
       });
 
-      const { getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const client = getRedisClient();
       expect(client).toBeNull();
     });
 
     it('should return null when REDIS_REST_URL is missing', async () => {
-      const { getEnv, getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { getEnv, getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -270,14 +270,14 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const client = getRedisClient();
       expect(client).toBeNull();
     });
 
     it('should return null when REDIS_REST_TOKEN is missing', async () => {
-      const { getEnv, getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { getEnv, getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -287,7 +287,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: '',
       });
 
-      const { getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const client = getRedisClient();
       expect(client).toBeNull();
@@ -295,7 +295,7 @@ describe('Cache Redis - Global State Management', () => {
 
     it('should create and return Redis instance with valid config', async () => {
       const { Redis } = await import('@upstash/redis');
-      const { getRedisClient } = await import('@withwiz/core/cache/cache-redis');
+      const { getRedisClient } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const client = getRedisClient();
       expect(client).not.toBeNull();
@@ -309,7 +309,7 @@ describe('Cache Redis - Global State Management', () => {
   describe('checkRedisConnection - additional cases', () => {
     it('should return success when ping returns PONG', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -323,7 +323,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(true);
@@ -336,7 +336,7 @@ describe('Cache Redis - Global State Management', () => {
       mockPingResult = 'ERROR';
 
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -350,7 +350,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -361,7 +361,7 @@ describe('Cache Redis - Global State Management', () => {
       mockPingError = new Error('Connection timeout');
 
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -375,7 +375,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -386,7 +386,7 @@ describe('Cache Redis - Global State Management', () => {
 
     it('should return failure when REDIS_REST_URL is empty string', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -400,7 +400,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -409,7 +409,7 @@ describe('Cache Redis - Global State Management', () => {
 
     it('should return failure when REDIS_REST_TOKEN is empty string', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -423,7 +423,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: '   ',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -434,7 +434,7 @@ describe('Cache Redis - Global State Management', () => {
       mockPingError = 'string error';
 
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, validateRedisEnvironment, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => true,
       });
@@ -448,7 +448,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: 'test-token-123',
       });
 
-      const { checkRedisConnection } = await import('@withwiz/core/cache/cache-redis');
+      const { checkRedisConnection } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       const result = await checkRedisConnection();
       expect(result.success).toBe(false);
@@ -460,7 +460,7 @@ describe('Cache Redis - Global State Management', () => {
     it('should skip logging when already logged', async () => {
       (globalThis as any).__redisCacheInitLogged = true;
 
-      const { logRedisInitialization } = await import('@withwiz/core/cache/cache-redis');
+      const { logRedisInitialization } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       logRedisInitialization();
       expect(logger.info).not.toHaveBeenCalled();
@@ -468,7 +468,7 @@ describe('Cache Redis - Global State Management', () => {
     });
 
     it('should log info when Redis is available', async () => {
-      const { logRedisInitialization } = await import('@withwiz/core/cache/cache-redis');
+      const { logRedisInitialization } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       logRedisInitialization();
       expect(logger.info).toHaveBeenCalledWith(
@@ -480,12 +480,12 @@ describe('Cache Redis - Global State Management', () => {
 
     it('should log info when cache is disabled', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      const { getConfig: getCacheConfig } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => false,
       });
 
-      const { logRedisInitialization } = await import('@withwiz/core/cache/cache-redis');
+      const { logRedisInitialization } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       logRedisInitialization();
       expect(logger.info).toHaveBeenCalledWith(
@@ -496,7 +496,7 @@ describe('Cache Redis - Global State Management', () => {
 
     it('should log warning when Redis env vars are missing', async () => {
       (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      const { getConfig: getCacheConfig, getEnv } = await import('@withwiz/core/cache/cache-env');
+      const { getConfig: getCacheConfig, getEnv } = await import('@withwiz/toolkit/core/cache/cache-env');
       (getCacheConfig as ReturnType<typeof vi.fn>).mockReturnValue({
         isRedisAvailable: () => false,
       });
@@ -506,7 +506,7 @@ describe('Cache Redis - Global State Management', () => {
         REDIS_REST_TOKEN: '',
       });
 
-      const { logRedisInitialization } = await import('@withwiz/core/cache/cache-redis');
+      const { logRedisInitialization } = await import('@withwiz/toolkit/core/cache/cache-redis');
 
       logRedisInitialization();
       expect(logger.warn).toHaveBeenCalledWith(
