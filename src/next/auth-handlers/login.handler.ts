@@ -13,6 +13,13 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+/**
+ * 더미 bcrypt 해시 (cost 12) — 계정이 없거나 비밀번호가 없는 경우에도
+ * 동일 비용의 compare 를 수행해 응답 시간을 균일화한다 (타이밍 기반 계정
+ * enumeration 방지). 실제 발급 해시와 동일한 cost 여야 의미가 있다.
+ */
+const DUMMY_PASSWORD_HASH = '$2b$12$/l4jMXYcTL.SQgNWzy1UcuSlrtLlw.GFTpWDYTficzN2kRhN/LwEO';
+
 export function createLoginHandler(options: AuthHandlerOptions) {
   const { dependencies, jwt, hooks, features, cookie, tokenDelivery } = options;
   const jwtService = new JWTService({
@@ -44,6 +51,8 @@ export function createLoginHandler(options: AuthHandlerOptions) {
 
       const user = await dependencies.userRepository.findByEmail(email);
       if (!user) {
+        // 계정이 없어도 동일 비용의 compare 를 수행해 타이밍을 균일화한다
+        await compare(password, DUMMY_PASSWORD_HASH);
         return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
       }
 
@@ -54,6 +63,8 @@ export function createLoginHandler(options: AuthHandlerOptions) {
       // The repository findByEmail should return the full user including password for auth
       const userRecord = user as any;
       if (!userRecord.password) {
+        // 비밀번호가 없는 계정(OAuth 전용)도 동일하게 더미 compare 로 타이밍 균일화
+        await compare(password, DUMMY_PASSWORD_HASH);
         return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
       }
 
