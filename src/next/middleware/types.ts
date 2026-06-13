@@ -7,12 +7,15 @@ import type { TLocale } from '@withwiz/toolkit/core/error/messages';
 
 /**
  * 사용자 정보 (JWT 토큰에서 추출)
+ *
+ * `role`은 평범한 `string`이며 toolkit은 고정 role enum을 소유하지 않는다.
+ * 소비자가 자체 역할 어휘를 가지면 `IUser<AppRole>`로 좁힐 수 있다.
  */
-export interface IUser {
+export interface IUser<TRole extends string = string> {
   id: string;
   email: string;
   name?: string;
-  role: string;
+  role: TRole;
 }
 
 /**

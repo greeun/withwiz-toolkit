@@ -124,7 +124,9 @@ export class JWTManager {
   /**
    * Access JWT 토큰 검증
    */
-  async verifyAccessToken(token: string): Promise<JWTPayload> {
+  async verifyAccessToken<TRole extends string = string>(
+    token: string,
+  ): Promise<JWTPayload<TRole>> {
     try {
       const { payload } = await jwtVerify(token, this.secretKey, {
         algorithms: [this.config.algorithm] as const,
@@ -151,7 +153,9 @@ export class JWTManager {
         id: userId,
         userId: userId,
         email: payload.email as string,
-        role: payload.role as any,
+        // role 은 신뢰 불가 토큰에서 옴 — TRole 단언은 소비자 어휘로의 타입 편의일 뿐
+        // 런타임 검증은 아니다.
+        role: payload.role as TRole,
         emailVerified: payload.emailVerified as Date | null | undefined,
         tokenType: payload.tokenType as "access" | "refresh" | undefined,
         iat: payload.iat,
@@ -308,8 +312,10 @@ export class JWTService {
   /**
    * 토큰 검증
    */
-  async verify(token: string): Promise<JWTPayload> {
-    return this.manager.verifyAccessToken(token);
+  async verify<TRole extends string = string>(
+    token: string,
+  ): Promise<JWTPayload<TRole>> {
+    return this.manager.verifyAccessToken<TRole>(token);
   }
 
   /**
@@ -352,8 +358,10 @@ export class JWTService {
   /**
    * Access 토큰 검증
    */
-  async verifyAccessToken(token: string): Promise<JWTPayload> {
-    return this.manager.verifyAccessToken(token);
+  async verifyAccessToken<TRole extends string = string>(
+    token: string,
+  ): Promise<JWTPayload<TRole>> {
+    return this.manager.verifyAccessToken<TRole>(token);
   }
 
   /**

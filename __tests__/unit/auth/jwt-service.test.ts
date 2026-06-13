@@ -13,10 +13,10 @@
  * - Constructor with short secret
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, expectTypeOf } from 'vitest';
 import { JWTService, JWTManager } from '@withwiz/toolkit/core/auth/jwt';
 import { JWTError } from '@withwiz/toolkit/core/auth/errors';
-import type { JWTConfig } from '@withwiz/toolkit/core/auth/types';
+import type { JWTConfig, JWTPayload } from '@withwiz/toolkit/core/auth/types';
 
 const testConfig: JWTConfig = {
   secret: 'test-secret-key-that-is-at-least-32-characters-long',
@@ -421,5 +421,53 @@ describe('JWTManager: constructor validation', () => {
     expect(
       () => new JWTManager({ ...testConfig, secret: 'a'.repeat(32) }, logger)
     ).not.toThrow();
+  });
+});
+
+// ============================================================================
+// Consumer-owned role vocabulary (generic JWTPayload<TRole>)
+// ============================================================================
+describe('JWTPayload role vocabulary', () => {
+  it('round-trips an arbitrary consumer role string unchanged', async () => {
+    // toolkit 은 고정 role enum 을 소유하지 않는다 — 임의 어휘를 그대로 운반해야 한다.
+    const service = new JWTService(testConfig);
+    const token = await service.createAccessToken({
+      id: 'u1',
+      userId: 'u1',
+      email: 'doc@example.com',
+      role: 'DOCTOR', // 'USER'/'ADMIN' 가 아닌 소비자 자체 어휘
+    });
+
+    const payload = await service.verifyAccessToken(token);
+    expect(payload.role).toBe('DOCTOR');
+  });
+
+  it('narrows role to the consumer union via the type parameter', async () => {
+    type AppRole = 'USER' | 'EDITOR' | 'ADMIN';
+    const service = new JWTService(testConfig);
+    const token = await service.createAccessToken({
+      id: 'u2',
+      userId: 'u2',
+      email: 'ed@example.com',
+      role: 'EDITOR',
+    });
+
+    const payload = await service.verifyAccessToken<AppRole>(token);
+    expectTypeOf(payload).toEqualTypeOf<JWTPayload<AppRole>>();
+    expectTypeOf(payload.role).toEqualTypeOf<AppRole>();
+    expect(payload.role).toBe('EDITOR');
+  });
+
+  it('defaults role to string when no type parameter is given (backward compat)', async () => {
+    const service = new JWTService(testConfig);
+    const token = await service.createAccessToken({
+      id: 'u3',
+      userId: 'u3',
+      email: 'x@example.com',
+      role: 'USER',
+    });
+
+    const payload = await service.verifyAccessToken(token);
+    expectTypeOf(payload.role).toEqualTypeOf<string>();
   });
 });
