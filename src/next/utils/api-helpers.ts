@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema } from 'zod';
 import { ERROR_CODES, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
+import { ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 /**
  * Zod 스키마로 데이터 검증
@@ -162,16 +163,21 @@ export function createPaginatedResponse<T>(
 /**
  * Admin 권한 확인
  *
+ * `adminRole` 미지정 시 `ROLE_DEFAULTS.ADMIN_ROLE`('ADMIN')과 비교한다.
+ * 자체 역할 어휘를 쓰는 소비자는 관리자 역할 이름을 직접 넘긴다.
+ *
  * @example
  * ```typescript
- * const adminCheck = requireAdmin(user.role);
+ * const adminCheck = requireAdmin(user.role);              // 기본 'ADMIN'
+ * const superCheck = requireAdmin(user.role, 'SUPERADMIN'); // 소비자 지정
  * if (!adminCheck.isAdmin) return adminCheck.response;
  * ```
  */
 export function requireAdmin(
-  userRole: string
+  userRole: string,
+  adminRole: string = ROLE_DEFAULTS.ADMIN_ROLE
 ): { isAdmin: true } | { isAdmin: false; response: NextResponse } {
-  if (userRole !== 'ADMIN') {
+  if (userRole !== adminRole) {
     return {
       isAdmin: false,
       response: NextResponse.json(

@@ -1,7 +1,7 @@
 import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { UserRepository, OAuthAccountRepository, BaseUser, TokenPair, Logger } from '@withwiz/toolkit/core/auth/types';
-import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export interface OAuthCallbackServiceConfig {
   userRepository: UserRepository;
@@ -136,7 +136,7 @@ export class OAuthCallbackService {
     return this.jwtService.createTokenPair({
       id: user.id,
       email: user.email,
-      role: user.role ?? 'USER',
+      role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
       emailVerified: user.emailVerified,
     });
   }

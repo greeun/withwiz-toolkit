@@ -1,7 +1,7 @@
 import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { UserRepository, Logger } from '@withwiz/toolkit/core/auth/types';
-import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export interface TokenRefreshServiceConfig {
   userRepository: UserRepository;
@@ -58,10 +58,10 @@ export class TokenRefreshService {
       id: user.id,
       userId: user.id,
       email: user.email,
-      role: user.role ?? 'USER',
+      role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
       emailVerified: user.emailVerified,
     });
 
-    return { accessToken, user: { id: user.id, email: user.email, role: user.role ?? 'USER' } };
+    return { accessToken, user: { id: user.id, email: user.email, role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE } };
   }
 }
