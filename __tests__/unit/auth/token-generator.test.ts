@@ -4,9 +4,32 @@
  * crypto 기반 토큰 생성 유틸리티 테스트
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createHash } from 'crypto';
 import { TokenGenerator } from '@withwiz/toolkit/core/auth/email/token-generator';
 
 describe('TokenGenerator', () => {
+  describe('hash', () => {
+    it('입력의 SHA-256 hex 다이제스트를 반환해야 한다 (64글자)', () => {
+      const token = 'some-secret-token';
+      const expected = createHash('sha256').update(token).digest('hex');
+
+      const hashed = TokenGenerator.hash(token);
+
+      expect(hashed).toBe(expected);
+      expect(hashed).toHaveLength(64);
+      expect(hashed).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('동일 입력에 대해 결정적이어야 한다', () => {
+      expect(TokenGenerator.hash('abc')).toBe(TokenGenerator.hash('abc'));
+    });
+
+    it('원본 토큰과 달라야 한다 (평문 저장 방지)', () => {
+      const token = TokenGenerator.generate();
+      expect(TokenGenerator.hash(token)).not.toBe(token);
+    });
+  });
+
   describe('generate', () => {
     it('기본 32바이트 hex 문자열을 반환해야 한다 (64글자)', () => {
       const token = TokenGenerator.generate();

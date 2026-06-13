@@ -36,13 +36,16 @@ export class PasswordResetService {
 
     const token = TokenGenerator.generate();
     const expires = new Date(Date.now() + this.tokenExpiryHours * 60 * 60 * 1000);
-    await this.tokenRepo.create(email, token, TokenType.PASSWORD_RESET, expires);
+    // DB 에는 해시만 저장, 평문은 이메일로만 전달 (DB 유출 시 토큰 복원 방지)
+    await this.tokenRepo.create(email, TokenGenerator.hash(token), TokenType.PASSWORD_RESET, expires);
     await this.emailSender.sendPasswordResetEmail(email, token);
     this.logger.info('Password reset requested', { email });
   }
 
   async resetPassword(email: string, token: string, newPassword: string): Promise<void> {
-    const tokenRecord = await this.tokenRepo.findByEmailAndToken(email, token, TokenType.PASSWORD_RESET);
+    // 저장은 해시값 기준이므로 평문 토큰을 해시해 조회/삭제한다
+    const hashedToken = TokenGenerator.hash(token);
+    const tokenRecord = await this.tokenRepo.findByEmailAndToken(email, hashedToken, TokenType.PASSWORD_RESET);
 
     if (!tokenRecord || tokenRecord.expires < new Date()) {
       throw new AuthError('Invalid or expired token', 'TOKEN_INVALID', 400);
@@ -55,7 +58,7 @@ export class PasswordResetService {
 
     const hashedPassword = await hash(newPassword, this.bcryptRounds);
     await this.userRepo.update(user.id, { password: hashedPassword });
-    await this.tokenRepo.delete(email, token, TokenType.PASSWORD_RESET);
+    await this.tokenRepo.delete(email, hashedToken, TokenType.PASSWORD_RESET);
     this.logger.info('Password reset completed', { userId: user.id });
   }
 }
