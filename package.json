@@ -58,6 +58,7 @@
     "./core/auth/services/password-reset.service": "./dist/core/auth/services/password-reset.service.js",
     "./core/auth/services/register.service": "./dist/core/auth/services/register.service.js",
     "./core/auth/services/token-refresh.service": "./dist/core/auth/services/token-refresh.service.js",
+    "./core/auth/services/refresh-token-store": "./dist/core/auth/services/refresh-token-store.js",
     "./core/auth/token-delivery": "./dist/core/auth/token-delivery.js",
     "./core/auth/types": "./dist/core/auth/types/index.js",
     "./core/cache": "./dist/core/cache/index.js",

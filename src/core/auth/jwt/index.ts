@@ -5,6 +5,7 @@
  * Next.js, Express, Fastify 등 어디서나 사용 가능
  */
 
+import { randomUUID } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import type { JWTConfig, JWTPayload, TokenPair, Logger } from "@withwiz/toolkit/core/auth/types";
 import { JWTError } from "@withwiz/toolkit/core/auth/errors";
@@ -59,13 +60,22 @@ export class JWTManager {
 
   /**
    * Refresh 토큰 생성
+   *
+   * rotation/reuse detection 용 `jti`(토큰 고유 id)와 `familyId`(회전 계보 id)를
+   * 함께 발급할 수 있다. 미지정 시 0.8 이전과 동일하게 식별자 없는 refresh
+   * 토큰을 만든다(하위 호환).
    */
-  async createRefreshToken(userId: string): Promise<string> {
+  async createRefreshToken(
+    userId: string,
+    options?: { jti?: string; familyId?: string },
+  ): Promise<string> {
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         userId,
         tokenType: "refresh",
       };
+      if (options?.jti) payload.jti = options.jti;
+      if (options?.familyId) payload.familyId = options.familyId;
 
       const jwt = await new SignJWT(payload)
         .setProtectedHeader({ alg: this.config.algorithm })
@@ -91,13 +101,21 @@ export class JWTManager {
   /**
    * 토큰 쌍 생성 (Access + Refresh)
    */
-  async createTokenPair(user: {
-    id: string;
-    email: string;
-    role: string;
-    emailVerified?: Date | null;
-  }): Promise<TokenPair> {
+  async createTokenPair(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      emailVerified?: Date | null;
+    },
+    options?: { jti?: string; familyId?: string },
+  ): Promise<TokenPair> {
     try {
+      // 신규 refresh 는 기본으로 jti+familyId 를 부여한다 → 첫 회전부터
+      // rotation/reuse detection 이 동작한다. 소비자가 명시하면 그 값을 쓴다.
+      const jti = options?.jti ?? randomUUID();
+      const familyId = options?.familyId ?? randomUUID();
+
       const [accessToken, refreshToken] = await Promise.all([
         this.createAccessToken({
           id: user.id,
@@ -106,10 +124,10 @@ export class JWTManager {
           role: user.role as any,
           emailVerified: user.emailVerified,
         }),
-        this.createRefreshToken(user.id),
+        this.createRefreshToken(user.id, { jti, familyId }),
       ]);
 
-      this.logger.debug("Token pair created successfully", { userId: user.id });
+      this.logger.debug("Token pair created successfully", { userId: user.id, familyId });
 
       return { accessToken, refreshToken };
     } catch (error) {
@@ -183,7 +201,7 @@ export class JWTManager {
    */
   async verifyRefreshToken(
     token: string,
-  ): Promise<{ userId: string; tokenType: string }> {
+  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string }> {
     try {
       const { payload } = await jwtVerify(token, this.secretKey, {
         algorithms: [this.config.algorithm] as const,
@@ -205,6 +223,8 @@ export class JWTManager {
       return {
         userId,
         tokenType: payload.tokenType as string,
+        jti: typeof payload.jti === "string" ? payload.jti : undefined,
+        familyId: typeof payload.familyId === "string" ? payload.familyId : undefined,
       };
     } catch (error: any) {
       this.logger.error("Failed to verify refresh token", {
@@ -321,8 +341,11 @@ export class JWTService {
   /**
    * Refresh 토큰 생성
    */
-  async createRefreshToken(userId: string): Promise<string> {
-    return this.manager.createRefreshToken(userId);
+  async createRefreshToken(
+    userId: string,
+    options?: { jti?: string; familyId?: string },
+  ): Promise<string> {
+    return this.manager.createRefreshToken(userId, options);
   }
 
   /**
@@ -330,20 +353,23 @@ export class JWTService {
    */
   async verifyRefreshToken(
     token: string,
-  ): Promise<{ userId: string; tokenType: string }> {
+  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string }> {
     return this.manager.verifyRefreshToken(token);
   }
 
   /**
    * 토큰 쌍 생성
    */
-  async createTokenPair(user: {
-    id: string;
-    email: string;
-    role: string;
-    emailVerified?: Date | null;
-  }): Promise<TokenPair> {
-    return this.manager.createTokenPair(user);
+  async createTokenPair(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      emailVerified?: Date | null;
+    },
+    options?: { jti?: string; familyId?: string },
+  ): Promise<TokenPair> {
+    return this.manager.createTokenPair(user, options);
   }
 
   /**

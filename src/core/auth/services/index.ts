@@ -9,6 +9,7 @@ export type { OAuthCallbackServiceConfig, OAuthCallbackInput, OAuthCallbackResul
 
 export { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
 export type { TokenRefreshServiceConfig, RefreshResult } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+export type { IRefreshTokenStore, RefreshTokenRecord } from '@withwiz/toolkit/core/auth/services/refresh-token-store';
 
 export { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
 export type { PasswordResetServiceConfig } from '@withwiz/toolkit/core/auth/services/password-reset.service';
