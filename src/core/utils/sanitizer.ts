@@ -72,8 +72,12 @@ export function removeEventHandlers(input: string): string {
     return '';
   }
 
-  // on* 이벤트 핸들러 패턴 제거
-  return input.replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, '');
+  // on* 이벤트 핸들러 제거 — 따옴표 값(onerror="..."/'...')과 무따옴표 값
+  // (onerror=alert(1)) 모두 처리. 무따옴표는 공백/'>' 전까지를 값으로 본다.
+  return input.replace(
+    /\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
+    '',
+  );
 }
 
 /**
