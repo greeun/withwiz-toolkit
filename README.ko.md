@@ -1,15 +1,15 @@
 # @withwiz/toolkit
 
-**English** | [한국어](README.ko.md)
+[English](README.md) | **한국어**
 
-Shared utility library for [withwiz](https://github.com/greeun) projects — a collection of production-ready modules for authentication, caching, error handling, middleware, geolocation, logging, and more.
+Shared utility library for [withwiz](https://github.com/greeun) projects — 인증, 캐싱, 에러 처리, 미들웨어, 지오로케이션, 로깅 등 프로덕션 수준의 모듈 모음.
 
 ## Features
 
-- **Composition root** — assemble every tier's configuration at once with a single `initialize()`
-- **Framework tiers** — dependencies split across four tiers: `core` / `next` / `react` / `prisma` (0.7+)
-- **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF binding, Prisma adapter
-- **Cache** — Redis / in-memory / hybrid / noop backends, factory, invalidation, defaults
+- **Composition root** — 단일 `initialize()`로 모든 티어 설정을 한 번에 조립
+- **Framework tiers** — `core` / `next` / `react` / `prisma` 4개 티어로 의존성 분리 (0.7+)
+- **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF 바인딩, Prisma adapter
+- **Cache** — Redis / in-memory / hybrid / noop 백엔드, factory, invalidation, defaults
 - **Constants** — Error codes, messages, pagination, security constants
 - **Error** — Typed `AppError`, framework-aware error handler / display (core · next · react)
 - **Geolocation** — GeoIP lookup, batch processing, provider factory
@@ -34,17 +34,17 @@ yarn add @withwiz/toolkit
 
 ### Peer dependencies (optional)
 
-`next` / `react` / `react-dom` are **optional** peers — install only the peers required by the tiers you use.
+`next` / `react` / `react-dom` 은 **optional** peer입니다 — 사용하는 티어가 요구하는 peer만 설치하세요.
 
 ```bash
-# When using the next tier
+# next 티어를 쓸 때
 npm install next
 
-# When using the react tier
+# react 티어를 쓸 때
 npm install react react-dom
 
-# Backend / CLI using only the core tier
-# (no extra peers required)
+# core 티어만 쓰는 백엔드 / CLI
+# (별도 peer 설치 불필요)
 ```
 
 ## Quick start
@@ -101,9 +101,9 @@ import { formatNumber }  from '@withwiz/toolkit/core/utils/format-number'
 import { normalizeUrl }  from '@withwiz/toolkit/core/utils/url-normalizer'
 ```
 
-### Token delivery mode (tokenDelivery)
+### 토큰 전달 모드 (tokenDelivery)
 
-You can choose how authentication tokens are delivered at initialization time. The default is `'hybrid'` (cookie + header support, the legacy behavior).
+인증 토큰 전달 방식을 초기화 시 선택할 수 있습니다. 기본값은 `'hybrid'`(쿠키 + 헤더 동시 지원, 기존 동작)입니다.
 
 ```typescript
 import { initialize } from '@withwiz/toolkit/initialize';
@@ -111,38 +111,38 @@ import { initialize } from '@withwiz/toolkit/initialize';
 initialize({
   auth: {
     jwtSecret: process.env.JWT_SECRET!,
-    tokenDelivery: 'cookie', // 'cookie' | 'header' | 'hybrid' (default)
+    tokenDelivery: 'cookie', // 'cookie' | 'header' | 'hybrid' (기본)
   },
 });
 ```
 
-It can also be overridden per handler (precedence: option > global > `'hybrid'`):
+핸들러별로 덮어쓸 수도 있습니다 (옵션 > 전역 > `'hybrid'` 순):
 
 ```typescript
 createAuthHandlers({ ...options, tokenDelivery: 'header' });
 ```
 
-| Mode | Token location | Notes |
+| 모드 | 토큰 위치 | 특징 |
 |---|---|---|
-| `cookie` | HttpOnly cookie only | Token removed from the response body — minimal XSS exposure. Recommended for browser apps |
-| `header` | `Authorization: Bearer` + body | Refresh is passed via the body `{ refreshToken }`. Client-side storage is relatively vulnerable to XSS — for non-browser clients |
-| `hybrid` | Both | Legacy behavior. Cookie first, with header/body fallback |
+| `cookie` | HttpOnly 쿠키 전용 | 응답 body 에서 토큰 제거 — XSS 노출 면 최소. 브라우저 앱 권장 |
+| `header` | `Authorization: Bearer` + body | refresh 는 body `{ refreshToken }` 으로 전달. 클라이언트 저장소는 XSS 에 상대적으로 취약 — 비브라우저 클라이언트용 |
+| `hybrid` | 둘 다 | 기존 동작. 쿠키 우선, 헤더/body 폴백 |
 
-**Constraint**: The OAuth callback is a redirect response, so it always delivers the token via cookie regardless of the mode. Apps that use OAuth should use `'cookie'` or `'hybrid'`.
+**제약**: OAuth callback 은 redirect 응답이라 모드와 무관하게 쿠키로만 토큰을 전달합니다. OAuth 를 쓰는 앱은 `'cookie'` 또는 `'hybrid'` 를 사용하세요.
 
 ## Module reference
 
-Since 0.7, every subpath is split into four tiers based on its framework dependencies.
-For the detailed tier model, rules, and migration mapping, see [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md)
-and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
+0.7부터 모든 subpath는 프레임워크 의존성에 따라 4개 티어로 분리됩니다.
+자세한 티어 모델·규칙·마이그레이션 매핑은 [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md)
+및 [`CHANGELOG.md`](CHANGELOG.md) 의 0.7.0 항목을 참조하세요.
 
 ### Composition root
 
 | Subpath | Description |
 |---|---|
-| `/initialize` | Unified entry point that assembles every tier's configuration into a single object |
+| `/initialize` | 모든 티어 설정을 단일 객체로 조립하는 통합 진입점 |
 
-### `core` — framework-independent (pure TS)
+### `core` — 프레임워크 독립 (pure TS)
 
 | Subpath | Description |
 |---|---|
@@ -169,7 +169,7 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 | `/core/utils` | `sanitizer`, `type-guards`, `format-number`, `ip-utils`, `timezone`, ... |
 | `/core/validators` | Password strength validator |
 
-### `next` — depends on Next.js
+### `next` — Next.js 의존
 
 | Subpath | Description |
 |---|---|
@@ -179,7 +179,7 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
 
-### `react` — depends on React
+### `react` — React 의존
 
 | Subpath | Description |
 |---|---|
@@ -188,11 +188,11 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 | `/react/error` | `error-display` (sonner toast) |
 | `/react/utils/{client-utils,qr-code}` | Browser-context utilities |
 
-### `prisma` — depends on Prisma
+### `prisma` — Prisma 의존
 
 | Subpath | Description |
 |---|---|
-| `/prisma/auth-adapter` | Prisma implementations of `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` |
+| `/prisma/auth-adapter` | `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` Prisma 구현체 |
 
 ## Requirements
 
@@ -201,15 +201,15 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Optional peers
 
-`next` / `react` / `react-dom` are `optional` peer dependencies.
-Install only the peers required by the tiers you use:
+`next` / `react` / `react-dom` 은 `optional` peer dependency입니다.
+사용하는 티어가 요구하는 peer만 설치하세요:
 
-- Backend / CLI using only the `core` tier: no peers required
-- `next` tier: Next.js >= 15
-- `react` tier: React >= 18, React-DOM >= 18
-- `prisma` tier: a Prisma-compatible client (duck-typed)
-- Some modules such as the Prisma adapter's `EmailTokenRepository`: `date-fns >= 3` (optional)
-- Email delivery: `nodemailer >= 6` (optional)
+- `core` 티어만 쓰는 백엔드 / CLI: peer 불필요
+- `next` 티어: Next.js >= 15
+- `react` 티어: React >= 18, React-DOM >= 18
+- `prisma` 티어: Prisma 호환 클라이언트 (덕 타이핑)
+- Prisma 어댑터의 `EmailTokenRepository` 등 일부 모듈: `date-fns >= 3` (optional)
+- 이메일 전송: `nodemailer >= 6` (optional)
 
 ## Development
 
