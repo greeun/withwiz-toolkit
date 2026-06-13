@@ -285,6 +285,36 @@ describe('Auth Handlers', () => {
       expect(body.error).toBe('Invalid credentials');
     });
 
+    it('should perform a dummy password comparison when user is not found (timing equalization)', async () => {
+      const options = createMockOptions();
+      (options.dependencies.userRepository.findByEmail as any).mockResolvedValue(null);
+      const handler = createLoginHandler(options);
+      const req = makePostRequest('http://localhost/api/auth/login', {
+        email: 'notfound@example.com',
+        password: 'password123',
+      });
+
+      const res = await handler(req);
+      expect(res.status).toBe(401);
+      // 미존재 계정도 bcrypt.compare 를 수행해 응답 시간을 균일화한다 (계정 enumeration 방지)
+      expect(mockCompare).toHaveBeenCalledTimes(1);
+    });
+
+    it('should perform a dummy password comparison when user has no password (timing equalization)', async () => {
+      const options = createMockOptions();
+      const userWithoutPassword = { ...mockUser, password: undefined };
+      (options.dependencies.userRepository.findByEmail as any).mockResolvedValue(userWithoutPassword);
+      const handler = createLoginHandler(options);
+      const req = makePostRequest('http://localhost/api/auth/login', {
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      const res = await handler(req);
+      expect(res.status).toBe(401);
+      expect(mockCompare).toHaveBeenCalledTimes(1);
+    });
+
     it('should return 401 when password does not match', async () => {
       const options = createMockOptions();
       (options.dependencies.userRepository.findByEmail as any).mockResolvedValue(mockUser);

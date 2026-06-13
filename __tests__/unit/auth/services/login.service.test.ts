@@ -1,6 +1,12 @@
 import { LoginService } from '@withwiz/toolkit/core/auth/services/login.service';
 import type { UserRepository, Logger } from '@withwiz/toolkit/core/auth/types';
-import { hash } from 'bcryptjs';
+
+// compare 를 실제 구현으로 래핑한 spy 로 교체 — 호출 추적은 하되 동작은 보존
+vi.mock('bcryptjs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('bcryptjs')>();
+  return { ...actual, default: actual, compare: vi.fn(actual.compare) };
+});
+import { hash, compare as mockedCompare } from 'bcryptjs';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),
@@ -67,6 +73,14 @@ describe('LoginService', () => {
   it('should throw for non-existent user', async () => {
     (mockUserRepo.findByEmail as any).mockResolvedValue(null);
     await expect(service.login('nobody@test.com', 'any', 'hash')).rejects.toThrow('Invalid credentials');
+  });
+
+  it('should perform a dummy bcrypt comparison for a non-existent user (timing equalization)', async () => {
+    (mockUserRepo.findByEmail as any).mockResolvedValue(null);
+
+    await expect(service.login('nobody@test.com', 'any', 'hash')).rejects.toThrow('Invalid credentials');
+    // 미존재 계정도 bcrypt.compare 를 수행해 응답 시간을 균일화한다 (계정 enumeration 방지)
+    expect(mockedCompare).toHaveBeenCalledTimes(1);
   });
 
   it('should throw for inactive user', async () => {

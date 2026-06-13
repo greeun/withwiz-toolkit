@@ -4,6 +4,12 @@ import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { UserRepository, BaseUser, TokenPair, Logger } from '@withwiz/toolkit/core/auth/types';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
+/**
+ * 더미 bcrypt 해시 (cost 12) — 계정이 없을 때도 동일 비용의 compare 를 수행해
+ * 응답 시간을 균일화한다 (타이밍 기반 계정 enumeration 방지).
+ */
+const DUMMY_PASSWORD_HASH = '$2b$12$/l4jMXYcTL.SQgNWzy1UcuSlrtLlw.GFTpWDYTficzN2kRhN/LwEO';
+
 export interface LoginServiceConfig {
   userRepository: UserRepository;
   jwtSecret: string;
@@ -37,6 +43,8 @@ export class LoginService {
     const user = await this.userRepo.findByEmail(email);
 
     if (!user) {
+      // 계정이 없어도 동일 비용의 compare 를 수행해 타이밍을 균일화한다
+      await compare(password, DUMMY_PASSWORD_HASH);
       throw new AuthError('Invalid credentials', 'INVALID_CREDENTIALS', 401);
     }
 
