@@ -346,5 +346,18 @@ export const strongPasswordSchema = z
     message: BCRYPT_BYTE_LIMIT_MESSAGE,
   });
 
+// Pluggable hashers (IPasswordHasher + bcrypt/argon2id/migrating adapters)
+export {
+  BcryptPasswordHasher,
+  Argon2idPasswordHasher,
+  MigratingPasswordHasher,
+} from '@withwiz/toolkit/core/auth/password/hasher';
+export type {
+  IPasswordHasher,
+  BcryptHasherOptions,
+  Argon2idHasherOptions,
+  MigratingHasherOptions,
+} from '@withwiz/toolkit/core/auth/password/hasher';
+
 // Export types
 export type { PasswordConfig, PasswordStrength } from '@withwiz/toolkit/core/auth/types';

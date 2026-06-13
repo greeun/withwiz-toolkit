@@ -93,4 +93,87 @@ describe('LoginService', () => {
 
     await expect(service.login('test@test.com', 'any', 'hash')).rejects.toThrow('Account is disabled');
   });
+
+  describe('with pluggable passwordHasher', () => {
+    const activeUser = {
+      id: 'user-1',
+      email: 'test@test.com',
+      name: 'Test',
+      role: 'USER',
+      emailVerified: new Date(),
+      isActive: true,
+    };
+
+    // verify 만 true 를 돌려주는 가짜 해셔. needsRehash 는 케이스별로 조정.
+    const makeHasher = (needsRehash: boolean, verifyResult = true) => ({
+      id: 'fake',
+      identifies: vi.fn(() => true),
+      hash: vi.fn(async () => 'rehashed-value'),
+      verify: vi.fn(async () => verifyResult),
+      needsRehash: vi.fn(() => needsRehash),
+    });
+
+    it('uses the injected hasher for verification instead of bcrypt', async () => {
+      const hasher = makeHasher(false);
+      const svc = new LoginService({
+        userRepository: mockUserRepo,
+        jwtSecret: 'a'.repeat(32),
+        passwordHasher: hasher,
+        logger: mockLogger,
+      });
+      (mockUserRepo.findByEmail as any).mockResolvedValue(activeUser);
+
+      const result = await svc.login('test@test.com', 'pw', 'legacy$hash');
+      expect(hasher.verify).toHaveBeenCalledWith('pw', 'legacy$hash');
+      expect(mockedCompare).not.toHaveBeenCalled();
+      expect(result.tokens.accessToken).toBeDefined();
+    });
+
+    it('returns rehashedPassword when the stored hash needs rehashing', async () => {
+      const hasher = makeHasher(true);
+      const svc = new LoginService({
+        userRepository: mockUserRepo,
+        jwtSecret: 'a'.repeat(32),
+        passwordHasher: hasher,
+        logger: mockLogger,
+      });
+      (mockUserRepo.findByEmail as any).mockResolvedValue(activeUser);
+
+      const result = await svc.login('test@test.com', 'pw', 'legacy$hash');
+      expect(hasher.needsRehash).toHaveBeenCalledWith('legacy$hash');
+      expect(hasher.hash).toHaveBeenCalledWith('pw');
+      expect(result.rehashedPassword).toBe('rehashed-value');
+    });
+
+    it('omits rehashedPassword when the stored hash is current', async () => {
+      const hasher = makeHasher(false);
+      const svc = new LoginService({
+        userRepository: mockUserRepo,
+        jwtSecret: 'a'.repeat(32),
+        passwordHasher: hasher,
+        logger: mockLogger,
+      });
+      (mockUserRepo.findByEmail as any).mockResolvedValue(activeUser);
+
+      const result = await svc.login('test@test.com', 'pw', '$2b$12$current');
+      expect(result.rehashedPassword).toBeUndefined();
+      expect(hasher.hash).not.toHaveBeenCalled();
+    });
+
+    it('burns equivalent work via hasher.hash for a non-existent user (timing equalization)', async () => {
+      const hasher = makeHasher(false);
+      const svc = new LoginService({
+        userRepository: mockUserRepo,
+        jwtSecret: 'a'.repeat(32),
+        passwordHasher: hasher,
+        logger: mockLogger,
+      });
+      (mockUserRepo.findByEmail as any).mockResolvedValue(null);
+
+      await expect(svc.login('nobody@test.com', 'pw', 'hash')).rejects.toThrow('Invalid credentials');
+      // 미존재 계정도 동일 스킴으로 해싱해 타이밍을 균일화한다 (bcrypt 폴백 미사용)
+      expect(hasher.hash).toHaveBeenCalledWith('pw');
+      expect(mockedCompare).not.toHaveBeenCalled();
+    });
+  });
 });
