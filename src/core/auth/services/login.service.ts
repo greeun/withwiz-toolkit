@@ -3,7 +3,7 @@ import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { UserRepository, BaseUser, TokenPair, Logger } from '@withwiz/toolkit/core/auth/types';
 import type { IPasswordHasher } from '@withwiz/toolkit/core/auth/password/hasher';
-import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 /**
  * 더미 bcrypt 해시 (cost 12) — 계정이 없을 때도 동일 비용의 compare 를 수행해
@@ -83,7 +83,7 @@ export class LoginService {
     const tokens = await this.jwtService.createTokenPair({
       id: user.id,
       email: user.email,
-      role: user.role ?? 'USER',
+      role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
       emailVerified: user.emailVerified,
     });
 

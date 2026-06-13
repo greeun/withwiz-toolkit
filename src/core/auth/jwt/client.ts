@@ -7,6 +7,8 @@
 
 'use client';
 
+import { ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -191,11 +193,11 @@ export class JWTClientManager {
    */
   getUserRole(token: string | null): string {
     if (!token) {
-      return 'USER';
+      return ROLE_DEFAULTS.DEFAULT_ROLE;
     }
 
     const user = this.extractUserFromToken(token);
-    return user?.role || 'USER';
+    return user?.role || ROLE_DEFAULTS.DEFAULT_ROLE;
   }
 
   /**

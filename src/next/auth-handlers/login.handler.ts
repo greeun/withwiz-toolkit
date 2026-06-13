@@ -6,7 +6,7 @@ import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -83,7 +83,7 @@ export function createLoginHandler(options: AuthHandlerOptions) {
       const tokens = await jwtService.createTokenPair({
         id: user.id,
         email: user.email,
-        role: user.role ?? 'USER',
+        role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
         emailVerified: user.emailVerified,
       });
 

@@ -17,6 +17,7 @@ import { JWTManager } from "@withwiz/toolkit/core/auth/jwt";
 import { logger as winstonLogger } from "@withwiz/toolkit/core/logger/logger";
 import { getAuthConfig } from "@withwiz/toolkit/core/auth/config";
 import { getTokenDeliveryStrategy } from "@withwiz/toolkit/core/auth/token-delivery";
+import { ROLE_DEFAULTS } from "@withwiz/toolkit/core/constants/security";
 
 // ============================================================================
 // Access Token Blacklist Checker (의존성 주입 방식)
@@ -215,7 +216,7 @@ export const authMiddleware: TApiMiddleware = async (context, next) => {
       id: payload.userId,
       email: payload.email ?? "",
       name: undefined, // 필요시 DB에서 조회
-      role: payload.role ?? 'USER',
+      role: payload.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
     };
   } catch (error: any) {
     // JWT 검증 실패 (만료, 유효하지 않음 등)
@@ -279,7 +280,7 @@ export const optionalAuthMiddleware: TApiMiddleware = async (context, next) => {
             id: payload.userId,
             email: payload.email ?? "",
             name: undefined,
-            role: payload.role ?? 'USER',
+            role: payload.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
           };
         }
       }
@@ -318,4 +319,4 @@ export function createRoleMiddleware(...allowedRoles: string[]): TApiMiddleware 
   };
 }
 
-export const adminMiddleware: TApiMiddleware = createRoleMiddleware('ADMIN');
+export const adminMiddleware: TApiMiddleware = createRoleMiddleware(ROLE_DEFAULTS.ADMIN_ROLE);
