@@ -47,11 +47,40 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+/** 대칭 HMAC 알고리즘 — 단일 secret 으로 발급·검증. */
+export type SymmetricJWTAlgorithm = 'HS256' | 'HS384' | 'HS512';
+
+/** 비대칭 알고리즘 — privateKey 로 발급, publicKey/JWKS 로 검증. */
+export type AsymmetricJWTAlgorithm =
+  | 'RS256' | 'RS384' | 'RS512'
+  | 'ES256' | 'ES384' | 'ES512'
+  | 'EdDSA';
+
+export type JWTAlgorithm = SymmetricJWTAlgorithm | AsymmetricJWTAlgorithm;
+
+/**
+ * JWT 설정.
+ *
+ * - HS 계열(대칭): `secret`(>= 32자) 필수. 발급·검증 동일 키.
+ * - RS·ES·EdDSA 계열(비대칭): 발급에는 `privateKey`(PEM PKCS#8), 검증에는
+ *   `publicKey`(PEM SPKI) 또는 `jwksUri`(원격 JWKS) 필요. 발급/검증을 분리한
+ *   서비스에서는 한쪽만 설정한다(검증 전용 서비스는 privateKey 생략).
+ *
+ * 보안: 검증 시 알고리즘 allowlist 를 `algorithm` 한 개로 고정해 alg confusion
+ * (예: RS256 토큰을 HS256 으로 검증시켜 공개키를 HMAC 비밀로 악용)을 차단한다.
+ */
 export interface JWTConfig {
-  secret: string;
+  algorithm: JWTAlgorithm;
   accessTokenExpiry: string;
   refreshTokenExpiry: string;
-  algorithm: 'HS256' | 'HS384' | 'HS512';
+  /** HS* 대칭키 (>= 32자). */
+  secret?: string;
+  /** 비대칭 발급용 개인키 (PEM PKCS#8). */
+  privateKey?: string;
+  /** 비대칭 검증용 공개키 (PEM SPKI). `jwksUri` 와 택일. */
+  publicKey?: string;
+  /** 비대칭 검증용 원격 JWKS endpoint. `publicKey` 와 택일. */
+  jwksUri?: string;
 }
 
 // ============================================================================
