@@ -69,7 +69,7 @@ describe('OAuthCallbackService', () => {
     expect(mockOAuthRepo.update).toHaveBeenCalled();
   });
 
-  it('should link to existing user if email matches', async () => {
+  it('should link to existing user if email matches and provider email is verified', async () => {
     (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
     (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'email-user', email: 'oauth@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
 
@@ -80,11 +80,46 @@ describe('OAuthCallbackService', () => {
       name: 'OAuth User',
       image: null,
       accessToken: 'at-456',
+      emailVerified: true,
     });
 
     expect(result.isNewUser).toBe(false);
     expect(mockUserRepo.create).not.toHaveBeenCalled();
     expect(mockOAuthRepo.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'email-user' }));
+  });
+
+  it('should block linking to an existing account when the provider email is NOT verified', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'victim-user', email: 'victim@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+
+    // 공격자가 피해자 이메일을 미검증 상태로 주장 → 기존 계정 연결은 탈취이므로 차단
+    await expect(service.handleCallback({
+      provider: 'github',
+      providerAccountId: 'attacker-789',
+      email: 'victim@test.com',
+      name: 'Attacker',
+      image: null,
+      accessToken: 'at-789',
+      emailVerified: false,
+    })).rejects.toThrow('not verified');
+
+    // 연결(account create)이 일어나지 않아야 한다
+    expect(mockOAuthRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('should block linking when emailVerified is omitted (strict default)', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'victim-user', email: 'victim@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+
+    await expect(service.handleCallback({
+      provider: 'github',
+      providerAccountId: 'attacker-789',
+      email: 'victim@test.com',
+      name: 'Attacker',
+      image: null,
+      accessToken: 'at-789',
+    })).rejects.toThrow('not verified');
+    expect(mockOAuthRepo.create).not.toHaveBeenCalled();
   });
 
   it('should throw for disabled user', async () => {

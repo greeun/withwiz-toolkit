@@ -75,6 +75,7 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
         name: userInfo.name,
         image: userInfo.image,
         accessToken,
+        emailVerified: userInfo.emailVerified,
       });
 
       if (hooks?.onAfterOAuth) await hooks.onAfterOAuth(result.user, provider, result.isNewUser);
