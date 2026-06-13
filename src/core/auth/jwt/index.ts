@@ -6,9 +6,19 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { SignJWT, jwtVerify } from "jose";
+import {
+  SignJWT,
+  jwtVerify,
+  importPKCS8,
+  importSPKI,
+  createRemoteJWKSet,
+  type CryptoKey,
+  type JWTVerifyGetKey,
+} from "jose";
 import type { JWTConfig, JWTPayload, TokenPair, Logger } from "@withwiz/toolkit/core/auth/types";
 import { JWTError } from "@withwiz/toolkit/core/auth/errors";
+
+type SigningKey = Uint8Array | CryptoKey;
 
 // ============================================================================
 // JWT Manager Class
@@ -17,17 +27,68 @@ import { JWTError } from "@withwiz/toolkit/core/auth/errors";
 export class JWTManager {
   private config: JWTConfig;
   private logger: Logger;
-  private secretKey: Uint8Array;
+  private secretKey?: Uint8Array;
+  private signingKeyCache?: Promise<SigningKey>;
+  private verifyKeyCache?: Promise<Uint8Array | CryptoKey>;
+  private jwks?: JWTVerifyGetKey;
 
   constructor(config: JWTConfig, logger: Logger) {
     this.config = config;
     this.logger = logger;
-    this.secretKey = new TextEncoder().encode(config.secret);
 
-    // 보안 검증
-    if (config.secret.length < 32) {
-      throw new JWTError("JWT secret must be at least 32 characters long", "TOKEN_CREATION_FAILED");
+    if (this.isSymmetric()) {
+      // HS*(대칭): secret 필수, 32자 이상.
+      if (!config.secret || config.secret.length < 32) {
+        throw new JWTError("JWT secret must be at least 32 characters long", "TOKEN_CREATION_FAILED");
+      }
+      this.secretKey = new TextEncoder().encode(config.secret);
+    } else {
+      // 비대칭: 발급(privateKey) 또는 검증(publicKey/jwksUri) 중 최소 하나 필요.
+      if (!config.privateKey && !config.publicKey && !config.jwksUri) {
+        throw new JWTError(
+          "Asymmetric JWT requires privateKey (sign) and/or publicKey/jwksUri (verify)",
+          "TOKEN_CREATION_FAILED",
+        );
+      }
     }
+  }
+
+  private isSymmetric(): boolean {
+    return this.config.algorithm.startsWith("HS");
+  }
+
+  /** 발급용 키 (HS: secret, 비대칭: PKCS#8 개인키). 결과를 캐시한다. */
+  private async getSigningKey(): Promise<SigningKey> {
+    if (this.isSymmetric()) {
+      return this.secretKey!;
+    }
+    if (!this.config.privateKey) {
+      throw new JWTError("No privateKey configured for signing", "TOKEN_CREATION_FAILED");
+    }
+    this.signingKeyCache ??= importPKCS8(this.config.privateKey, this.config.algorithm);
+    return this.signingKeyCache;
+  }
+
+  /**
+   * 검증용 키를 jose getKey 함수로 정규화해 반환한다 (HS: secret, 비대칭:
+   * SPKI 공개키 또는 원격 JWKS). 정적 키도 함수로 감싸 단일 호출 경로를 쓰며,
+   * jose 는 함수 호출 전 알고리즘 allowlist 를 검증하므로 confusion 가드는 유지된다.
+   */
+  private async getVerifyKey(): Promise<JWTVerifyGetKey> {
+    if (this.isSymmetric()) {
+      const key = this.secretKey!;
+      return async () => key;
+    }
+    if (this.config.jwksUri) {
+      this.jwks ??= createRemoteJWKSet(new URL(this.config.jwksUri));
+      return this.jwks;
+    }
+    if (this.config.publicKey) {
+      this.verifyKeyCache ??= importSPKI(this.config.publicKey, this.config.algorithm);
+      const key = await this.verifyKeyCache;
+      return async () => key;
+    }
+    throw new JWTError("No publicKey or jwksUri configured for verification", "TOKEN_VERIFICATION_FAILED");
   }
 
   /**
@@ -41,7 +102,7 @@ export class JWTManager {
         .setProtectedHeader({ alg: this.config.algorithm })
         .setIssuedAt()
         .setExpirationTime(this.config.accessTokenExpiry)
-        .sign(this.secretKey);
+        .sign(await this.getSigningKey());
 
       this.logger.debug("Access token created successfully", {
         userId: payload.userId,
@@ -81,7 +142,7 @@ export class JWTManager {
         .setProtectedHeader({ alg: this.config.algorithm })
         .setIssuedAt()
         .setExpirationTime(this.config.refreshTokenExpiry)
-        .sign(this.secretKey);
+        .sign(await this.getSigningKey());
 
       this.logger.debug("Refresh token created successfully", {
         userId,
@@ -146,7 +207,7 @@ export class JWTManager {
     token: string,
   ): Promise<JWTPayload<TRole>> {
     try {
-      const { payload } = await jwtVerify(token, this.secretKey, {
+      const { payload } = await jwtVerify(token, await this.getVerifyKey(), {
         algorithms: [this.config.algorithm] as const,
       });
 
@@ -203,7 +264,7 @@ export class JWTManager {
     token: string,
   ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string }> {
     try {
-      const { payload } = await jwtVerify(token, this.secretKey, {
+      const { payload } = await jwtVerify(token, await this.getVerifyKey(), {
         algorithms: [this.config.algorithm] as const,
       });
 
