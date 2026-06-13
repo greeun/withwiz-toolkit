@@ -20,11 +20,22 @@ export interface Logger {
 // JWT Types
 // ============================================================================
 
-export interface JWTPayload {
+/**
+ * JWT 페이로드.
+ *
+ * `role`은 평범한 `string`이며 toolkit은 고정 role enum을 소유하지 않는다.
+ * 소비자가 자체 역할 어휘(union/enum)를 가지면 타입 인자로 좁힐 수 있다.
+ *
+ * @example
+ * type AppRole = 'USER' | 'EDITOR' | 'ADMIN';
+ * const payload = await jwt.verifyAccessToken<AppRole>(token);
+ * payload.role; // 'USER' | 'EDITOR' | 'ADMIN'
+ */
+export interface JWTPayload<TRole extends string = string> {
   id: string; // User ID (기존 코드와의 호환성)
   userId: string; // Refresh token용
   email: string;
-  role: string;
+  role: TRole;
   emailVerified?: Date | null; // 이메일 인증 여부 (기존 코드와의 호환성)
   tokenType?: 'access' | 'refresh'; // 토큰 타입
   iat?: number;
