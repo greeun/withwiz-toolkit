@@ -20,6 +20,12 @@ export interface OAuthCallbackInput {
   image: string | null;
   accessToken: string;
   refreshToken?: string;
+  /**
+   * provider 가 이 이메일을 검증했는지 여부. 기존 로컬 계정에 OAuth 를
+   * 연결할 때 반드시 true 여야 한다(미검증/부재 시 계정 탈취 방지를 위해 차단).
+   * OAuthUserInfo.emailVerified 를 그대로 전달할 것.
+   */
+  emailVerified?: boolean;
 }
 
 export interface OAuthCallbackResult {
@@ -74,6 +80,21 @@ export class OAuthCallbackService {
     const existingUser = await this.userRepo.findByEmail(input.email);
 
     if (existingUser) {
+      // 보안: 기존 로컬 계정에 OAuth 를 연결하려면 provider 가 이메일을 검증했어야 한다.
+      // 미검증 이메일을 신뢰하면 공격자가 피해자 이메일을 주장해 계정을 탈취할 수 있다
+      // (pre-account hijacking). 검증되지 않았으면 연결을 거부한다.
+      if (input.emailVerified !== true) {
+        this.logger.warn('Blocked OAuth account linking for unverified email', {
+          provider: input.provider,
+          userId: existingUser.id,
+        });
+        throw new AuthError(
+          'OAuth email is not verified by the provider; cannot link to an existing account',
+          'OAUTH_EMAIL_NOT_VERIFIED',
+          403,
+        );
+      }
+
       // Link OAuth account to existing user
       await this.oauthRepo.create({
         userId: existingUser.id,
@@ -89,11 +110,13 @@ export class OAuthCallbackService {
     }
 
     // 3. Create new user + OAuth account
+    // provider 가 이메일을 검증한 경우에만 자동 인증 처리한다. 미검증이면
+    // emailVerified=null 로 두어 로컬 이메일 인증 흐름을 거치게 한다.
     const newUser = await this.userRepo.create({
       email: input.email,
       name: input.name,
       image: input.image,
-      emailVerified: new Date(), // OAuth users are auto-verified
+      emailVerified: input.emailVerified === true ? new Date() : null,
     });
 
     await this.oauthRepo.create({
