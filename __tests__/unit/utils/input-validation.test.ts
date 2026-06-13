@@ -50,6 +50,57 @@ describe('validateURL', () => {
     expect(result.valid).toBe(true)
   })
 
+  it('rejects IPv6 loopback ::1 by default', () => {
+    const result = validateURL('http://[::1]:3000')
+    expect(result.valid).toBe(false)
+    expect(result.error).toContain('Internal URLs')
+  })
+
+  it('rejects 0.0.0.0 by default', () => {
+    const result = validateURL('http://0.0.0.0:8080')
+    expect(result.valid).toBe(false)
+    expect(result.error).toContain('Internal URLs')
+  })
+
+  it('rejects private range 10.0.0.1 by default', () => {
+    expect(validateURL('http://10.0.0.1').valid).toBe(false)
+  })
+
+  it('rejects private range 192.168.1.1 by default', () => {
+    expect(validateURL('http://192.168.1.1').valid).toBe(false)
+  })
+
+  it('rejects private range 172.16.5.4 by default', () => {
+    expect(validateURL('http://172.16.5.4').valid).toBe(false)
+  })
+
+  it('rejects link-local cloud metadata IP 169.254.169.254 by default', () => {
+    const result = validateURL('http://169.254.169.254/latest/meta-data/')
+    expect(result.valid).toBe(false)
+    expect(result.error).toContain('Internal URLs')
+  })
+
+  it('rejects decimal-encoded loopback (2130706433 = 127.0.0.1)', () => {
+    expect(validateURL('http://2130706433').valid).toBe(false)
+  })
+
+  it('rejects 127.x loopback variants (127.0.0.2)', () => {
+    expect(validateURL('http://127.0.0.2').valid).toBe(false)
+  })
+
+  it('allows a public IP (8.8.8.8)', () => {
+    expect(validateURL('http://8.8.8.8').valid).toBe(true)
+  })
+
+  it('does NOT misclassify a domain starting with fc/fd (fc-barcelona.com)', () => {
+    expect(validateURL('https://fc-barcelona.com').valid).toBe(true)
+  })
+
+  it('allows private ranges when allowLocalhost is true', () => {
+    expect(validateURL('http://10.0.0.1', { allowLocalhost: true }).valid).toBe(true)
+    expect(validateURL('http://169.254.169.254', { allowLocalhost: true }).valid).toBe(true)
+  })
+
   it('rejects URL exceeding maxLength', () => {
     const longUrl = 'https://example.com/' + 'a'.repeat(2100)
     const result = validateURL(longUrl)
@@ -224,6 +275,26 @@ describe('detectSQLInjection', () => {
     expect(detectSQLInjection('Hello world, how are you?')).toBe(false)
   })
 
+  it('does not flag a sentence containing the word "update"', () => {
+    expect(detectSQLInjection('Please update your profile information')).toBe(false)
+  })
+
+  it('does not flag a sentence containing the word "select"', () => {
+    expect(detectSQLInjection('Select your preferred language')).toBe(false)
+  })
+
+  it('does not flag a single semicolon', () => {
+    expect(detectSQLInjection('First item; second item')).toBe(false)
+  })
+
+  it('does not flag an em-dash style double hyphen mid-text', () => {
+    expect(detectSQLInjection('well--known fact')).toBe(false)
+  })
+
+  it('still detects a stacked query (; DROP)', () => {
+    expect(detectSQLInjection("1; DROP TABLE users")).toBe(true)
+  })
+
   it('returns false for non-string input', () => {
     expect(detectSQLInjection(null as any)).toBe(false)
   })
@@ -362,9 +433,10 @@ describe('validateInput', () => {
     expect(result.error).toContain('Dangerous HTML')
   })
 
-  it('accepts safe html content', () => {
+  it('accepts safe html content but returns an escaped (safe-by-default) value', () => {
     const result = validateInput('Hello <b>world</b>', 'html')
     expect(result.valid).toBe(true)
-    expect(result.sanitized).toBe('Hello <b>world</b>')
+    // 블록리스트 통과만으로 원본을 그대로 돌려주지 않는다 — 이스케이프해 안전한 값 반환
+    expect(result.sanitized).toBe('Hello &lt;b&gt;world&lt;/b&gt;')
   })
 })

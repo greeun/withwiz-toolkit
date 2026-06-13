@@ -37,6 +37,51 @@ const ALLOWED_URL_SCHEMES = [
 ] as const;
 
 /**
+ * 사설/예약 IPv4 대역 여부 (a.b.c.d 의 a,b 기준)
+ */
+function isPrivateV4(a: number, b: number): boolean {
+  if (a === 0) return true; // 0.0.0.0/8 "this network"
+  if (a === 127) return true; // loopback 127.0.0.0/8
+  if (a === 10) return true; // private 10.0.0.0/8
+  if (a === 169 && b === 254) return true; // link-local 169.254.0.0/16 (cloud metadata 포함)
+  if (a === 192 && b === 168) return true; // private 192.168.0.0/16
+  if (a === 172 && b >= 16 && b <= 31) return true; // private 172.16.0.0/12
+  return false;
+}
+
+/**
+ * 내부/사설/loopback 호스트 여부 — SSRF 방어.
+ *
+ * WHATWG URL 파서가 10진수/16진수 IPv4 를 점표기로 정규화하므로
+ * 점표기 IPv4 와 IPv6 리터럴, localhost 만 판정하면 된다.
+ */
+function isInternalHost(hostname: string): boolean {
+  let h = hostname.toLowerCase();
+  // IPv6 리터럴 대괄호 제거
+  if (h.startsWith('[') && h.endsWith(']')) h = h.slice(1, -1);
+
+  if (h === 'localhost' || h.endsWith('.localhost')) return true;
+
+  // IPv6 (콜론 포함) — 도메인 오탐 방지를 위해 콜론이 있을 때만 IPv6 규칙 적용
+  if (h.includes(':')) {
+    if (h === '::1' || h === '::') return true; // loopback / unspecified
+    // unique-local fc00::/7 (fc/fd), link-local fe80::/10 (fe8-feb)
+    if (/^f[cd]/.test(h) || /^fe[89ab]/.test(h)) return true;
+    return false;
+  }
+
+  // 점표기 IPv4
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const o = v4.slice(1, 5).map(Number);
+    if (o.some((n) => n > 255)) return false;
+    return isPrivateV4(o[0], o[1]);
+  }
+
+  return false;
+}
+
+/**
  * URL 검증 옵션
  */
 export interface URLValidationOptions {
@@ -111,8 +156,8 @@ export function validateURL(
     const urlToParse = hasProtocol ? trimmedUrl : `https://${trimmedUrl}`;
     const parsed = new URL(urlToParse);
 
-    // 8. localhost/내부 IP 체크
-    if (!allowLocalhost && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')) {
+    // 8. localhost/내부·사설 IP 체크 (SSRF 방어)
+    if (!allowLocalhost && isInternalHost(parsed.hostname)) {
       return { valid: false, error: 'Internal URLs are not allowed' };
     }
 
@@ -209,14 +254,22 @@ export function detectSQLInjection(input: string): boolean {
     return false;
   }
 
+  // 단일 키워드/세미콜론만으로 판정하면 정상 텍스트("update your profile", "a; b")를
+  // 오탐한다. SQL 구조(키워드 조합)·주입 시그니처에 한해 탐지한다.
+  // (전역 플래그 미사용 — test() 의 lastIndex 부작용 회피)
   const sqlPatterns = [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|DECLARE)\b)/gi,
-    /--/g, // SQL 주석
-    /\/\*/g, // SQL 블록 주석
-    /;.*?/g, // 세미콜론 (쿼리 구분)
-    /'\s*(OR|AND)\s*'?\d/gi, // ' OR 1=1
-    /\bxp_\w+/gi, // SQL Server 확장 프로시저
-    /\bsp_\w+/gi, // SQL Server 저장 프로시저
+    /\bSELECT\b[\s\S]+\bFROM\b/i, // SELECT ... FROM
+    /\bINSERT\b[\s\S]+\bINTO\b/i, // INSERT INTO
+    /\bUPDATE\b[\s\S]+\bSET\b/i, // UPDATE ... SET
+    /\bDELETE\b[\s\S]+\bFROM\b/i, // DELETE FROM
+    /\b(?:DROP|ALTER|CREATE|TRUNCATE)\s+(?:TABLE|DATABASE|INDEX|VIEW|SCHEMA|COLUMN)\b/i,
+    /\bUNION\b[\s\S]*?\bSELECT\b/i, // UNION SELECT
+    /\b(?:EXEC|EXECUTE)\s*\(/i, // exec(
+    /'\s*(?:--|#|;)/, // 따옴표 뒤 주석/종결 (admin'--)
+    /\/\*[\s\S]*?\*\//, // 블록 주석
+    /'\s*(?:OR|AND)\s+'?\d/i, // ' OR 1
+    /;\s*(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b/i, // 스택 쿼리
+    /\b(?:xp_|sp_)\w+/i, // SQL Server 프로시저
   ];
 
   return sqlPatterns.some((pattern) => pattern.test(input));
@@ -354,11 +407,13 @@ export function validateInput(
       return { valid: true, sanitized: sanitizeInput(input) };
 
     case 'html':
-      // HTML은 더 엄격한 검증 필요 (별도 라이브러리 사용 권장)
+      // blocklist(detectXSS)는 우회가 쉬우므로 통과 시에도 원본을 그대로
+      // 돌려주지 않는다. escapeHTML 로 안전한 값을 반환한다(텍스트 컨텍스트 안전).
+      // 실제 리치 HTML 정제가 필요하면 소비자가 DOMPurify 등 allowlist 정제기를 쓸 것.
       if (detectXSS(input)) {
         return { valid: false, error: 'Dangerous HTML pattern detected' };
       }
-      return { valid: true, sanitized: input };
+      return { valid: true, sanitized: escapeHTML(input) };
 
     default:
       return { valid: false, error: 'Unknown input type' };
