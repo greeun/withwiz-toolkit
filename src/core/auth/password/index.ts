@@ -17,6 +17,15 @@ export interface PasswordValidationResult extends BasePasswordValidationResult {
   score: number;
 }
 
+/**
+ * bcrypt 는 입력의 첫 72바이트만 사용하고 초과분을 조용히 절단한다.
+ * 절단되면 서로 다른 비밀번호가 동일 해시를 가질 수 있으므로 검증에서 거부한다.
+ * (문자 수가 아닌 UTF-8 바이트 수 기준 — 멀티바이트 문자 고려)
+ */
+const BCRYPT_MAX_PASSWORD_BYTES = 72;
+const utf8ByteLength = (value: string): number => new TextEncoder().encode(value).length;
+const BCRYPT_BYTE_LIMIT_MESSAGE = `Password cannot exceed ${BCRYPT_MAX_PASSWORD_BYTES} bytes`;
+
 // ============================================================================
 // Password Validator Class
 // ============================================================================
@@ -47,6 +56,11 @@ export class PasswordValidator {
       errors.push(
         `Password cannot exceed ${this.config.maxLength} characters`
       );
+    }
+
+    // bcrypt 72바이트 절단 방지 (문자 수가 아닌 바이트 수 기준)
+    if (utf8ByteLength(password) > BCRYPT_MAX_PASSWORD_BYTES) {
+      errors.push(BCRYPT_BYTE_LIMIT_MESSAGE);
     }
 
     // 숫자 포함 검사
@@ -146,7 +160,7 @@ export class PasswordValidator {
   /**
    * Zod 스키마 생성
    */
-  createZodSchema(): z.ZodString {
+  createZodSchema(): z.ZodType<string> {
     let schema = z
       .string()
       .min(
@@ -190,7 +204,11 @@ export class PasswordValidator {
       );
     }
 
-    return schema;
+    // bcrypt 72바이트 절단 방지 (바이트 수 기준)
+    return schema.refine(
+      (value) => utf8ByteLength(value) <= BCRYPT_MAX_PASSWORD_BYTES,
+      { message: BCRYPT_BYTE_LIMIT_MESSAGE }
+    );
   }
 
   /**
@@ -304,7 +322,10 @@ export const defaultPasswordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters long')
   .max(128, 'Password cannot exceed 128 characters')
-  .regex(/\d/, 'Password must contain at least one number');
+  .regex(/\d/, 'Password must contain at least one number')
+  .refine((value) => utf8ByteLength(value) <= BCRYPT_MAX_PASSWORD_BYTES, {
+    message: BCRYPT_BYTE_LIMIT_MESSAGE,
+  });
 
 /**
  * 강력한 비밀번호 스키마 (기존 코드 호환성)
@@ -320,7 +341,10 @@ export const strongPasswordSchema = z
   .regex(
     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/,
     'Password must contain at least one special character'
-  );
+  )
+  .refine((value) => utf8ByteLength(value) <= BCRYPT_MAX_PASSWORD_BYTES, {
+    message: BCRYPT_BYTE_LIMIT_MESSAGE,
+  });
 
 // Export types
 export type { PasswordConfig, PasswordStrength } from '@withwiz/toolkit/core/auth/types';

@@ -7,6 +7,15 @@
 import { z } from 'zod';
 
 /**
+ * bcrypt 는 입력의 첫 72바이트만 사용하고 초과분을 조용히 절단한다.
+ * 절단 시 서로 다른 비밀번호가 동일 해시를 가질 수 있어 검증에서 거부한다.
+ * (문자 수가 아닌 UTF-8 바이트 수 기준)
+ */
+const BCRYPT_MAX_PASSWORD_BYTES = 72;
+const utf8ByteLength = (value: string): number => new TextEncoder().encode(value).length;
+const BCRYPT_BYTE_LIMIT_MESSAGE = `Password cannot exceed ${BCRYPT_MAX_PASSWORD_BYTES} bytes`;
+
+/**
  * 비밀번호 검증 결과 인터페이스
  */
 export interface IPasswordValidationResult {
@@ -74,6 +83,11 @@ export class PasswordValidator {
 
     if (password.length > opts.maxLength) {
       errors.push(`Password cannot exceed ${opts.maxLength} characters`);
+    }
+
+    // bcrypt 72바이트 절단 방지 (바이트 수 기준)
+    if (utf8ByteLength(password) > BCRYPT_MAX_PASSWORD_BYTES) {
+      errors.push(BCRYPT_BYTE_LIMIT_MESSAGE);
     }
 
     // 숫자 포함 검사
@@ -194,7 +208,7 @@ export class PasswordValidator {
   /**
    * Zod 스키마 생성
    */
-  static createZodSchema(options: Partial<IPasswordValidationOptions> = {}): z.ZodString {
+  static createZodSchema(options: Partial<IPasswordValidationOptions> = {}): z.ZodType<string> {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
 
     let schema = z.string()
@@ -226,7 +240,11 @@ export class PasswordValidator {
       schema = schema.regex(opts.customPattern, opts.customMessage);
     }
 
-    return schema;
+    // bcrypt 72바이트 절단 방지 (바이트 수 기준)
+    return schema.refine(
+      (value) => utf8ByteLength(value) <= BCRYPT_MAX_PASSWORD_BYTES,
+      { message: BCRYPT_BYTE_LIMIT_MESSAGE }
+    );
   }
 
   /**

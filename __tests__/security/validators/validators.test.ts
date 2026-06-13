@@ -38,6 +38,22 @@ describe("SC-UNIT-VAL-001: PasswordValidator Class Tests", () => {
       expect(result.errors).toContain("Password cannot exceed 128 characters");
     });
 
+    test("password over 72 bytes → error (bcrypt truncation guard)", () => {
+      // 73 bytes, has a digit, under 128 chars
+      const result = PasswordValidator.validate("1" + "a".repeat(72));
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some((e) => e.includes("72"))).toBe(true);
+    });
+
+    test("72-byte limit counts bytes, not characters (multibyte)", () => {
+      // 25 Korean chars = 75 bytes; pass other rules via options
+      const result = PasswordValidator.validate("가".repeat(25), {
+        requireNumber: false,
+        minLength: 1,
+      });
+      expect(result.isValid).toBe(false);
+    });
+
     test("password without number → error (requireNumber: true)", () => {
       const result = PasswordValidator.validate("PasswordNoNumber");
       expect(result.isValid).toBe(false);

@@ -5,10 +5,17 @@ import { PasswordResetService } from '@withwiz/toolkit/core/auth/services/passwo
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
+// bcrypt 는 72바이트 초과분을 조용히 절단하므로 검증 단계에서 거부 (바이트 수 기준)
+const withinBcryptByteLimit = (value: string): boolean =>
+  new TextEncoder().encode(value).length <= 72;
+
 const schema = z.object({
   email: z.string().email(),
   token: z.string().min(1),
-  password: z.string().min(8),
+  password: z
+    .string()
+    .min(8)
+    .refine(withinBcryptByteLimit, { message: 'Password cannot exceed 72 bytes' }),
 });
 
 export function createResetPasswordHandler(options: AuthHandlerOptions) {
