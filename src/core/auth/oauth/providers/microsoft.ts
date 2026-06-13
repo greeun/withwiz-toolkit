@@ -14,8 +14,8 @@
  */
 
 import { jwtVerify, createRemoteJWKSet } from 'jose';
-import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/core/auth/types';
-import { OAuthError } from '@withwiz/core/auth/errors';
+import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/toolkit/core/auth/types';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
 
 // Microsoft Entra v2.0 (multi-tenant 'common') 서명 키 — 원격 JWKS.
 // createRemoteJWKSet 은 키를 캐싱하므로 매 검증마다 네트워크를 타지 않는다.

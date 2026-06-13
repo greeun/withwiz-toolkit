@@ -5,9 +5,9 @@
  * - getResolvedCacheConfig()에서 설정을 읽어 ISharedEnvConfig 호환 레이어 제공
  * - process.env 의존성 없음
  */
-import type { ISharedEnvConfig, IRawEnv } from '@withwiz/core/types/env';
-import { getResolvedCacheConfig } from './config';
-import { getCommonConfig } from '../config/common';
+import type { ISharedEnvConfig, IRawEnv } from '@withwiz/toolkit/core/types/env';
+import { getResolvedCacheConfig } from '@withwiz/toolkit/core/cache/config';
+import { getCommonConfig } from '@withwiz/toolkit/core/config/common';
 
 // ============================================================================
 // 내부 헬퍼

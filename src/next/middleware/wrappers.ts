@@ -5,15 +5,15 @@
  */
 
 import type { NextRequest } from 'next/server';
-import type { IApiContext, TApiHandler, TApiMiddleware } from './types';
-import { MiddlewareChain } from './middleware-chain';
-import { errorHandlerMiddleware } from './error-handler';
-import { initRequestMiddleware } from './init-request';
-import { authMiddleware, adminMiddleware, optionalAuthMiddleware } from './auth';
-import { rateLimitMiddleware } from './rate-limit';
-import { responseLoggerMiddleware } from './response-logger';
-import { corsMiddleware } from './cors';
-import { securityMiddleware } from './security';
+import type { IApiContext, TApiHandler, TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
+import { MiddlewareChain } from '@withwiz/toolkit/next/middleware/middleware-chain';
+import { errorHandlerMiddleware } from '@withwiz/toolkit/next/middleware/error-handler';
+import { initRequestMiddleware } from '@withwiz/toolkit/next/middleware/init-request';
+import { authMiddleware, adminMiddleware, optionalAuthMiddleware } from '@withwiz/toolkit/next/middleware/auth';
+import { rateLimitMiddleware } from '@withwiz/toolkit/next/middleware/rate-limit';
+import { responseLoggerMiddleware } from '@withwiz/toolkit/next/middleware/response-logger';
+import { corsMiddleware } from '@withwiz/toolkit/next/middleware/cors';
+import { securityMiddleware } from '@withwiz/toolkit/next/middleware/security';
 
 /**
  * 공개 API 래퍼

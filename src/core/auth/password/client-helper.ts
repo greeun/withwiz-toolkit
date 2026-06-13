@@ -4,8 +4,8 @@
  * 클라이언트 사이드용 비밀번호 검증 헬퍼 (프레임워크 독립적)
  */
 
-import { PasswordValidator, PasswordHasher } from './index';
-import type { PasswordConfig } from '@withwiz/core/auth/types';
+import { PasswordValidator, PasswordHasher } from '@withwiz/toolkit/core/auth/password';
+import type { PasswordConfig } from '@withwiz/toolkit/core/auth/types';
 import type { z } from 'zod';
 
 /**
@@ -78,6 +78,6 @@ export function createPasswordHasher(rounds: number = 12): PasswordHasher {
 // Re-exports
 // ============================================================================
 
-export { PasswordValidator, PasswordHasher } from './index';
-export type { PasswordValidationResult } from './index';
-export type { PasswordConfig, PasswordStrength } from '@withwiz/core/auth/types';
+export { PasswordValidator, PasswordHasher } from '@withwiz/toolkit/core/auth/password';
+export type { PasswordValidationResult } from '@withwiz/toolkit/core/auth/password';
+export type { PasswordConfig, PasswordStrength } from '@withwiz/toolkit/core/auth/types';

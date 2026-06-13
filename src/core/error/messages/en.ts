@@ -2,7 +2,7 @@
  * English Error Messages
  */
 
-import type { TErrorMessages } from './types';
+import type { TErrorMessages } from '@withwiz/toolkit/core/error/messages/types';
 
 export const enMessages: TErrorMessages = {
   // ============================================

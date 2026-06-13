@@ -2,16 +2,16 @@
  * authMiddleware / optionalAuthMiddleware 의 tokenDelivery 모드별 토큰 추출 검증.
  * cookie: 쿠키만 (헤더 무시) / header: 헤더만 (쿠키 무시) / hybrid: 쿠키 → 헤더 폴백
  */
-import { JWTService } from "@withwiz/core/auth/jwt";
-import type { JWTConfig } from "@withwiz/core/auth/types";
-import type { IApiContext } from "@withwiz/next/middleware/types";
+import { JWTService } from "@withwiz/toolkit/core/auth/jwt";
+import type { JWTConfig } from "@withwiz/toolkit/core/auth/types";
+import type { IApiContext } from "@withwiz/toolkit/next/middleware/types";
 import { NextResponse } from "next/server";
 import {
   authMiddleware,
   optionalAuthMiddleware,
-} from "@withwiz/next/middleware/auth";
-import { initializeAuth, resetAuth } from "../../../src/core/auth/config";
-import type { TokenDelivery } from "../../../src/core/auth/config";
+} from "@withwiz/toolkit/next/middleware/auth";
+import { initializeAuth, resetAuth } from "@withwiz/toolkit/core/auth/config";
+import type { TokenDelivery } from "@withwiz/toolkit/core/auth/config";
 
 const testConfig: JWTConfig = {
   secret: "test-secret-key-that-is-at-least-32-characters-long",

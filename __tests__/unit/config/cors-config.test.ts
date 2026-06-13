@@ -1,5 +1,5 @@
-import { initializeCors, getCorsConfig, resetCors } from '../../../src/core/cors';
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { initializeCors, getCorsConfig, resetCors } from '@withwiz/toolkit/core/cors';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('CORS Config', () => {
   beforeEach(() => { resetCors(); });

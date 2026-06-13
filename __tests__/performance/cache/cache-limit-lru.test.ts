@@ -22,9 +22,9 @@
  * - TC-UNIT-MEMLRU-010: TTL eviction 정책
  */
 
-import { InMemoryCacheManager } from "@withwiz/core/cache/inmemory-cache-manager";
+import { InMemoryCacheManager } from "@withwiz/toolkit/core/cache/inmemory-cache-manager";
 
-vi.mock("@withwiz/core/logger/logger", () => ({
+vi.mock("@withwiz/toolkit/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

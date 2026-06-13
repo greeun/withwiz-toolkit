@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { clearTokenCookies } from '@withwiz/core/auth/jwt/cookie';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
+import { clearTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 export function createLogoutHandler(_options: AuthHandlerOptions) {
   return async (_request: NextRequest): Promise<Response> => {

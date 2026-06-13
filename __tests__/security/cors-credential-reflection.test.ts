@@ -18,8 +18,8 @@ import {
   setCorsHeaders,
   isOriginAllowed,
   initCorsConfig,
-} from '@withwiz/next/utils/cors';
-import { createCorsMiddleware } from '@withwiz/next/middleware/cors';
+} from '@withwiz/toolkit/next/utils/cors';
+import { createCorsMiddleware } from '@withwiz/toolkit/next/middleware/cors';
 
 function reqWith(origin?: string, method = 'GET') {
   const headers = new Headers();

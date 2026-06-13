@@ -7,8 +7,8 @@
  */
 
 import { NextResponse } from "next/server";
-import { setTokenCookies, clearTokenCookies } from "@withwiz/core/auth/jwt";
-import type { TokenPair } from "@withwiz/core/auth/types";
+import { setTokenCookies, clearTokenCookies } from "@withwiz/toolkit/core/auth/jwt";
+import type { TokenPair } from "@withwiz/toolkit/core/auth/types";
 
 const mockTokenPair: TokenPair = {
   accessToken: "mock-access-token-value",

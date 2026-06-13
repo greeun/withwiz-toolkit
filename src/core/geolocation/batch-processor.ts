@@ -4,8 +4,8 @@
  * batch-processor
  * - Shared
  */
-import { logger } from '@withwiz/core/logger/logger';
-import type { IBatchProcessorConfig, IBatchProcessResult } from '@withwiz/core/types/geoip';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import type { IBatchProcessorConfig, IBatchProcessResult } from '@withwiz/toolkit/core/types/geoip';
 
 /**
  * 범용 배치 처리기

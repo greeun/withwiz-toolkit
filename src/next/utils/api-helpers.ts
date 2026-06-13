@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema } from 'zod';
-import { ERROR_CODES, formatErrorMessage } from '@withwiz/core/constants/error-codes';
+import { ERROR_CODES, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
 
 /**
  * Zod 스키마로 데이터 검증

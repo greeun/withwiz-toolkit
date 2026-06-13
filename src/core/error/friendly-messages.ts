@@ -6,7 +6,7 @@
  * 5자리 HTTP 확장 에러 코드별 프렌들리 메시지
  */
 
-import { getErrorCategory } from '@withwiz/core/constants/error-codes';
+import { getErrorCategory } from '@withwiz/toolkit/core/constants/error-codes';
 
 export interface IFriendlyMessage {
   title: string;

@@ -7,7 +7,7 @@
 import fs from 'fs';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { getLoggerConfig } from './config';
+import { getLoggerConfig } from '@withwiz/toolkit/core/logger/config';
 
 // 전역 플래그로 중복 설정 방지
 declare global {

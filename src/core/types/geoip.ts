@@ -2,7 +2,7 @@
 // GeoIP 관련 통합 타입 정의
 // ============================================================================
 
-import type { IGeoLocationData, IDatabaseService, ICacheService } from './database';
+import type { IGeoLocationData, IDatabaseService, ICacheService } from '@withwiz/toolkit/core/types/database';
 
 // ============================================================================
 // 기본 GeoIP 설정 타입

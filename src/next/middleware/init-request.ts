@@ -7,8 +7,8 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { TApiMiddleware } from './types';
-import { LocaleDetector } from '@withwiz/next/error/locale-detector';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
+import { LocaleDetector } from '@withwiz/toolkit/next/error/locale-detector';
 
 /**
  * 요청 초기화 미들웨어

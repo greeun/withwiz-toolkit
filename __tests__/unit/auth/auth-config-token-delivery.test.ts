@@ -1,4 +1,4 @@
-import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/core/auth/config';
+import { initializeAuth, getAuthConfig, resetAuth } from '@withwiz/toolkit/core/auth/config';
 
 const SECRET = 'test-secret-key-that-is-at-least-32-characters-long';
 

@@ -5,11 +5,11 @@
  */
 "use client";
 
-import { Button } from "../Button";
+import { Button } from "@withwiz/toolkit/react/components/ui/Button";
 import { CheckSquare, Square, Loader2 } from 'lucide-react';
-import { LoadingBar } from "../loading-bar";
-import type { BulkAction } from "./types";
-import { formatLabel } from "./types";
+import { LoadingBar } from "@withwiz/toolkit/react/components/ui/loading-bar";
+import type { BulkAction } from "@withwiz/toolkit/react/components/ui/data-table/types";
+import { formatLabel } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 export interface DataTableBulkActionsProps {
   bulkActions: BulkAction[];

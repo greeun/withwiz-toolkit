@@ -14,11 +14,11 @@ import {
   getHttpStatus,
   getErrorCategory,
   classifyError,
-} from "@withwiz/core/constants/error-codes";
+} from "@withwiz/toolkit/core/constants/error-codes";
 import type {
   ErrorCodeKey,
   IErrorCodeInfo,
-} from "@withwiz/core/constants/error-codes";
+} from "@withwiz/toolkit/core/constants/error-codes";
 
 /**
  * 에러 상세 정보 인터페이스

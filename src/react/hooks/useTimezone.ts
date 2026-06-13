@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getUserTimezone, getTimezoneOffset } from '@withwiz/core/utils/timezone';
+import { getUserTimezone, getTimezoneOffset } from '@withwiz/toolkit/core/utils/timezone';
 
 interface ITimezoneInfo {
   timezone: string;

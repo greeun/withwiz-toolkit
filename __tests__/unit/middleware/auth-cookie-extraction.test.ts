@@ -7,11 +7,11 @@
  * 쿠키가 없으면 Authorization 헤더로 폴백하는 동작을 검증합니다.
  */
 
-import { JWTService } from "@withwiz/core/auth/jwt";
-import type { JWTConfig } from "@withwiz/core/auth/types";
-import type { IApiContext } from "@withwiz/next/middleware/types";
+import { JWTService } from "@withwiz/toolkit/core/auth/jwt";
+import type { JWTConfig } from "@withwiz/toolkit/core/auth/types";
+import type { IApiContext } from "@withwiz/toolkit/next/middleware/types";
 import { NextResponse } from "next/server";
-import { initializeAuth, resetAuth } from "../../../src/core/auth/config";
+import { initializeAuth, resetAuth } from "@withwiz/toolkit/core/auth/config";
 
 const testConfig: JWTConfig = {
   secret: "test-secret-key-that-is-at-least-32-characters-long",
@@ -95,7 +95,7 @@ describe("SC-UNIT-AUTHCOOKIE-001: authMiddleware 쿠키 기반 토큰 추출", (
   let optionalAuthMiddleware: any;
 
   beforeAll(async () => {
-    const authModule = await import("@withwiz/next/middleware/auth");
+    const authModule = await import("@withwiz/toolkit/next/middleware/auth");
     authMiddleware = authModule.authMiddleware;
     optionalAuthMiddleware = authModule.optionalAuthMiddleware;
   });
@@ -152,7 +152,7 @@ describe("SC-UNIT-AUTHCOOKIE-002: optionalAuthMiddleware 쿠키 기반 토큰 �
   let optionalAuthMiddleware: any;
 
   beforeAll(async () => {
-    const authModule = await import("@withwiz/next/middleware/auth");
+    const authModule = await import("@withwiz/toolkit/next/middleware/auth");
     optionalAuthMiddleware = authModule.optionalAuthMiddleware;
   });
 

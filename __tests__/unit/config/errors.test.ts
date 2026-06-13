@@ -1,4 +1,4 @@
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('ConfigurationError', () => {
   it('should format message with module name prefix', () => {

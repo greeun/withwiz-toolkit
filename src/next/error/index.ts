@@ -5,6 +5,6 @@
  * 프레임워크 독립 항목은 @withwiz/toolkit/core/error 참조.
  */
 
-export * from "./error-handler";
-export { LocaleDetector } from "./locale-detector";
-export * from "./ErrorBoundary";
+export * from "@withwiz/toolkit/next/error/error-handler";
+export { LocaleDetector } from "@withwiz/toolkit/next/error/locale-detector";
+export * from "@withwiz/toolkit/next/error/ErrorBoundary";

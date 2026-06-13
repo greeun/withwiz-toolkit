@@ -1,6 +1,6 @@
 // __tests__/unit/config/logger-config.test.ts
-import { initializeLogger, getLoggerConfig, resetLogger } from '../../../src/core/logger/config';
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { initializeLogger, getLoggerConfig, resetLogger } from '@withwiz/toolkit/core/logger/config';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('Logger Config', () => {
   beforeEach(() => { resetLogger(); });

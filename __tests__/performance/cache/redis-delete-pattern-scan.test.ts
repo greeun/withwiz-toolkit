@@ -11,7 +11,7 @@
  */
 
 // Mock Logger
-vi.mock("@withwiz/core/logger/logger", () => ({
+vi.mock("@withwiz/toolkit/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -31,7 +31,7 @@ const mockRedis = {
   expire: vi.fn(),
 };
 
-vi.mock("@withwiz/core/cache/cache-redis", () => ({
+vi.mock("@withwiz/toolkit/core/cache/cache-redis", () => ({
   getRedisClient: vi.fn(() => mockRedis),
   CacheMetrics: vi.fn().mockImplementation(() => ({
     hits: 0,
@@ -52,7 +52,7 @@ vi.mock("@withwiz/core/cache/cache-redis", () => ({
   isRedisGloballyDisabled: vi.fn().mockReturnValue(false),
 }));
 
-vi.mock("@withwiz/core/cache/cache-env", () => ({
+vi.mock("@withwiz/toolkit/core/cache/cache-env", () => ({
   getENV: vi.fn().mockReturnValue({
     CACHE_ENABLED: true,
     CACHE_REDIS_ENABLED: true,
@@ -61,9 +61,9 @@ vi.mock("@withwiz/core/cache/cache-env", () => ({
   isCacheEnabled: vi.fn().mockReturnValue(true),
 }));
 
-import { RedisCacheManager } from "@withwiz/core/cache/redis-cache-manager";
-import { getRedisClient } from "@withwiz/core/cache/cache-redis";
-import { logger } from "@withwiz/core/logger/logger";
+import { RedisCacheManager } from "@withwiz/toolkit/core/cache/redis-cache-manager";
+import { getRedisClient } from "@withwiz/toolkit/core/cache/cache-redis";
+import { logger } from "@withwiz/toolkit/core/logger/logger";
 
 describe("SC-UNIT-REDIS-OPT-003: deletePattern scan 기반 구현", () => {
   let cacheManager: RedisCacheManager;

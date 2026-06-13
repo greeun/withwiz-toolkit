@@ -5,9 +5,9 @@
  * - System
  */
 import os from 'os';
-import { runCommand, runMacCommand } from './utils';
-import { ICpuInfo } from './types';
-import { logger } from '@withwiz/core/logger/logger';
+import { runCommand, runMacCommand } from '@withwiz/toolkit/core/system/utils';
+import { ICpuInfo } from '@withwiz/toolkit/core/system/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 export async function getCpuInfo(): Promise<ICpuInfo> {
   try {

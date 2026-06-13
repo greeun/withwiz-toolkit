@@ -11,7 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
@@ -31,12 +31,12 @@ describe('cache-factory: uninitialized import', () => {
 
   it('does not throw at import time when initializeCache() was never called', async () => {
     await expect(
-      import('@withwiz/core/cache/cache-factory'),
+      import('@withwiz/toolkit/core/cache/cache-factory'),
     ).resolves.toBeDefined();
   });
 
   it('degrades to a usable no-op cache (get returns null, set is a no-op, no throw)', async () => {
-    const mod = await import('@withwiz/core/cache/cache-factory');
+    const mod = await import('@withwiz/toolkit/core/cache/cache-factory');
     expect(mod.cache).toBeDefined();
     expect(mod.geoCache).toBeDefined();
     await expect(mod.cache.get('any-key')).resolves.toBeNull();
@@ -44,7 +44,7 @@ describe('cache-factory: uninitialized import', () => {
   });
 
   it('warns once that cache is not initialized', async () => {
-    await import('@withwiz/core/cache/cache-factory');
+    await import('@withwiz/toolkit/core/cache/cache-factory');
     expect(warnSpy).toHaveBeenCalled();
     const combined = warnSpy.mock.calls
       .map((c: unknown[]) => String(c[0]))

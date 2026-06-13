@@ -5,9 +5,9 @@
  * - 프로젝트 독립적
  * - HTTP 전용 (무료 플랜)
  */
-import type { IGeoIPApiResponse } from '@withwiz/core/types/geoip';
-import type { IGeoLocationData } from '@withwiz/core/types/database';
-import { BaseGeoIPProvider, truncateString } from './base-provider';
+import type { IGeoIPApiResponse } from '@withwiz/toolkit/core/types/geoip';
+import type { IGeoLocationData } from '@withwiz/toolkit/core/types/database';
+import { BaseGeoIPProvider, truncateString } from '@withwiz/toolkit/core/geolocation/providers/base-provider';
 
 export class IPApiProvider extends BaseGeoIPProvider {
   name = 'ip-api.com';

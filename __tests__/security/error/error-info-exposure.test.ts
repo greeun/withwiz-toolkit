@@ -18,7 +18,7 @@ vi.mock('next/server', () => {
   };
 });
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('@withwiz/core/logger/logger', () => ({
   },
 }));
 
-vi.mock('@withwiz/core/auth/errors', () => {
+vi.mock('@withwiz/toolkit/core/auth/errors', () => {
   class AuthError extends Error {
     code: string;
     statusCode: number;
@@ -50,7 +50,7 @@ describe('Security: Error Information Exposure', () => {
 
   describe('errorToResponse - Stack trace exposure', () => {
     it('should never include stack traces in response body', async () => {
-      const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+      const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
 
       // Create an error with a stack trace
       const error = new Error('Internal database connection failed');
@@ -67,7 +67,7 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should never expose file paths in error responses', async () => {
-      const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+      const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const error = new Error('Module not found: /app/src/services/payment.ts');
       const response = errorToResponse(error);
@@ -81,7 +81,7 @@ describe('Security: Error Information Exposure', () => {
 
   describe('errorToResponse - 500 error detail exposure', () => {
     it('should not expose internal error details for 500 errors', async () => {
-      const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+      const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
 
       // Simulate an unexpected internal error
       const error = new Error('ECONNREFUSED: connection refused to redis://internal-redis:6379');
@@ -95,7 +95,7 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should return a generic error message for unhandled exceptions', async () => {
-      const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+      const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const error = new Error('Cannot read properties of undefined (reading "password")');
       const response = errorToResponse(error);
@@ -110,7 +110,7 @@ describe('Security: Error Information Exposure', () => {
 
   describe('processError - Prisma error sanitization', () => {
     it('should sanitize Prisma unique constraint errors without exposing field values', async () => {
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       // Simulate Prisma P2002 error (unique constraint violation)
       const prismaError = new Error(
@@ -125,7 +125,7 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should sanitize Prisma record not found errors', async () => {
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const prismaError = new Error(
         'No User found with id: "clxy123abc456" P2001'
@@ -137,7 +137,7 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should map Prisma P2025 to 404 status', async () => {
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const prismaError = new Error(
         'An operation failed because it depends on one or more records that were required but not found. P2025'
@@ -150,8 +150,8 @@ describe('Security: Error Information Exposure', () => {
 
   describe('Auth error responses - User enumeration prevention', () => {
     it('should return the same error code for "user not found" and "wrong password"', async () => {
-      const { AuthError } = await import('@withwiz/core/auth/errors');
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { AuthError } = await import('@withwiz/toolkit/core/auth/errors');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       // "User not found" scenario
       const userNotFoundError = new (AuthError as any)('Invalid credentials', 'INVALID_CREDENTIALS', 401);
@@ -168,8 +168,8 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should not distinguish between user-not-found and wrong-password in error messages', async () => {
-      const { AuthError } = await import('@withwiz/core/auth/errors');
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { AuthError } = await import('@withwiz/toolkit/core/auth/errors');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const userNotFoundError = new (AuthError as any)('Invalid credentials', 'INVALID_CREDENTIALS', 401);
       const result = processError(userNotFoundError);
@@ -181,8 +181,8 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should not expose user IDs or emails in auth error responses', async () => {
-      const { AuthError } = await import('@withwiz/core/auth/errors');
-      const { errorToResponse } = await import('@withwiz/next/error/error-handler');
+      const { AuthError } = await import('@withwiz/toolkit/core/auth/errors');
+      const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const authError = new (AuthError as any)('Invalid credentials', 'USER_NOT_FOUND', 401);
       const response = errorToResponse(authError);
@@ -195,7 +195,7 @@ describe('Security: Error Information Exposure', () => {
 
   describe('Unknown error handling', () => {
     it('should handle non-Error objects without exposing internals', async () => {
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const result = processError('string error with internal path /app/src/secret.ts');
 
@@ -206,7 +206,7 @@ describe('Security: Error Information Exposure', () => {
     });
 
     it('should handle null/undefined errors gracefully', async () => {
-      const { processError } = await import('@withwiz/next/error/error-handler');
+      const { processError } = await import('@withwiz/toolkit/next/error/error-handler');
 
       const result1 = processError(null);
       const result2 = processError(undefined);

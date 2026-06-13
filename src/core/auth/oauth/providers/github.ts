@@ -4,8 +4,8 @@
  * GitHub OAuth 2.0 인증 어댑터
  */
 
-import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/core/auth/types';
-import { OAuthError } from '@withwiz/core/auth/errors';
+import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/toolkit/core/auth/types';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
 
 export class GitHubOAuthProvider implements IOAuthProviderAdapter {
   readonly name = 'github';

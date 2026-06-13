@@ -3,7 +3,7 @@
  *
  * 캐시 설정 유틸리티 및 TTL 관리
  */
-import { getENV, isCacheEnabled } from './cache-env';
+import { getENV, isCacheEnabled } from '@withwiz/toolkit/core/cache/cache-env';
 
 // ============================================================================
 // 캐시 옵션 인터페이스

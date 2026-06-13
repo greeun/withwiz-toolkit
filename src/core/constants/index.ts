@@ -6,16 +6,16 @@
  */
 
 // Error Codes
-export * from './error-codes';
+export * from '@withwiz/toolkit/core/constants/error-codes';
 
 // Pagination
-export * from './pagination';
+export * from '@withwiz/toolkit/core/constants/pagination';
 
 // Security
-export * from './security';
+export * from '@withwiz/toolkit/core/constants/security';
 
 // Validation
-export * from './validation';
+export * from '@withwiz/toolkit/core/constants/validation';
 
 // Messages
-export * from './messages';
+export * from '@withwiz/toolkit/core/constants/messages';

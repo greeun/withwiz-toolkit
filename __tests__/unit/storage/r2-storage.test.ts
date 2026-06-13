@@ -2,9 +2,9 @@
  * R2 Storage Unit Tests
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AppError } from '@withwiz/core/error/app-error';
-import { ERROR_CODES } from '@withwiz/core/constants/error-codes';
-import { initializeStorage, resetStorage } from '../../../src/core/storage/config';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import { ERROR_CODES } from '@withwiz/toolkit/core/constants/error-codes';
+import { initializeStorage, resetStorage } from '@withwiz/toolkit/core/storage/config';
 
 // S3Client mock
 const mockSend = vi.fn();
@@ -26,7 +26,7 @@ vi.mock('@aws-sdk/client-s3', () => {
 });
 
 // r2-storage를 static import로 가져옴 (resetR2로 캐시 초기화)
-import { isR2Enabled, uploadToR2, deleteFromR2, getFromR2, resetR2 } from '@withwiz/core/storage/r2-storage';
+import { isR2Enabled, uploadToR2, deleteFromR2, getFromR2, resetR2 } from '@withwiz/toolkit/core/storage/r2-storage';
 
 describe('R2 Storage', () => {
   const R2_STORAGE_CONFIG = {

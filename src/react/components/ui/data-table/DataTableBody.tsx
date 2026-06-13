@@ -6,9 +6,9 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { cn } from "@withwiz/react/utils/client-utils";
-import { LoadingBar } from "../loading-bar";
-import type { ColumnDef, SortConfig } from "./types";
+import { cn } from "@withwiz/toolkit/react/utils/client-utils";
+import { LoadingBar } from "@withwiz/toolkit/react/components/ui/loading-bar";
+import type { ColumnDef, SortConfig } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 export interface DataTableBodyProps<T> {
   data: T[];

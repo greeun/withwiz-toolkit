@@ -1,8 +1,8 @@
 /**
  * auth 핸들러의 tokenDelivery 모드 분기 검증 (login / refresh / me)
  */
-import type { AuthHandlerOptions } from '../../../../src/next/auth-types/handler-types';
-import { initializeAuth, resetAuth } from '../../../../src/core/auth/config';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { initializeAuth, resetAuth } from '@withwiz/toolkit/core/auth/config';
 
 const mockCompare = vi.fn();
 vi.mock('bcryptjs', () => ({
@@ -12,7 +12,7 @@ vi.mock('bcryptjs', () => ({
 const mockCreateTokenPair = vi.fn();
 const mockVerifyAccessToken = vi.fn();
 const mockExtractTokenFromHeader = vi.fn();
-vi.mock('../../../../src/core/auth/jwt', () => ({
+vi.mock('@withwiz/toolkit/core/auth/jwt', () => ({
   JWTService: vi.fn().mockImplementation(function (this: any) {
     this.createTokenPair = mockCreateTokenPair;
     this.verifyAccessToken = mockVerifyAccessToken;
@@ -22,21 +22,21 @@ vi.mock('../../../../src/core/auth/jwt', () => ({
 
 const mockSetTokenCookies = vi.fn();
 const mockClearTokenCookies = vi.fn();
-vi.mock('../../../../src/core/auth/jwt/cookie', () => ({
+vi.mock('@withwiz/toolkit/core/auth/jwt/cookie', () => ({
   setTokenCookies: (...args: any[]) => mockSetTokenCookies(...args),
   clearTokenCookies: (...args: any[]) => mockClearTokenCookies(...args),
 }));
 
 const mockRefresh = vi.fn();
-vi.mock('../../../../src/core/auth/services/token-refresh.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/token-refresh.service', () => ({
   TokenRefreshService: vi.fn().mockImplementation(function (this: any) {
     this.refresh = mockRefresh;
   }),
 }));
 
-import { createLoginHandler } from '../../../../src/next/auth-handlers/login.handler';
-import { createRefreshHandler } from '../../../../src/next/auth-handlers/refresh.handler';
-import { createMeHandler } from '../../../../src/next/auth-handlers/me.handler';
+import { createLoginHandler } from '@withwiz/toolkit/next/auth-handlers/login.handler';
+import { createRefreshHandler } from '@withwiz/toolkit/next/auth-handlers/refresh.handler';
+import { createMeHandler } from '@withwiz/toolkit/next/auth-handlers/me.handler';
 
 const SECRET = 'test-secret-key-that-is-at-least-32-characters-long';
 

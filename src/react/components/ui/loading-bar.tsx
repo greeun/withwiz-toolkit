@@ -7,7 +7,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@withwiz/react/utils/client-utils";
+import { cn } from "@withwiz/toolkit/react/utils/client-utils";
 
 interface LoadingBarProps {
   className?: string;

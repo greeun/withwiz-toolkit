@@ -7,11 +7,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { logger } from '@withwiz/core/logger/logger';
-import { logApiRequest, logApiResponse } from '@withwiz/core/logger/logger';
-import { ERROR_CODES, formatErrorMessage, getHttpStatus } from '@withwiz/core/constants/error-codes';
-import { AppError } from '@withwiz/core/error/app-error';
-import type { ISerializedError } from '@withwiz/core/error/app-error';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { logApiRequest, logApiResponse } from '@withwiz/toolkit/core/logger/logger';
+import { ERROR_CODES, formatErrorMessage, getHttpStatus } from '@withwiz/toolkit/core/constants/error-codes';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import type { ISerializedError } from '@withwiz/toolkit/core/error/app-error';
 
 // ProcessedError 타입 (AppError의 ISerializedError와 호환)
 export type ProcessedError = ISerializedError;

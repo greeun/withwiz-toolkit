@@ -6,5 +6,5 @@
  * 브라우저 전용 헬퍼는 @withwiz/toolkit/react/utils 참조.
  */
 
-export * from './sanitizer';
-export * from './type-guards';
+export * from '@withwiz/toolkit/core/utils/sanitizer';
+export * from '@withwiz/toolkit/core/utils/type-guards';

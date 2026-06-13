@@ -6,11 +6,11 @@
 "use client";
 
 import { ReactNode, isValidElement } from "react";
-import { Button } from "../Button";
-import { Input } from "../Input";
+import { Button } from "@withwiz/toolkit/react/components/ui/Button";
+import { Input } from "@withwiz/toolkit/react/components/ui/Input";
 import { Filter } from 'lucide-react';
-import type { PaginationConfig, FilterConfig } from "./types";
-import { formatLabel } from "./types";
+import type { PaginationConfig, FilterConfig } from "@withwiz/toolkit/react/components/ui/data-table/types";
+import { formatLabel } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 export interface DataTableSearchProps {
   onSearch?: (search: string) => void;

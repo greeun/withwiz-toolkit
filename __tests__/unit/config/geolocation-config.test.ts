@@ -1,5 +1,5 @@
-import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/core/geolocation/config';
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '@withwiz/toolkit/core/geolocation/config';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('Geolocation Config', () => {
   beforeEach(() => { resetGeolocation(); });

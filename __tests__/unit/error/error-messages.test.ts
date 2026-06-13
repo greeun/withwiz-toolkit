@@ -1,4 +1,4 @@
-import { getErrorMessage, getAllMessages, hasMessage, isLocaleSupported, supportedLocales } from '../../../src/core/error/messages';
+import { getErrorMessage, getAllMessages, hasMessage, isLocaleSupported, supportedLocales } from '@withwiz/toolkit/core/error/messages';
 
 describe('Error Messages Module', () => {
   describe('getErrorMessage', () => {

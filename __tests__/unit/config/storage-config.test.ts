@@ -1,5 +1,5 @@
-import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/core/storage/config';
-import { ConfigurationError } from '../../../src/core/config/errors';
+import { initializeStorage, getStorageConfig, resetStorage } from '@withwiz/toolkit/core/storage/config';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('Storage Config', () => {
   beforeEach(() => { resetStorage(); });

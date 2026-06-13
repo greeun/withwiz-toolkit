@@ -5,10 +5,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { logger } from '@withwiz/core/logger/logger';
-import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError } from '@withwiz/core/constants/error-codes';
-import { AppError } from '@withwiz/core/error/app-error';
-import { AuthError } from '@withwiz/core/auth/errors';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError } from '@withwiz/toolkit/core/constants/error-codes';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 
 // AuthError.code → ERROR_CODES 키 매핑
 export const AUTH_ERROR_CODE_MAP: Record<string, number> = {

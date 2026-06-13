@@ -4,7 +4,7 @@
  * 프로젝트 독립적인 GeoIP 유틸리티
  * - 순수 Provider 구현
  * - 범용 배치 처리기
- * - IP 유틸리티는 @withwiz/core/utils/ip-utils 에서 import
+ * - IP 유틸리티는 @withwiz/toolkit/core/utils/ip-utils 에서 import
  *
  * 프로젝트 종속적인 서비스는 <your-project>/services/geoip 를 사용하세요.
  */
@@ -18,10 +18,10 @@ export {
   IPGeolocationProvider,
   MaxMindProvider,
   GeoIPProviderFactory,
-} from './providers';
+} from '@withwiz/toolkit/core/geolocation/providers';
 
 // 범용 배치 처리기 (프로젝트 독립적)
-export { BatchProcessor, createBatchProcessor } from './batch-processor';
+export { BatchProcessor, createBatchProcessor } from '@withwiz/toolkit/core/geolocation/batch-processor';
 
 // 타입 re-export (프로젝트 독립적)
 export type {
@@ -36,11 +36,11 @@ export type {
   IGeoIPError,
   IGeoIPCacheEntry,
   IGeoIPPreset,
-} from '@withwiz/core/types/geoip';
+} from '@withwiz/toolkit/core/types/geoip';
 
 export type {
   IGeoLocationData,
   IGeoIPResponse,
   IDatabaseService,
   ICacheService,
-} from '@withwiz/core/types/database';
+} from '@withwiz/toolkit/core/types/database';

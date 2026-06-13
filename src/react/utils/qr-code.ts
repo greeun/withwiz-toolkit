@@ -1,7 +1,7 @@
 // QR 코드 관련 유틸리티 함수들
 // /shared/ 내부에서 독립적으로 사용
 
-import type { IQRCodeSettings, IQRCodeDownloadOptions } from '@withwiz/core/types/qr-code';
+import type { IQRCodeSettings, IQRCodeDownloadOptions } from '@withwiz/toolkit/core/types/qr-code';
 
 // QR 코드 설정 기본값 (스캔 성능 향상을 위해 개선)
 export const DEFAULT_QR_SETTINGS: IQRCodeSettings = {

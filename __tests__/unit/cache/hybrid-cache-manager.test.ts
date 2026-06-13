@@ -5,7 +5,7 @@
  * destroy/resetRedisErrorState 등 미커버된 영역 중심 테스트
  */
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -14,13 +14,13 @@ vi.mock('@withwiz/core/logger/logger', () => ({
   },
 }));
 
-vi.mock('@withwiz/core/cache/cache-redis', () => ({
+vi.mock('@withwiz/toolkit/core/cache/cache-redis', () => ({
   isRedisGloballyDisabled: vi.fn(() => false),
   notifyRedisError: vi.fn(),
   resetRedisGlobalState: vi.fn(),
 }));
 
-vi.mock('@withwiz/core/cache/cache-env', () => ({
+vi.mock('@withwiz/toolkit/core/cache/cache-env', () => ({
   getCacheFallbackConfig: vi.fn(() => ({
     redisErrorThresholdGlobal: 5,
     redisErrorThresholdLocal: 3,
@@ -30,9 +30,9 @@ vi.mock('@withwiz/core/cache/cache-env', () => ({
   })),
 }));
 
-import { logger } from '@withwiz/core/logger/logger';
-import { isRedisGloballyDisabled, notifyRedisError, resetRedisGlobalState } from '@withwiz/core/cache/cache-redis';
-import { HybridCacheManager } from '@withwiz/core/cache/hybrid-cache-manager';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { isRedisGloballyDisabled, notifyRedisError, resetRedisGlobalState } from '@withwiz/toolkit/core/cache/cache-redis';
+import { HybridCacheManager } from '@withwiz/toolkit/core/cache/hybrid-cache-manager';
 
 /**
  * Mock Redis Manager factory

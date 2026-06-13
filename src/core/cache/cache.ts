@@ -6,10 +6,10 @@
  *
  * @example
  * // 기존 방식 (계속 동작)
- * import { cache, withCache } from '@withwiz/core/cache/cache';
+ * import { cache, withCache } from '@withwiz/toolkit/core/cache/cache';
  *
  * // 신규 권장 방식
  * import { cache, withCache } from '@withwiz/cache';
  */
 
-export * from './index';
+export * from '@withwiz/toolkit/core/cache';

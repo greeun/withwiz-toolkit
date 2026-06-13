@@ -1,6 +1,6 @@
-import { ConfigurationError } from '../config/errors';
-import { configWarn } from '../config/warn';
-import { JWT_DEFAULTS } from '../constants/security';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
+import { configWarn } from '@withwiz/toolkit/core/config/warn';
+import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export type TokenDelivery = 'cookie' | 'header' | 'hybrid';
 

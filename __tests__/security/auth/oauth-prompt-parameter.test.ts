@@ -10,7 +10,7 @@
  * 관련 커밋: 05461ca5 - fix: Google OAuth 계정 선택 및 로그인 에러 코드 수정
  */
 
-import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/core/auth/oauth";
+import { OAuthManager, OAUTH_PROVIDERS } from "@withwiz/toolkit/core/auth/oauth";
 
 const mockLogger = {
   debug: vi.fn(),

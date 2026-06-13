@@ -4,13 +4,13 @@
  * environment
  * - System
  */
-import { IEnvironmentInfo } from './types';
-import { getPlatform } from './utils';
+import { IEnvironmentInfo } from '@withwiz/toolkit/core/system/types';
+import { getPlatform } from '@withwiz/toolkit/core/system/utils';
 import os from 'os';
-import { getAuthConfig } from '../auth/config';
-import { getResolvedCacheConfig } from '../cache/config';
-import { getGeolocationConfig } from '../geolocation/config';
-import { getCommonConfig } from '../config/common';
+import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
+import { getResolvedCacheConfig } from '@withwiz/toolkit/core/cache/config';
+import { getGeolocationConfig } from '@withwiz/toolkit/core/geolocation/config';
+import { getCommonConfig } from '@withwiz/toolkit/core/config/common';
 
 export function checkEnvironmentVariables(): IEnvironmentInfo[] {
   const platform = getPlatform();

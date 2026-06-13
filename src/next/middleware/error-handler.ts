@@ -9,14 +9,14 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import type { TApiMiddleware } from './types';
-import { AppError } from '@withwiz/core/error/app-error';
-import { AUTH_ERROR_CODE_MAP } from '@withwiz/next/error/error-handler';
-import { getErrorMessage } from '@withwiz/core/error/messages';
-import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/core/constants/error-codes';
-import { AuthError } from '@withwiz/core/auth/errors';
-import { logger } from '@withwiz/core/logger/logger';
-import { getCommonConfig } from '@withwiz/core/config/common';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
+import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
+import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { getCommonConfig } from '@withwiz/toolkit/core/config/common';
 
 /**
  * 에러 핸들러 미들웨어

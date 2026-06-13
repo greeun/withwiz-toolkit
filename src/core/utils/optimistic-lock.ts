@@ -5,7 +5,7 @@
  * Prisma의 updateMany + where version 조건을 활용.
  */
 
-import { AppError } from '@withwiz/core/error/app-error';
+import { AppError } from '@withwiz/toolkit/core/error/app-error';
 
 /**
  * 낙관적 락이 적용된 업데이트 실행

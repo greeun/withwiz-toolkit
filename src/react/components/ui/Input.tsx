@@ -1,6 +1,6 @@
 // 독립적인 Input 컴포넌트
 import React from 'react';
-import { cn } from '@withwiz/react/utils/client-utils';
+import { cn } from '@withwiz/toolkit/react/utils/client-utils';
 
 export interface IInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;

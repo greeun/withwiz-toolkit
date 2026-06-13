@@ -1,4 +1,4 @@
-import { formatNumber, formatChartNumber } from '@withwiz/core/utils/format-number'
+import { formatNumber, formatChartNumber } from '@withwiz/toolkit/core/utils/format-number'
 
 describe('formatNumber', () => {
   it('returns "-" for null', () => {

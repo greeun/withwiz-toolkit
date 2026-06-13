@@ -1,13 +1,13 @@
-import { initialize } from '../../src/initialize';
-import { config, resetConfig } from '../../src/initialize';
-import { getCommonConfig, resetCommon } from '../../src/core/config/common';
-import { getAuthConfig, resetAuth } from '../../src/core/auth/config';
-import { getLoggerConfig, resetLogger } from '../../src/core/logger/config';
-import { getResolvedCacheConfig, resetCache } from '../../src/core/cache/config';
-import { getStorageConfig, resetStorage } from '../../src/core/storage/config';
-import { getGeolocationConfig, resetGeolocation } from '../../src/core/geolocation/config';
-import { getCorsConfig, resetCors } from '../../src/core/cors';
-import { ConfigurationError } from '../../src/core/config/errors';
+import { initialize } from '@withwiz/toolkit/initialize';
+import { config, resetConfig } from '@withwiz/toolkit/initialize';
+import { getCommonConfig, resetCommon } from '@withwiz/toolkit/core/config/common';
+import { getAuthConfig, resetAuth } from '@withwiz/toolkit/core/auth/config';
+import { getLoggerConfig, resetLogger } from '@withwiz/toolkit/core/logger/config';
+import { getResolvedCacheConfig, resetCache } from '@withwiz/toolkit/core/cache/config';
+import { getStorageConfig, resetStorage } from '@withwiz/toolkit/core/storage/config';
+import { getGeolocationConfig, resetGeolocation } from '@withwiz/toolkit/core/geolocation/config';
+import { getCorsConfig, resetCors } from '@withwiz/toolkit/core/cors';
+import { ConfigurationError } from '@withwiz/toolkit/core/config/errors';
 
 describe('initialize', () => {
   beforeEach(() => {

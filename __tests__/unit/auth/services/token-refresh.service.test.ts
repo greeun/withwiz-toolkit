@@ -1,6 +1,6 @@
-import { TokenRefreshService } from '../../../../src/core/auth/services/token-refresh.service';
-import { JWTService } from '../../../../src/core/auth/jwt';
-import type { UserRepository } from '../../../../src/core/auth/types';
+import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
+import type { UserRepository } from '@withwiz/toolkit/core/auth/types';
 
 const jwtSecret = 'a'.repeat(32);
 

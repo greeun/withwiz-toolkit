@@ -10,16 +10,16 @@
 import {
   BaseGeoIPProvider,
   truncateString,
-} from "@withwiz/core/geolocation/providers/base-provider";
+} from "@withwiz/toolkit/core/geolocation/providers/base-provider";
 import {
   BatchProcessor,
   createBatchProcessor,
-} from "@withwiz/core/geolocation/batch-processor";
-import type { IGeoLocationData } from "@withwiz/core/types/database";
-import type { IGeoIPApiResponse } from "@withwiz/core/types/geoip";
+} from "@withwiz/toolkit/core/geolocation/batch-processor";
+import type { IGeoLocationData } from "@withwiz/toolkit/core/types/database";
+import type { IGeoIPApiResponse } from "@withwiz/toolkit/core/types/geoip";
 
 // Mock Logger to avoid issues in test environment
-vi.mock("@withwiz/core/logger/logger", () => ({
+vi.mock("@withwiz/toolkit/core/logger/logger", () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

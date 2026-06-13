@@ -4,7 +4,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import type { TLocale } from '@withwiz/core/error/messages/types';
+import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
 
 /**
  * 로케일 감지기

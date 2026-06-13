@@ -4,9 +4,9 @@
  * network
  * - System
  */
-import { runCommand, runMacCommand, formatBytesPerSec, convertToBytes } from './utils';
-import { INetworkInfo } from './types';
-import { logger } from '@withwiz/core/logger/logger';
+import { runCommand, runMacCommand, formatBytesPerSec, convertToBytes } from '@withwiz/toolkit/core/system/utils';
+import { INetworkInfo } from '@withwiz/toolkit/core/system/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 export async function getNetworkInfo(): Promise<INetworkInfo> {
   try {

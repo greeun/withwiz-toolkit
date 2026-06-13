@@ -3,10 +3,10 @@
  *
  * withCache 래퍼 함수 및 캐시 메트릭
  */
-import { logger } from '@withwiz/core/logger/logger';
-import { isCacheEnabled } from './cache-env';
-import { getCacheConfig, getCacheTTL, CacheOptions } from './cache-config';
-import { getCacheManager, getEffectiveCacheBackend } from './cache-factory';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
+import { isCacheEnabled } from '@withwiz/toolkit/core/cache/cache-env';
+import { getCacheConfig, getCacheTTL, CacheOptions } from '@withwiz/toolkit/core/cache/cache-config';
+import { getCacheManager, getEffectiveCacheBackend } from '@withwiz/toolkit/core/cache/cache-factory';
 
 // 캐시 백엔드 타입 약어 (R=Redis, M=Memory, H=Hybrid, N=Noop)
 export function getCacheBackendLabel(): string {

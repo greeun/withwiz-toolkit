@@ -1,13 +1,13 @@
 // __tests__/unit/config/registry.test.ts
-import { config, resetConfig } from '../../../src/core/config/registry';
-import { initialize } from '../../../src/initialize';
-import { initializeCommon, getCommonConfig, resetCommon } from '../../../src/core/config/common';
-import { initializeAuth, getAuthConfig, resetAuth } from '../../../src/core/auth/config';
-import { initializeLogger, getLoggerConfig, resetLogger } from '../../../src/core/logger/config';
-import { initializeCache, getResolvedCacheConfig, resetCache } from '../../../src/core/cache/config';
-import { initializeStorage, getStorageConfig, resetStorage } from '../../../src/core/storage/config';
-import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '../../../src/core/geolocation/config';
-import { initializeCors, getCorsConfig, resetCors } from '../../../src/core/cors';
+import { config, resetConfig } from '@withwiz/toolkit/core/config/registry';
+import { initialize } from '@withwiz/toolkit/initialize';
+import { initializeCommon, getCommonConfig, resetCommon } from '@withwiz/toolkit/core/config/common';
+import { initializeAuth, getAuthConfig, resetAuth } from '@withwiz/toolkit/core/auth/config';
+import { initializeLogger, getLoggerConfig, resetLogger } from '@withwiz/toolkit/core/logger/config';
+import { initializeCache, getResolvedCacheConfig, resetCache } from '@withwiz/toolkit/core/cache/config';
+import { initializeStorage, getStorageConfig, resetStorage } from '@withwiz/toolkit/core/storage/config';
+import { initializeGeolocation, getGeolocationConfig, resetGeolocation } from '@withwiz/toolkit/core/geolocation/config';
+import { initializeCors, getCorsConfig, resetCors } from '@withwiz/toolkit/core/cors';
 
 const FULL_CONFIG = {
   nodeEnv: 'test' as const,

@@ -1,4 +1,4 @@
-import type { AuthHandlerOptions, AuthHandlerHooks, AuthHandlerDependencies } from '../../../../src/next/auth-types/handler-types';
+import type { AuthHandlerOptions, AuthHandlerHooks, AuthHandlerDependencies } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 describe('AuthHandlerTypes', () => {
   it('should allow minimal AuthHandlerOptions', () => {

@@ -6,10 +6,10 @@
  */
 'use client';
 
-import { useSimpleTimezone } from '@withwiz/react/hooks/useTimezone';
+import { useSimpleTimezone } from '@withwiz/toolkit/react/hooks/useTimezone';
 import { Clock, Globe } from 'lucide-react';
-import { Badge } from './Badge';
-import { Skeleton } from './Skeleton';
+import { Badge } from '@withwiz/toolkit/react/components/ui/Badge';
+import { Skeleton } from '@withwiz/toolkit/react/components/ui/Skeleton';
 
 interface ITimezoneDisplayProps {
   showIcon?: boolean;

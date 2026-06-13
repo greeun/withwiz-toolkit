@@ -6,11 +6,11 @@
  * messages/ 폴더의 다중 언어 시스템을 활용합니다.
  */
 
-import { getErrorCategory } from '@withwiz/core/constants/error-codes';
-import { getErrorMessage, type IErrorMessage, type TLocale } from './messages';
+import { getErrorCategory } from '@withwiz/toolkit/core/constants/error-codes';
+import { getErrorMessage, type IErrorMessage, type TLocale } from '@withwiz/toolkit/core/error/messages';
 
 /**
- * @deprecated Use IErrorMessage from './messages' instead
+ * @deprecated Use IErrorMessage from '@withwiz/toolkit/core/error/messages' instead
  */
 export interface IFriendlyMessage extends IErrorMessage {}
 
@@ -99,4 +99,4 @@ export function formatFriendlyError(code: number, locale: TLocale = 'ko'): strin
 }
 
 // Re-export types
-export type { IErrorMessage, TLocale } from './messages';
+export type { IErrorMessage, TLocale } from '@withwiz/toolkit/core/error/messages';

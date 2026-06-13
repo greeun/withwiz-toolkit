@@ -5,13 +5,13 @@
  * `config.auth`와 `getAuthConfig()` 모두 같은 객체를 반환한다.
  */
 
-import type { ResolvedCommonConfig } from './common';
-import type { ResolvedAuthConfig } from '../auth/config';
-import type { ResolvedLoggerConfig } from '../logger/config';
-import type { ResolvedCacheConfig } from '../cache/config';
-import type { ResolvedStorageConfig } from '../storage/config';
-import type { ResolvedGeolocationConfig } from '../geolocation/config';
-import type { ResolvedCorsConfig } from '../cors';
+import type { ResolvedCommonConfig } from '@withwiz/toolkit/core/config/common';
+import type { ResolvedAuthConfig } from '@withwiz/toolkit/core/auth/config';
+import type { ResolvedLoggerConfig } from '@withwiz/toolkit/core/logger/config';
+import type { ResolvedCacheConfig } from '@withwiz/toolkit/core/cache/config';
+import type { ResolvedStorageConfig } from '@withwiz/toolkit/core/storage/config';
+import type { ResolvedGeolocationConfig } from '@withwiz/toolkit/core/geolocation/config';
+import type { ResolvedCorsConfig } from '@withwiz/toolkit/core/cors';
 
 export interface ConfigRegistry {
   common: ResolvedCommonConfig;

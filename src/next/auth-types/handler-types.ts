@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
-import type { BaseUser, OAuthProviderName, UserRepository, OAuthAccountRepository, EmailTokenRepository, EmailSender, Logger } from '@withwiz/core/auth/types';
-import type { TokenDelivery } from '@withwiz/core/auth/config';
+import type { BaseUser, OAuthProviderName, UserRepository, OAuthAccountRepository, EmailTokenRepository, EmailSender, Logger } from '@withwiz/toolkit/core/auth/types';
+import type { TokenDelivery } from '@withwiz/toolkit/core/auth/config';
 
 export interface AuthHandlerDependencies {
   userRepository: UserRepository;
@@ -60,4 +60,4 @@ export interface AuthHandlerResult {
   POST: (req: NextRequest) => Promise<Response>;
 }
 
-export { resolveTokenDelivery } from '@withwiz/core/auth/token-delivery';
+export { resolveTokenDelivery } from '@withwiz/toolkit/core/auth/token-delivery';

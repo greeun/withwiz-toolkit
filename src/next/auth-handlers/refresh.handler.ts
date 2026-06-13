@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { TokenRefreshService } from '@withwiz/core/auth/services/token-refresh.service';
-import { getTokenDeliveryStrategy } from '@withwiz/core/auth/token-delivery';
-import { AuthError } from '@withwiz/core/auth/errors';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
+import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 export function createRefreshHandler(options: AuthHandlerOptions) {
   const { dependencies, jwt, hooks, cookie, tokenDelivery } = options;

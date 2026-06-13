@@ -1,7 +1,7 @@
-import { TokenGenerator } from '../email/token-generator';
-import { AuthError } from '../errors';
-import type { UserRepository, EmailTokenRepository, EmailSender, Logger } from '../types';
-import { TokenType } from '../types';
+import { TokenGenerator } from '@withwiz/toolkit/core/auth/email/token-generator';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { UserRepository, EmailTokenRepository, EmailSender, Logger } from '@withwiz/toolkit/core/auth/types';
+import { TokenType } from '@withwiz/toolkit/core/auth/types';
 
 export interface EmailVerificationServiceConfig {
   userRepository: UserRepository;

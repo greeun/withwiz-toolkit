@@ -6,8 +6,8 @@
  * - 사용자 정보는 Graph /me?fields=id,name,email,picture 응답에서 매핑
  */
 
-import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/core/auth/types';
-import { OAuthError } from '@withwiz/core/auth/errors';
+import type { IOAuthProviderAdapter, OAuthProviderConfig, OAuthUserInfo, OAuthTokenResponse } from '@withwiz/toolkit/core/auth/types';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
 
 const META_GRAPH_VERSION = 'v25.0';
 

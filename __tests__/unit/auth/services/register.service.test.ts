@@ -1,5 +1,5 @@
-import { RegisterService } from '../../../../src/core/auth/services/register.service';
-import type { UserRepository, EmailTokenRepository, EmailSender } from '../../../../src/core/auth/types';
+import { RegisterService } from '@withwiz/toolkit/core/auth/services/register.service';
+import type { UserRepository, EmailTokenRepository, EmailSender } from '@withwiz/toolkit/core/auth/types';
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),

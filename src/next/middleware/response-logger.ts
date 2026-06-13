@@ -6,8 +6,8 @@
  * - Rate limit 헤더 추가
  */
 
-import { logger, logApiRequest, logApiResponse } from '@withwiz/core/logger/logger';
-import type { TApiMiddleware } from './types';
+import { logger, logApiRequest, logApiResponse } from '@withwiz/toolkit/core/logger/logger';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
 
 /**
  * 응답 로거 미들웨어

@@ -5,8 +5,8 @@
  * - 멀티 도메인 지원: 환경 변수 기반 동적 CORS 설정
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getCommonConfig } from '@withwiz/core/config/common';
-import { getCorsConfig as getMiddlewareCorsConfig } from '@withwiz/core/cors';
+import { getCommonConfig } from '@withwiz/toolkit/core/config/common';
+import { getCorsConfig as getMiddlewareCorsConfig } from '@withwiz/toolkit/core/cors';
 
 /**
  * CORS 설정 옵션

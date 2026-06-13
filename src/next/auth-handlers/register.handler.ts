@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { RegisterService } from '@withwiz/core/auth/services/register.service';
-import { AuthError } from '@withwiz/core/auth/errors';
-import type { AuthHandlerOptions } from '../auth-types/handler-types';
+import { RegisterService } from '@withwiz/toolkit/core/auth/services/register.service';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 const registerSchema = z.object({
   email: z.string().email(),

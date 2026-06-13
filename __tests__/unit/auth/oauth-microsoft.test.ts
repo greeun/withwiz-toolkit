@@ -27,9 +27,9 @@ vi.mock('jose', async (importOriginal) => {
 });
 
 import { SignJWT } from 'jose';
-import { MicrosoftOAuthProvider } from '@withwiz/core/auth/oauth/providers/microsoft';
-import { OAuthError } from '@withwiz/core/auth/errors';
-import type { OAuthProviderConfig } from '@withwiz/core/auth/types';
+import { MicrosoftOAuthProvider } from '@withwiz/toolkit/core/auth/oauth/providers/microsoft';
+import { OAuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { OAuthProviderConfig } from '@withwiz/toolkit/core/auth/types';
 
 /** 테스트 키로 실제 RS256 서명된 Microsoft id_token */
 async function signIdToken(claims: Record<string, unknown>): Promise<string> {

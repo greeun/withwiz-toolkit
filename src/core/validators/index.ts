@@ -13,4 +13,4 @@ export {
   strongPasswordSchema,
   type IPasswordValidationResult,
   type IPasswordValidationOptions,
-} from './password-validator';
+} from '@withwiz/toolkit/core/validators/password-validator';

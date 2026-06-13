@@ -5,11 +5,11 @@
  * getTokenDeliveryStrategy() 가 돌려주는 구현체의 메서드를 호출한다.
  * oauth-callback 은 redirect 응답 특성상 전략 비적용(항상 쿠키).
  */
-import type { TokenDelivery } from './config';
-import { getAuthConfig } from './config';
-import type { TokenPair } from './types';
-import { setTokenCookies } from './jwt/cookie';
-import type { CookieOptions } from './jwt/cookie';
+import type { TokenDelivery } from '@withwiz/toolkit/core/auth/config';
+import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
+import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
+import { setTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
+import type { CookieOptions } from '@withwiz/toolkit/core/auth/jwt/cookie';
 
 /** cookies/headers/json 만 구조적으로 요구 — NextRequest 미의존 (core 티어 규칙) */
 export interface TokenSource {

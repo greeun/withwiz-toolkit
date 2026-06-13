@@ -3,8 +3,8 @@
  * Based on: TEST_SCENARIOS.md - error module
  */
 
-import { AppError } from "@withwiz/core/error/app-error";
-import { ERROR_CODES } from "@withwiz/core/constants/error-codes";
+import { AppError } from "@withwiz/toolkit/core/error/app-error";
+import { ERROR_CODES } from "@withwiz/toolkit/core/constants/error-codes";
 
 // ============================================================================
 describe("SC-ERR-001: Create with error code", () => {

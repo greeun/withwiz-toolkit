@@ -6,7 +6,7 @@
  * - lines 154-155: adapter.isEnabled가 false를 반환할 때 스킵 경로
  */
 
-vi.mock('@withwiz/core/logger/logger', () => ({
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -15,13 +15,13 @@ vi.mock('@withwiz/core/logger/logger', () => ({
   },
 }));
 
-import { logger } from '@withwiz/core/logger/logger';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 import {
   setRateLimitAdapter,
   createRateLimitMiddleware,
   type IRateLimitAdapter,
   type IRateLimiter,
-} from '@withwiz/next/middleware/rate-limit';
+} from '@withwiz/toolkit/next/middleware/rate-limit';
 
 // ============================================================================
 // 테스트 헬퍼

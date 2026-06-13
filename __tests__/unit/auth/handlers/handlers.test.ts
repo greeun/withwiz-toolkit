@@ -1,5 +1,5 @@
-import { AuthError } from '../../../../src/core/auth/errors';
-import type { AuthHandlerOptions } from '../../../../src/next/auth-types/handler-types';
+import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 // ============================================================================
 // Mocks
@@ -13,7 +13,7 @@ vi.mock('bcryptjs', () => ({
 const mockCreateTokenPair = vi.fn();
 const mockVerifyAccessToken = vi.fn();
 const mockExtractTokenFromHeader = vi.fn();
-vi.mock('../../../../src/core/auth/jwt', () => ({
+vi.mock('@withwiz/toolkit/core/auth/jwt', () => ({
   JWTService: vi.fn().mockImplementation(function (this: any) {
     this.createTokenPair = mockCreateTokenPair;
     this.verifyAccessToken = mockVerifyAccessToken;
@@ -23,20 +23,20 @@ vi.mock('../../../../src/core/auth/jwt', () => ({
 
 const mockSetTokenCookies = vi.fn();
 const mockClearTokenCookies = vi.fn();
-vi.mock('../../../../src/core/auth/jwt/cookie', () => ({
+vi.mock('@withwiz/toolkit/core/auth/jwt/cookie', () => ({
   setTokenCookies: (...args: any[]) => mockSetTokenCookies(...args),
   clearTokenCookies: (...args: any[]) => mockClearTokenCookies(...args),
 }));
 
 const mockRegister = vi.fn();
-vi.mock('../../../../src/core/auth/services/register.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/register.service', () => ({
   RegisterService: vi.fn().mockImplementation(function (this: any) {
     this.register = mockRegister;
   }),
 }));
 
 const mockRefresh = vi.fn();
-vi.mock('../../../../src/core/auth/services/token-refresh.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/token-refresh.service', () => ({
   TokenRefreshService: vi.fn().mockImplementation(function (this: any) {
     this.refresh = mockRefresh;
   }),
@@ -44,7 +44,7 @@ vi.mock('../../../../src/core/auth/services/token-refresh.service', () => ({
 
 const mockRequestReset = vi.fn();
 const mockResetPassword = vi.fn();
-vi.mock('../../../../src/core/auth/services/password-reset.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/password-reset.service', () => ({
   PasswordResetService: vi.fn().mockImplementation(function (this: any) {
     this.requestReset = mockRequestReset;
     this.resetPassword = mockResetPassword;
@@ -52,7 +52,7 @@ vi.mock('../../../../src/core/auth/services/password-reset.service', () => ({
 }));
 
 const mockVerifyEmail = vi.fn();
-vi.mock('../../../../src/core/auth/services/email-verification.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/email-verification.service', () => ({
   EmailVerificationService: vi.fn().mockImplementation(function (this: any) {
     this.verify = mockVerifyEmail;
   }),
@@ -61,7 +61,7 @@ vi.mock('../../../../src/core/auth/services/email-verification.service', () => (
 const mockGetLoginUrl = vi.fn();
 const mockExchangeCodeForToken = vi.fn();
 const mockGetUserInfo = vi.fn();
-vi.mock('../../../../src/core/auth/oauth', () => ({
+vi.mock('@withwiz/toolkit/core/auth/oauth', () => ({
   OAuthManager: vi.fn().mockImplementation(function (this: any) {
     this.getLoginUrl = mockGetLoginUrl;
     this.exchangeCodeForToken = mockExchangeCodeForToken;
@@ -70,7 +70,7 @@ vi.mock('../../../../src/core/auth/oauth', () => ({
 }));
 
 const mockHandleCallback = vi.fn();
-vi.mock('../../../../src/core/auth/services/oauth-callback.service', () => ({
+vi.mock('@withwiz/toolkit/core/auth/services/oauth-callback.service', () => ({
   OAuthCallbackService: vi.fn().mockImplementation(function (this: any) {
     this.handleCallback = mockHandleCallback;
   }),
@@ -80,17 +80,17 @@ vi.mock('../../../../src/core/auth/services/oauth-callback.service', () => ({
 // Imports (after mocks)
 // ============================================================================
 
-import { createLoginHandler } from '../../../../src/next/auth-handlers/login.handler';
-import { createRegisterHandler } from '../../../../src/next/auth-handlers/register.handler';
-import { createLogoutHandler } from '../../../../src/next/auth-handlers/logout.handler';
-import { createRefreshHandler } from '../../../../src/next/auth-handlers/refresh.handler';
-import { createMeHandler } from '../../../../src/next/auth-handlers/me.handler';
-import { createForgotPasswordHandler } from '../../../../src/next/auth-handlers/forgot-password.handler';
-import { createResetPasswordHandler } from '../../../../src/next/auth-handlers/reset-password.handler';
-import { createVerifyEmailHandler } from '../../../../src/next/auth-handlers/verify-email.handler';
-import { createOAuthAuthorizeHandler } from '../../../../src/next/auth-handlers/oauth-authorize.handler';
-import { createOAuthCallbackHandler } from '../../../../src/next/auth-handlers/oauth-callback.handler';
-import { createAuthHandlers } from '../../../../src/next/auth-handlers';
+import { createLoginHandler } from '@withwiz/toolkit/next/auth-handlers/login.handler';
+import { createRegisterHandler } from '@withwiz/toolkit/next/auth-handlers/register.handler';
+import { createLogoutHandler } from '@withwiz/toolkit/next/auth-handlers/logout.handler';
+import { createRefreshHandler } from '@withwiz/toolkit/next/auth-handlers/refresh.handler';
+import { createMeHandler } from '@withwiz/toolkit/next/auth-handlers/me.handler';
+import { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
+import { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
+import { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
+import { createOAuthAuthorizeHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-authorize.handler';
+import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-callback.handler';
+import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
 
 // ============================================================================
 // Helpers

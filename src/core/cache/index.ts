@@ -14,10 +14,10 @@ export {
   getENV,
   getConfig,
   validateRedisEnvironment,
-} from './cache-env';
+} from '@withwiz/toolkit/core/cache/cache-env';
 
 // initializeCache는 config.ts에서 export (새로운 코드 기반 DI 패턴)
-export { initializeCache, getResolvedCacheConfig, resetCache } from './config';
+export { initializeCache, getResolvedCacheConfig, resetCache } from '@withwiz/toolkit/core/cache/config';
 
 // ============================================================================
 // Redis Client Management
@@ -32,14 +32,14 @@ export {
   notifyRedisError,
   resetRedisGlobalState,
   getRedisGlobalStatus,
-} from './cache-redis';
-export type { CacheMetrics, RedisConnectionStatus } from './cache-redis';
+} from '@withwiz/toolkit/core/cache/cache-redis';
+export type { CacheMetrics, RedisConnectionStatus } from '@withwiz/toolkit/core/cache/cache-redis';
 
 // ============================================================================
 // Cache Configuration
 // ============================================================================
-export { getCacheConfig, getCacheTTL } from './cache-config';
-export type { CacheOptions } from './cache-config';
+export { getCacheConfig, getCacheTTL } from '@withwiz/toolkit/core/cache/cache-config';
+export type { CacheOptions } from '@withwiz/toolkit/core/cache/cache-config';
 
 // ============================================================================
 // Cache Defaults
@@ -57,13 +57,13 @@ export {
   ONE_HOUR,
   ONE_DAY,
   THIRTY_DAYS,
-} from './cache-defaults';
+} from '@withwiz/toolkit/core/cache/cache-defaults';
 
 // ============================================================================
 // Cache Managers
 // ============================================================================
-export { RedisCacheManager } from './redis-cache-manager';
-export { NoopCacheManager } from './noop-cache-manager';
+export { RedisCacheManager } from '@withwiz/toolkit/core/cache/redis-cache-manager';
+export { NoopCacheManager } from '@withwiz/toolkit/core/cache/noop-cache-manager';
 
 // ============================================================================
 // Cache Factory and Instances (범용만)
@@ -73,23 +73,23 @@ export {
   getEffectiveCacheBackend,
   cache,
   geoCache,
-} from './cache-factory';
+} from '@withwiz/toolkit/core/cache/cache-factory';
 
 // ============================================================================
 // Cache Invalidation
 // ============================================================================
-export { invalidateCache } from './cache-invalidation';
+export { invalidateCache } from '@withwiz/toolkit/core/cache/cache-invalidation';
 
 // ============================================================================
 // Cache Wrapper and Metrics
 // ============================================================================
-export { withCache, cacheMetrics } from './cache-wrapper';
+export { withCache, cacheMetrics } from '@withwiz/toolkit/core/cache/cache-wrapper';
 
 // ============================================================================
 // Sub-modules Re-exports
 // ============================================================================
-export { InMemoryCacheManager } from './inmemory-cache-manager';
-export { HybridCacheManager } from './hybrid-cache-manager';
+export { InMemoryCacheManager } from '@withwiz/toolkit/core/cache/inmemory-cache-manager';
+export { HybridCacheManager } from '@withwiz/toolkit/core/cache/hybrid-cache-manager';
 export type {
   InMemoryCacheConfig,
   CacheBackendType,
@@ -100,4 +100,4 @@ export type {
   HybridCacheConfig,
   HybridConnectionStatus,
   IUnifiedCacheManager,
-} from './cache-types';
+} from '@withwiz/toolkit/core/cache/cache-types';

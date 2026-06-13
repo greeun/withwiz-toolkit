@@ -10,8 +10,8 @@ import type {
   TApiHandler,
   TApiMiddleware,
   IMiddlewareChainOptions,
-} from './types';
-import { logger } from '@withwiz/core/logger/logger';
+} from '@withwiz/toolkit/next/middleware/types';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
 /**
  * 미들웨어 체인 클래스

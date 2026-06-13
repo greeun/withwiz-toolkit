@@ -13,9 +13,9 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "../Pagination";
-import type { PaginationConfig } from "./types";
-import { formatLabel } from "./types";
+} from "@withwiz/toolkit/react/components/ui/Pagination";
+import type { PaginationConfig } from "@withwiz/toolkit/react/components/ui/data-table/types";
+import { formatLabel } from "@withwiz/toolkit/react/components/ui/data-table/types";
 
 export interface DataTablePaginationProps {
   pagination: PaginationConfig;
