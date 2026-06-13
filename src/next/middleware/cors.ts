@@ -60,6 +60,8 @@ export function createCorsMiddleware(config: CorsMiddlewareConfig): TApiMiddlewa
 
       if (origin && allowedOrigins.includes(origin)) {
         response.headers.set('Access-Control-Allow-Origin', origin);
+        // Origin 을 동적 반사하므로 캐시 오염 방지를 위해 Vary: Origin 필수
+        response.headers.append('Vary', 'Origin');
         if (allowCredentials) {
           response.headers.set('Access-Control-Allow-Credentials', 'true');
         }
@@ -81,6 +83,8 @@ export function createCorsMiddleware(config: CorsMiddlewareConfig): TApiMiddlewa
     // Origin 검증
     if (origin && allowedOrigins.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);
+      // Origin 을 동적 반사하므로 캐시 오염 방지를 위해 Vary: Origin 필수
+      response.headers.append('Vary', 'Origin');
       if (allowCredentials) {
         response.headers.set('Access-Control-Allow-Credentials', 'true');
       }
