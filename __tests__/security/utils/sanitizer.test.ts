@@ -121,6 +121,16 @@ describe("Sanitizer", () => {
       expect(result).not.toContain("onmouseover");
     });
 
+    it("should remove unquoted event handler values", () => {
+      expect(removeEventHandlers("<img src=x onerror=alert(1)>")).not.toContain(
+        "onerror",
+      );
+      expect(removeEventHandlers("<svg onload=alert(1)>")).not.toContain(
+        "onload",
+      );
+      expect(removeEventHandlers("onclick=doEvil()")).toBe("");
+    });
+
     it("should handle edge cases", () => {
       expect(removeEventHandlers("")).toBe("");
       expect(removeEventHandlers(null as any)).toBe("");
