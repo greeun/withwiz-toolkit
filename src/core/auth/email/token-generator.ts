@@ -23,6 +23,20 @@ export class TokenGenerator {
   }
 
   /**
+   * 토큰의 SHA-256 해시 (저장용)
+   *
+   * 이메일/URL 로 전달되는 평문 토큰을 DB 에 그대로 저장하지 않기 위해 사용한다.
+   * 저장·조회 시 이 해시값으로 비교하면 DB 유출 시에도 토큰을 복원할 수 없다.
+   * (토큰 자체가 고엔트로피 랜덤이므로 salt 없이 단방향 해시로 충분하다.)
+   *
+   * @param token - 평문 토큰
+   * @returns 64글자 hex SHA-256 다이제스트
+   */
+  static hash(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
    * URL-safe 토큰 생성 (Base64URL)
    *
    * @param bytes - 바이트 수 (기본: 32)

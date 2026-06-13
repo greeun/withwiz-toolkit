@@ -1,5 +1,8 @@
+import { createHash } from 'crypto';
 import { EmailVerificationService } from '@withwiz/toolkit/core/auth/services/email-verification.service';
 import type { UserRepository, EmailTokenRepository, EmailSender } from '@withwiz/toolkit/core/auth/types';
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),
@@ -47,6 +50,29 @@ describe('EmailVerificationService', () => {
     await service.verify('test@test.com', 'valid');
     expect(mockUserRepo.verifyEmail).toHaveBeenCalledWith('test@test.com');
     expect(mockTokenRepo.delete).toHaveBeenCalled();
+  });
+
+  it('should look up and delete the token by its hash, not the plaintext', async () => {
+    (mockTokenRepo.findByEmailAndToken as any).mockResolvedValue({
+      id: 't1', email: 'test@test.com', token: sha256('plain-token'),
+      expires: new Date(Date.now() + 60000), used: false,
+    });
+
+    await service.verify('test@test.com', 'plain-token');
+
+    expect((mockTokenRepo.findByEmailAndToken as any).mock.calls[0][1]).toBe(sha256('plain-token'));
+    expect((mockTokenRepo.delete as any).mock.calls[0][1]).toBe(sha256('plain-token'));
+  });
+
+  it('resend() should store the hashed token but email the plaintext', async () => {
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'u1', email: 'test@test.com', emailVerified: null });
+
+    await service.resend('test@test.com');
+
+    const storedToken = (mockTokenRepo.create as any).mock.calls[0][1];
+    const emailedToken = (mockEmailSender.sendVerificationEmail as any).mock.calls[0][1];
+    expect(storedToken).toBe(sha256(emailedToken));
+    expect(storedToken).not.toBe(emailedToken);
   });
 
   it('should throw for expired token', async () => {

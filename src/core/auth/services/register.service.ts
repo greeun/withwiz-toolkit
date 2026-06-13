@@ -61,7 +61,8 @@ export class RegisterService {
     if (this.emailVerificationRequired && this.emailSender) {
       const token = TokenGenerator.generate();
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      await this.tokenRepo.create(input.email, token, TokenType.EMAIL_VERIFICATION, expires);
+      // DB 에는 해시만 저장하고 평문은 이메일로만 전달한다 (DB 유출 시 토큰 복원 방지)
+      await this.tokenRepo.create(input.email, TokenGenerator.hash(token), TokenType.EMAIL_VERIFICATION, expires);
       await this.emailSender.sendVerificationEmail(input.email, token);
       verificationSent = true;
     }

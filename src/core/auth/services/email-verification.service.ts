@@ -27,14 +27,16 @@ export class EmailVerificationService {
   }
 
   async verify(email: string, token: string): Promise<void> {
-    const tokenRecord = await this.tokenRepo.findByEmailAndToken(email, token, TokenType.EMAIL_VERIFICATION);
+    // 저장은 해시값 기준이므로 평문 토큰을 해시해 조회/삭제한다
+    const hashedToken = TokenGenerator.hash(token);
+    const tokenRecord = await this.tokenRepo.findByEmailAndToken(email, hashedToken, TokenType.EMAIL_VERIFICATION);
 
     if (!tokenRecord || tokenRecord.expires < new Date()) {
       throw new AuthError('Invalid or expired verification token', 'TOKEN_INVALID', 400);
     }
 
     await this.userRepo.verifyEmail(email);
-    await this.tokenRepo.delete(email, token, TokenType.EMAIL_VERIFICATION);
+    await this.tokenRepo.delete(email, hashedToken, TokenType.EMAIL_VERIFICATION);
     this.logger.info('Email verified', { email });
   }
 
@@ -50,7 +52,8 @@ export class EmailVerificationService {
 
     const token = TokenGenerator.generate();
     const expires = new Date(Date.now() + this.tokenExpiryHours * 60 * 60 * 1000);
-    await this.tokenRepo.create(email, token, TokenType.EMAIL_VERIFICATION, expires);
+    // DB 에는 해시만 저장, 평문은 이메일로만 전달
+    await this.tokenRepo.create(email, TokenGenerator.hash(token), TokenType.EMAIL_VERIFICATION, expires);
     await this.emailSender.sendVerificationEmail(email, token);
     this.logger.info('Verification email resent', { email });
   }

@@ -1,5 +1,8 @@
+import { createHash } from 'crypto';
 import { RegisterService } from '@withwiz/toolkit/core/auth/services/register.service';
 import type { UserRepository, EmailTokenRepository, EmailSender } from '@withwiz/toolkit/core/auth/types';
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
 const mockUserRepo: UserRepository = {
   findById: vi.fn(),
@@ -72,6 +75,17 @@ describe('RegisterService', () => {
     const result = await service.register({ email: 'new@test.com', password: 'StrongPass1!' });
     expect(result.verificationSent).toBe(false);
     expect(mockEmailSender.sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it('should store the hashed verification token but email the plaintext', async () => {
+    await service.register({ email: 'new@test.com', password: 'StrongPass1!' });
+
+    const storedToken = (mockTokenRepo.create as any).mock.calls[0][1];
+    const emailedToken = (mockEmailSender.sendVerificationEmail as any).mock.calls[0][1];
+
+    // DB 에는 해시, 이메일에는 평문 — 평문이 hash 하면 저장값과 일치해야 한다
+    expect(storedToken).toBe(sha256(emailedToken));
+    expect(storedToken).not.toBe(emailedToken);
   });
 
   it('should hash password before storing', async () => {
