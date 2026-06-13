@@ -25,6 +25,7 @@ export default defineConfig({
     "react-dom",
     "next",
     "@prisma/client",
+    "argon2",
     "bcryptjs",
     "jose",
     "@upstash/redis",

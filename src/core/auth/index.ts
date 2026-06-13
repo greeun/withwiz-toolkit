@@ -47,8 +47,18 @@ export {
   PasswordHasher,
   defaultPasswordSchema,
   strongPasswordSchema,
+  BcryptPasswordHasher,
+  Argon2idPasswordHasher,
+  MigratingPasswordHasher,
 } from '@withwiz/toolkit/core/auth/password';
-export type { PasswordValidationResult, PasswordConfig } from '@withwiz/toolkit/core/auth/password';
+export type {
+  PasswordValidationResult,
+  PasswordConfig,
+  IPasswordHasher,
+  BcryptHasherOptions,
+  Argon2idHasherOptions,
+  MigratingHasherOptions,
+} from '@withwiz/toolkit/core/auth/password';
 
 // Password Client Helper
 export {
