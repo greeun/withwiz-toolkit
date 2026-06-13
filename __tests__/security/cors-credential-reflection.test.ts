@@ -77,4 +77,22 @@ describe('C-1: CORS credential reflection — middleware/cors.ts', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe(ALLOWED);
     expect(res.headers.get('access-control-allow-credentials')).toBe('true');
   });
+
+  it('sets Vary: Origin when reflecting an allow-listed origin (cache poisoning 방지)', async () => {
+    const mw = createCorsMiddleware({ allowedOrigins: [ALLOWED] });
+    const res = await mw(
+      { request: reqWith(ALLOWED) } as any,
+      async () => NextResponse.json({}),
+    );
+    expect((res.headers.get('vary') || '').toLowerCase()).toContain('origin');
+  });
+
+  it('sets Vary: Origin on a preflight (OPTIONS) reflecting origin', async () => {
+    const mw = createCorsMiddleware({ allowedOrigins: [ALLOWED] });
+    const res = await mw(
+      { request: reqWith(ALLOWED, 'OPTIONS') } as any,
+      async () => NextResponse.json({}),
+    );
+    expect((res.headers.get('vary') || '').toLowerCase()).toContain('origin');
+  });
 });
