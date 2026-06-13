@@ -48,7 +48,7 @@ export function getPasswordStrength(password: string, config?: Partial<PasswordC
 /**
  * Zod 스키마 생성 헬퍼 함수
  */
-export function createPasswordSchema(config?: Partial<PasswordConfig>): z.ZodString {
+export function createPasswordSchema(config?: Partial<PasswordConfig>): z.ZodType<string> {
   const validator = createPasswordValidator(config);
   return validator.createZodSchema();
 }

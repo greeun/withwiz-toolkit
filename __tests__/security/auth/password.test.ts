@@ -84,6 +84,33 @@ describe("Password Module", () => {
           "Password cannot exceed 128 characters",
         );
       });
+
+      it("should reject a password exceeding 72 bytes (bcrypt truncation guard)", () => {
+        // 74 bytes, satisfies all complexity rules, under 128 chars
+        const pw = "Aa1!" + "a".repeat(70);
+        const result = validator.validate(pw);
+        expect(result.isValid).toBe(false);
+        expect(result.errors.some((e) => e.includes("72"))).toBe(true);
+      });
+
+      it("should count bytes not characters for the 72-byte limit (multibyte)", () => {
+        const lenient = new PasswordValidator({
+          minLength: 1,
+          maxLength: 128,
+          requireNumber: false,
+          requireUppercase: false,
+          requireLowercase: false,
+          requireSpecialChar: false,
+          bcryptRounds: 10,
+        });
+        // 25 Korean chars = 75 bytes (> 72) but only 25 characters (< 128)
+        const result = lenient.validate("가".repeat(25));
+        expect(result.isValid).toBe(false);
+      });
+
+      it("defaultPasswordSchema rejects a password over 72 bytes", () => {
+        expect(defaultPasswordSchema.safeParse("a".repeat(73) + "1").success).toBe(false);
+      });
     });
 
     describe("Password Strength Calculation", () => {

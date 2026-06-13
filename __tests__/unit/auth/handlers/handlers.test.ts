@@ -542,6 +542,20 @@ describe('Auth Handlers', () => {
       expect(res.status).toBe(400);
     });
 
+    it('should return 400 for password exceeding 72 bytes (bcrypt truncation guard)', async () => {
+      const options = createMockOptions();
+      const handler = createRegisterHandler(options);
+      const req = makePostRequest('http://localhost/api/auth/register', {
+        email: 'test@example.com',
+        password: 'a'.repeat(73),
+      });
+
+      const res = await handler(req);
+      expect(res.status).toBe(400);
+      // 72바이트 초과는 검증 단계에서 거부되어 RegisterService 까지 도달하지 않는다
+      expect(mockRegister).not.toHaveBeenCalled();
+    });
+
     it('should return 403 when allowEmail hook returns false', async () => {
       const options = createMockOptions({
         hooks: { allowEmail: vi.fn().mockResolvedValue(false) },
