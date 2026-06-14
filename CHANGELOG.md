@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.0] - 2026-06-12
+## [0.8.0] - 2026-06-15
+
+### Breaking — React layer removed (extracted to `@withwiz/ui`)
+
+- The entire `react` tier — UI components (`react/components/ui/*`), hooks
+  (`useDataTable` / `useDebounce` / `useExitIntent` / `useTimezone`),
+  `react/error/error-display`, and browser-context utils
+  (`react/utils/client-utils`, `react/utils/qr-code`) — was extracted to the
+  standalone [`@withwiz/ui`](https://github.com/greeun) package and **removed**
+  from this package.
+- All `./react/*` subpaths were removed from `exports`. `@withwiz/ui` mirrors
+  the same `react/*` namespace, so migration is a prefix swap:
+  `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
+- `@radix-ui/react-select` dropped from dependencies (only the react tier used it).
+- `react` / `react-dom` peers are **retained** (still `optional`) — `next/error/ErrorBoundary`
+  is a React component, so the `next` tier still needs React.
+- The package is now three tiers: `core` / `next` / `prisma`.
+
+```bash
+# Migration codemod (macOS sed)
+grep -rl '@withwiz/toolkit/react' src | xargs sed -i '' 's|@withwiz/toolkit/react|@withwiz/ui/react|g'
+# then add @withwiz/ui to dependencies
+```
 
 ### Added
 
