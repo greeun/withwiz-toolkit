@@ -3,7 +3,7 @@
  *
  * 프레임워크 독립적인 에러 클래스/코드/메시지.
  * Next.js 의존 항목은 @withwiz/toolkit/next/error,
- * React 의존 항목은 @withwiz/toolkit/react/error 참조.
+ * React 의존 항목은 @withwiz/ui/react/error 참조.
  */
 
 // 에러 코드 및 상수
