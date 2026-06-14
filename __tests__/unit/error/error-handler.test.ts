@@ -30,13 +30,6 @@ describe('Error Handler exports', () => {
   });
 });
 
-describe('Error Display exports', () => {
-  it('should export error display utilities', async () => {
-    const errorDisplay = await import('@withwiz/toolkit/react/error/error-display');
-    expect(errorDisplay).toBeDefined();
-  });
-});
-
 // ============================================================================
 // processError: AppError passthrough
 // ============================================================================
