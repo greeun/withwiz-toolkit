@@ -1,6 +1,6 @@
 # @withwiz/toolkit 모듈 사용 가이드
 
-> **v0.7.0** | Next.js >= 15 | React >= 18 | TypeScript 5 (strict)
+> **v0.8.0** | Next.js >= 15 | React >= 18 (`next` tier) | TypeScript 5 (strict)
 
 ---
 
@@ -18,8 +18,8 @@
 10. [System (시스템 모니터링)](#10-system-시스템-모니터링)
 11. [Utils (유틸리티)](#11-utils-유틸리티)
 12. [Validators (검증)](#12-validators-검증)
-13. [Hooks (React 훅)](#13-hooks-react-훅)
-14. [Components (UI 컴포넌트)](#14-components-ui-컴포넌트)
+13. [Hooks (React 훅) → @withwiz/ui](#13-hooks-react-훅)
+14. [Components (UI 컴포넌트) → @withwiz/ui](#14-components-ui-컴포넌트)
 15. [Types (타입 정의)](#15-types-타입-정의)
 16. [Constants (상수)](#16-constants-상수)
 
@@ -778,10 +778,10 @@ try {
 }
 ```
 
-### 5.5 ErrorBoundary (React)
+### 5.5 ErrorBoundary (React, next 티어)
 
 ```typescript
-import { ErrorBoundary } from '@withwiz/toolkit/core/error';
+import { ErrorBoundary } from '@withwiz/toolkit/next/error';
 
 <ErrorBoundary fallback={<p>문제가 발생했습니다</p>}>
   <MyComponent />
@@ -1216,129 +1216,34 @@ const confirmation = validator.validateConfirmation('MyP@ss123', 'MyP@ss124');
 
 ## 13. Hooks (React 훅)
 
-### useDebounce
+> **0.8 에서 `@withwiz/ui` 로 이동.** `useDebounce` / `useDataTable` /
+> `useExitIntent` / `useTimezone` 등 React 훅은 toolkit 에서 제거되어 독립 패키지
+> [`@withwiz/ui`](https://github.com/greeun) 로 옮겨졌습니다.
 
 ```typescript
+// 구 (≤0.7)
 import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce';
-
-function SearchInput() {
-  const [query, setQuery] = useState('');
-  const debouncedQuery = useDebounce(query, 300);
-
-  useEffect(() => {
-    if (debouncedQuery) fetchResults(debouncedQuery);
-  }, [debouncedQuery]);
-}
+// 신 (0.8+)
+import { useDebounce } from '@withwiz/ui/react/hooks/useDebounce';
 ```
 
-### useDataTable
-
-```typescript
-import { useDataTable } from '@withwiz/toolkit/react/hooks/useDataTable';
-
-function UserTable() {
-  const {
-    data, loading, total,
-    filters, sort, pagination, selectedIds,
-    dataActions, filterActions, sortActions, paginationActions, selectionActions,
-  } = useDataTable<User>({
-    initialPagination: { page: 1, pageSize: 20 },
-    debounceMs: 300,
-    onDataChange: async ({ filters, sort, pagination }) => {
-      const result = await fetchUsers({ filters, sort, pagination });
-      dataActions.setData(result.users);
-      dataActions.setTotal(result.total);
-    },
-  });
-
-  return (
-    <>
-      <input onChange={(e) => filterActions.setSearch(e.target.value)} />
-      <table>...</table>
-      <Pagination
-        page={pagination.page}
-        total={total}
-        onPageChange={paginationActions.setPage}
-      />
-    </>
-  );
-}
-```
-
-### useExitIntent
-
-```typescript
-import { useExitIntent } from '@withwiz/toolkit/react/hooks/useExitIntent';
-
-function PopupBanner() {
-  useExitIntent({
-    onExitIntent: () => showBanner(),
-    threshold: 20,   // 마우스가 화면 상단 20px 이내
-    cooldown: 60000,  // 60초 쿨다운
-  });
-}
-```
-
-### useTimezone
-
-```typescript
-import { useTimezone } from '@withwiz/toolkit/react/hooks/useTimezone';
-
-function TimeDisplay() {
-  const { timezone, offset, formatDate } = useTimezone();
-  // timezone: 'Asia/Seoul', offset: '+09:00'
-
-  return <span>{formatDate(new Date())}</span>;
-}
-```
+사용법은 `@withwiz/ui` README 를 참조하세요.
 
 ---
 
 ## 14. Components (UI 컴포넌트)
 
-### DataTable
+> **0.8 에서 `@withwiz/ui` 로 이동.** `DataTable` 등 UI 컴포넌트는 toolkit 에서
+> 제거되어 독립 패키지 [`@withwiz/ui`](https://github.com/greeun) 로 옮겨졌습니다.
 
 ```typescript
-import {
-  DataTable,
-  DataTableSearch,
-  DataTableFilters,
-  DataTableBulkActions,
-  DataTableBody,
-  DataTablePagination,
-} from '@withwiz/toolkit/react/components/ui/data-table';
-
-<DataTable
-  columns={[
-    { key: 'email', label: '이메일', sortable: true },
-    { key: 'name', label: '이름', filterable: true },
-    { key: 'createdAt', label: '가입일', sortable: true },
-  ]}
-  data={users}
-  loading={loading}
-  pagination={{ page: 1, pageSize: 20, total: 100 }}
-  onPageChange={setPage}
-  onSort={setSort}
-/>
+// 구 (≤0.7)
+import { DataTable } from '@withwiz/toolkit/react/components/ui/data-table';
+// 신 (0.8+)
+import { DataTable } from '@withwiz/ui/react/components/ui/data-table';
 ```
 
-조합형으로도 사용 가능합니다:
-
-```typescript
-<div>
-  <DataTableSearch onSearch={filterActions.setSearch} />
-  <DataTableFilters filters={filterConfig} onFilter={filterActions.setFilter} />
-  <DataTableBulkActions
-    selectedIds={selectedIds}
-    actions={[
-      { id: 'delete', label: '삭제', action: handleBulkDelete },
-      { id: 'export', label: '내보내기', action: handleExport },
-    ]}
-  />
-  <DataTableBody columns={columns} data={data} />
-  <DataTablePagination page={page} total={total} onPageChange={setPage} />
-</div>
-```
+사용법은 `@withwiz/ui` README 를 참조하세요.
 
 ---
 
@@ -1446,7 +1351,8 @@ PASSWORD_RESET.TOKEN_EXPIRES_HOURS           // 1
 | System | `@withwiz/toolkit/core/system` |
 | Utils | `@withwiz/toolkit/core/utils` |
 | Validators | `@withwiz/toolkit/core/validators` |
-| Hooks | `@withwiz/toolkit/react/hooks/useDebounce` 등 개별 |
-| Components | `@withwiz/toolkit/react/components/ui/data-table` |
+| ErrorBoundary | `@withwiz/toolkit/next/error` |
+| Hooks | → `@withwiz/ui/react/hooks/*` (0.8 에서 이동) |
+| Components | → `@withwiz/ui/react/components/ui/*` (0.8 에서 이동) |
 | Types | `@withwiz/toolkit/core/types/api` 등 개별 |
 | Constants | `@withwiz/toolkit/core/constants/error-codes` 등 개별 |
