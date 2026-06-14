@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Language**: TypeScript 5 with strict mode
 - **Runtime**: Node.js >= 18 with ESM-only output
-- **Peer Dependencies**: Next.js >= 15, React >= 18
+- **Peer Dependencies**: Next.js >= 15, React >= 18 (React is a `next`-tier peer — `next/error/ErrorBoundary` is a React component; the React UI tier itself moved to `@withwiz/ui` in 0.8)
 - **Distributed**: Published to npm registry
 
 ## Build System & Architecture
@@ -33,10 +33,11 @@ The project uses a two-stage build:
 
 The package uses conditional exports in `package.json` (the source of truth).
 Since 0.7, every subpath is namespaced under a framework tier
-(`core` / `next` / `react` / `prisma`). See `docs/FRAMEWORK_TIERS.md` for the
+(`core` / `next` / `prisma` since 0.8 — the `react` tier was extracted to
+`@withwiz/ui`). See `docs/FRAMEWORK_TIERS.md` for the
 tier breakdown and `docs/MODULE_STRUCTURE.md` for the full export map.
 
-**Tier rule**: `core` imports no framework; `next`/`react`/`prisma` may import
+**Tier rule**: `core` imports no framework; `next`/`prisma` may import
 `core` only, never each other. `initialize.ts` is the composition root exception.
 
 **Pattern**: Public APIs are exported through `index.ts` files; internal helpers live in `core/` subdirectories of each module.
@@ -219,10 +220,9 @@ Before committing, ensure:
 
 ### Dependencies
 
-- **Peer Dependencies** (must be installed by consumers):
-  - `next >= 15`
-  - `react >= 18`
-  - `react-dom >= 18`
+- **Peer Dependencies** (must be installed by consumers; all `optional` via `peerDependenciesMeta`):
+  - `next >= 15` (`next` tier)
+  - `react >= 18` / `react-dom >= 18` (`next` tier — `next/error/ErrorBoundary` is a React component)
 
 - **Core Dependencies**: pinned in `package.json`:
   - `jose` (JWT), `bcryptjs` (password hashing), `zod` (validation)
