@@ -19,3 +19,4 @@ docs/modules/
 docs/superpowers/
 logs/
 .harness-audit/
+.axt-profile*

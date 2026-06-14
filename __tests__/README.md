@@ -1,23 +1,23 @@
-# @withwiz 테스트
+# @withwiz Tests
 
-`packages/@withwiz/toolkit` 모듈의 독립적인 테스트 스위트입니다.
+A standalone test suite for the `packages/@withwiz/toolkit` module.
 
-## 개요
+## Overview
 
-이 테스트 스위트는 consumer app 프로젝트와 **완전히 독립적**으로 실행됩니다.
-`packages/@withwiz/toolkit`는 프로젝트 독립적인 범용 유틸리티이므로, 다른 프로젝트에서도 재사용 가능합니다.
+This test suite runs **completely independently** of the consumer app project.
+Since `packages/@withwiz/toolkit` is a project-independent, general-purpose utility, it can be reused across other projects as well.
 
-## 테스트 완료 현황
+## Test Completion Status
 
-### ✅ 완료된 테스트 (2024-02-01)
+### ✅ Completed Tests (2024-02-01)
 
-| 모듈                     | 테스트 파일                    | 테스트 케이스 수 | 커버리지 |
+| Module                   | Test File                      | Test Cases | Coverage |
 | ------------------------ | ------------------------------ | ---------------- | -------- |
 | **IP Utils**             | `ip-utils.test.ts`             | 50+              | ~100%    |
 | **Sanitizer**            | `sanitizer.test.ts`            | 40+              | ~100%    |
 | **Short Code Generator** | `short-code-generator.test.ts` | 35+              | ~100%    |
 | **Password**             | `password.test.ts`             | 45+              | ~95%     |
-| **기타 Utils**           | `utils.test.ts`                | 30+              | ~90%     |
+| **Other Utils**          | `utils.test.ts`                | 30+              | ~90%     |
 | **Validators**           | `validators.test.ts`           | 20+              | ~95%     |
 | **Type Guards**          | `type-guards.test.ts`          | 15+              | ~95%     |
 | **CSV Export**           | `csv-export.test.ts`           | 10+              | ~90%     |
@@ -27,82 +27,82 @@
 | **Validation Constants** | `validation-constants.test.ts` | 5+               | ~100%    |
 | **Cache Integration**    | `cache.integration.test.ts`    | 20+              | ~90%     |
 
-**총 테스트 케이스**: 310+ 개
+**Total test cases**: 310+
 
-### ⏳ 예정된 테스트
+### ⏳ Planned Tests
 
-- **OAuth**: Google/GitHub OAuth 흐름
+- **OAuth**: Google/GitHub OAuth flows
 - **Cache Managers**: InMemory, Hybrid, Noop
-- **Geolocation**: Provider 인터페이스, Batch Processor
-- **Logger**: 로그 레벨, PII 마스킹
-- **System**: CPU/Memory/Disk 메트릭
+- **Geolocation**: Provider interface, Batch Processor
+- **Logger**: Log levels, PII masking
+- **System**: CPU/Memory/Disk metrics
 - **Hooks**: useDebounce, useTimezone, useExitIntent, useDataTable
 - **Error Recovery**: Circuit Breaker, Retry Logic
 
-## 빠른 시작
+## Quick Start
 
-### npm 스크립트로 실행
+### Run via npm scripts
 
-프로젝트 루트에서 실행:
+Run from the project root:
 
 ```bash
-# 🎯 전체 테스트 실행 (unit + integration + category tests)
+# 🎯 Run all tests (unit + integration + category tests)
 npm test
 
-# 👀 Watch 모드 (파일 변경 시 자동 재실행)
+# 👀 Watch mode (auto re-run on file changes)
 npm run test:watch
 
-# 📊 Coverage 리포트 (v8 coverage)
+# 📊 Coverage report (v8 coverage)
 npm run test:coverage
 
-# 📦 Unit 테스트만 (약 265개)
+# 📦 Unit tests only (~265)
 npm test -- __tests__/unit/
 
-# 🔗 특정 카테고리 테스트만
+# 🔗 Specific category tests only
 npm test -- __tests__/security/
 npm test -- __tests__/performance/
 npm test -- __tests__/accessibility/
 ```
 
-### Vitest 직접 실행
+### Run Vitest directly
 
 ```bash
-# 프로젝트 루트에서
+# From the project root
 npm test
 
-# Watch 모드
+# Watch mode
 npm run test:watch
 
-# 커버리지 리포트
+# Coverage report
 npm run test:coverage
 ```
 
-### 특정 파일만 테스트
+### Test a specific file only
 
 ```bash
 npm test -- security/auth/auth-jwt.test.ts
 npm test -- performance/cache/cache-advanced.test.ts
 ```
 
-## 테스트 구조
+## Test Structure
 
-### 타입별 조직 (Test Type)
+### Organization by Type (Test Type)
 
-**Unit Tests**: 개별 함수/클래스의 동작을 검증
-**Integration Tests**: 여러 모듈 간 상호작용을 검증
+**Unit Tests**: Verify the behavior of individual functions/classes
+**Integration Tests**: Verify interactions between multiple modules
 
-### 카테고리별 조직 (Test Category)
+### Organization by Category (Test Category)
 
-**Security**: 인증, 검증, 보안 테스트
-**Performance**: 캐시, 성능 최적화 테스트
-**Accessibility**: 접근성, UI 컴포넌트 테스트
-**Unit**: 나머지 일반 단위 테스트
+**Security**: Authentication, validation, and security tests
+**Performance**: Cache and performance optimization tests
+**Accessibility**: Accessibility and UI component tests
+**Unit**: Remaining general unit tests
 
-### 폴더 구조
+### Folder Structure
 
 ```
 __tests__/
-├── unit/                      # Unit tests (모듈별)
+├── unit/                      # Unit tests (by module)
 │   ├── error/
 │   ├── geolocation/
 │   ├── logger/
@@ -122,16 +122,16 @@ __tests__/
     └── hooks/
 ```
 
-## 핵심 테스트 시나리오
+## Core Test Scenarios
 
 ### 1. IP Utils
 
-- **IPv4/IPv6 검증**: 유효한/무효한 IP 주소 판별
-- **Private IP 판별**: 10.x.x.x, 192.168.x.x, 127.x.x.x 등
-- **클라이언트 IP 추출**: Cloudflare 헤더, X-Forwarded-For 파싱
-- **IP 정규화**: IPv6 소문자 변환
+- **IPv4/IPv6 validation**: Distinguishing valid/invalid IP addresses
+- **Private IP detection**: 10.x.x.x, 192.168.x.x, 127.x.x.x, etc.
+- **Client IP extraction**: Parsing Cloudflare headers, X-Forwarded-For
+- **IP normalization**: IPv6 lowercase conversion
 
-**예시**:
+**Example**:
 
 ```typescript
 expect(isValidIP("192.168.1.1")).toBe(true);
@@ -141,12 +141,12 @@ expect(extractClientIp(headers)).toBe("1.2.3.4");
 
 ### 2. Sanitizer
 
-- **XSS 방어**: `<script>`, `<img onerror>` 제거
-- **이벤트 핸들러**: onclick, onerror 제거
-- **URL Sanitization**: javascript:, data:text/html 차단
-- **CSV Injection**: =, +, -, @ 접두사 처리
+- **XSS defense**: Removing `<script>`, `<img onerror>`
+- **Event handlers**: Removing onclick, onerror
+- **URL Sanitization**: Blocking javascript:, data:text/html
+- **CSV Injection**: Handling =, +, -, @ prefixes
 
-**예시**:
+**Example**:
 
 ```typescript
 expect(sanitizeHtml("<script>alert(1)</script>Hello")).toBe("Hello");
@@ -155,13 +155,13 @@ expect(sanitizeUrl("javascript:alert(1)")).toBe("");
 
 ### 3. Short Code Generator
 
-- **길이 검증**: 기본 8자, 커스텀 길이
-- **문자 집합**: 알파벳 대소문자 + 숫자만
-- **고유성**: 1,000개 생성 시 99% 고유
-- **중복 검사**: checkDuplicate 콜백 지원
-- **성능**: 10,000개 < 1초
+- **Length validation**: Default 8 characters, custom length
+- **Character set**: Uppercase/lowercase letters + digits only
+- **Uniqueness**: 99% unique when generating 1,000 codes
+- **Duplicate check**: checkDuplicate callback support
+- **Performance**: 10,000 codes < 1 second
 
-**예시**:
+**Example**:
 
 ```typescript
 const code = generateShortCode(8);
@@ -175,13 +175,13 @@ const unique = await generateUniqueShortCode({
 
 ### 4. Password Module
 
-- **비밀번호 검증**: 길이, 대소문자, 숫자, 특수문자
-- **강도 계산**: VERY_WEAK ~ VERY_STRONG (점수 0-100)
-- **해싱**: bcrypt, salt 랜덤성
-- **검증**: 타이밍 공격 방어
-- **Zod 스키마**: 동적 스키마 생성
+- **Password validation**: Length, upper/lowercase, digits, special characters
+- **Strength calculation**: VERY_WEAK ~ VERY_STRONG (score 0-100)
+- **Hashing**: bcrypt, salt randomness
+- **Verification**: Timing attack defense
+- **Zod schema**: Dynamic schema generation
 
-**예시**:
+**Example**:
 
 ```typescript
 const validator = new PasswordValidator({
@@ -200,9 +200,9 @@ const isValid = await hasher.verify("myPassword", hash);
 expect(isValid).toBe(true);
 ```
 
-## 테스트 작성 가이드라인
+## Test Writing Guidelines
 
-### 1. Arrange-Act-Assert 패턴
+### 1. Arrange-Act-Assert Pattern
 
 ```typescript
 it("should validate IP address", () => {
@@ -217,12 +217,12 @@ it("should validate IP address", () => {
 });
 ```
 
-### 2. Edge Cases 필수
+### 2. Edge Cases Required
 
-- 빈 값: `null`, `undefined`, `''`, `[]`
-- 경계 값: `0`, `-1`, `MAX_INT`
-- 잘못된 타입: `123`, `{}`, `[]`
-- 비정상 입력: `'not-an-ip'`, `'<script>'`
+- Empty values: `null`, `undefined`, `''`, `[]`
+- Boundary values: `0`, `-1`, `MAX_INT`
+- Wrong types: `123`, `{}`, `[]`
+- Abnormal input: `'not-an-ip'`, `'<script>'`
 
 ```typescript
 it("should handle edge cases", () => {
@@ -232,7 +232,7 @@ it("should handle edge cases", () => {
 });
 ```
 
-### 3. 성능 테스트
+### 3. Performance Tests
 
 ```typescript
 it("should generate 10,000 codes in less than 1 second", () => {
@@ -247,7 +247,7 @@ it("should generate 10,000 codes in less than 1 second", () => {
 });
 ```
 
-### 4. 보안 테스트
+### 4. Security Tests
 
 ```typescript
 it("should prevent XSS", () => {
@@ -265,15 +265,15 @@ it("should prevent XSS", () => {
 });
 ```
 
-## 모킹 전략
+## Mocking Strategy
 
-### 외부 의존성만 모킹
+### Mock external dependencies only
 
 ```typescript
-// ❌ 나쁨: 내부 함수 모킹
+// ❌ Bad: mocking internal functions
 jest.mock("@withwiz/utils/ip-utils");
 
-// ✅ 좋음: 외부 API 모킹
+// ✅ Good: mocking external APIs
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
@@ -282,7 +282,7 @@ global.fetch = jest.fn(() =>
 );
 ```
 
-### Mock 재사용
+### Mock Reuse
 
 ```typescript
 // __tests__/mocks/logger.ts
@@ -294,9 +294,9 @@ export const mockLogger = {
 };
 ```
 
-## CI/CD 통합
+## CI/CD Integration
 
-### GitHub Actions 예시
+### GitHub Actions Example
 
 ```yaml
 name: Test @withwiz
@@ -318,9 +318,9 @@ jobs:
           files: packages/@withwiz/toolkit/__tests__/coverage/lcov.info
 ```
 
-## 커버리지 임계값
+## Coverage Thresholds
 
-`jest.config.js`에 정의된 커버리지 임계값:
+Coverage thresholds defined in `jest.config.js`:
 
 ```javascript
 coverageThreshold: {
@@ -333,42 +333,42 @@ coverageThreshold: {
 }
 ```
 
-## 문서
+## Documentation
 
-- **[TEST_PLAN.md](docs/TEST_PLAN.md)**: 전체 테스트 계획 및 전략
-- **[TEST_SCENARIOS.md](docs/TEST_SCENARIOS.md)**: 모듈별 상세 시나리오
+- **[TEST_PLAN.md](docs/TEST_PLAN.md)**: Overall test plan and strategy
+- **[TEST_SCENARIOS.md](docs/TEST_SCENARIOS.md)**: Detailed scenarios per module
 
-## 문제 해결
+## Troubleshooting
 
-### 테스트 실패 시
+### When a test fails
 
-1. **단일 테스트 실행**:
+1. **Run a single test**:
 
    ```bash
    npx jest -t "should validate IP address"
    ```
 
-2. **디버그 모드**:
+2. **Debug mode**:
 
    ```bash
    node --inspect-brk node_modules/.bin/jest --runInBand
    ```
 
-3. **로그 출력**:
+3. **Log output**:
    ```typescript
    console.log("Debug:", result);
    ```
 
-### 성능 저하 시
+### When performance degrades
 
-- `--maxWorkers=2`: 병렬 실행 워커 제한
-- `--no-cache`: 캐시 비활성화
+- `--maxWorkers=2`: Limit parallel execution workers
+- `--no-cache`: Disable cache
 
-### 타임아웃 에러
+### Timeout errors
 
 ```typescript
 it("should handle async operation", async () => {
-  // 기본 5초 → 10초로 연장
+  // Default 5s → extend to 10s
   jest.setTimeout(10000);
 
   const result = await longRunningOperation();
@@ -376,32 +376,32 @@ it("should handle async operation", async () => {
 }, 10000);
 ```
 
-## 기여 가이드
+## Contribution Guide
 
-새로운 테스트 추가 시:
+When adding a new test:
 
-1. **파일 위치**: `__tests__/unit/{모듈명}.test.ts`
-2. **describe 블록**: 모듈명으로 그룹화
-3. **it 블록**: `should` 패턴 사용
-4. **Edge cases**: 필수 포함
-5. **성능**: 필요 시 성능 테스트 추가
+1. **File location**: `__tests__/unit/{moduleName}.test.ts`
+2. **describe block**: Group by module name
+3. **it block**: Use the `should` pattern
+4. **Edge cases**: Required
+5. **Performance**: Add performance tests when needed
 
-## 빠른 참조 테이블
+## Quick Reference Table
 
-### npm 스크립트 요약
+### npm Scripts Summary
 
-| 명령어                             | 설명                        | 테스트 수 |
+| Command                            | Description                 | Test Count |
 | ---------------------------------- | --------------------------- | --------- |
-| `npm run test:withwiz:unit`        | Unit 테스트만 실행          | ~265개    |
-| `npm run test:withwiz:integration` | Integration 테스트만 실행   | ~6개      |
-| `npm run test:withwiz:all`         | 전체 테스트 실행            | ~271개    |
-| `npm run test:withwiz:watch`       | Watch 모드 (파일 변경 감지) | Unit만    |
-| `npm run test:withwiz:coverage`    | Coverage 리포트 포함        | 전체      |
-| `npm run test:withwiz:verbose`     | 상세 출력 모드              | Unit만    |
+| `npm run test:withwiz:unit`        | Run unit tests only         | ~265      |
+| `npm run test:withwiz:integration` | Run integration tests only  | ~6        |
+| `npm run test:withwiz:all`         | Run all tests               | ~271      |
+| `npm run test:withwiz:watch`       | Watch mode (detect changes) | Unit only |
+| `npm run test:withwiz:coverage`    | Include coverage report     | All       |
+| `npm run test:withwiz:verbose`     | Verbose output mode         | Unit only |
 
-### 주요 모듈 테스트 현황
+### Test Status of Key Modules
 
-| 모듈           | 파일명                   | 테스트 수 | 상태 |
+| Module         | File Name                | Test Count | Status |
 | -------------- | ------------------------ | --------- | ---- |
 | Utils          | `utils.test.ts`          | 131       | ✅   |
 | Hooks          | `hooks.test.tsx`         | 38        | ✅   |
@@ -410,12 +410,12 @@ it("should handle async operation", async () => {
 | Error Recovery | `error-recovery.test.ts` | 21        | ✅   |
 | Logger         | `logger.test.ts`         | 15        | ✅   |
 
-### 커버리지 목표
+### Coverage Goals
 
-- **Unit Tests**: 90%+ 코드 커버리지
-- **Integration Tests**: 핵심 통합 시나리오 100% 커버
-- **Edge Cases**: 모든 경계 조건 테스트
+- **Unit Tests**: 90%+ code coverage
+- **Integration Tests**: 100% coverage of core integration scenarios
+- **Edge Cases**: Test all boundary conditions
 
-## 라이선스
+## License
 
-이 테스트 스위트는 프로젝트 라이선스를 따릅니다.
+This test suite follows the project license.
