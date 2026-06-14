@@ -30,27 +30,24 @@ src/
 │   ├── error/         #   error-handler (NextResponse), LocaleDetector, ErrorBoundary
 │   └── utils/         #   api-helpers, cors, csv-export, error-processor
 │
-├── react/             # React dependent
-│   ├── components/ui/ #   Button, Table, Badge, DataTable, etc.
-│   ├── hooks/         #   useDataTable, useDebounce, useExitIntent, useTimezone
-│   ├── error/         #   error-display (sonner toast)
-│   └── utils/         #   client-utils, qr-code (browser context)
-│
 └── prisma/            # Prisma dependent
     └── auth-adapter/  #   Prisma auth repository adapter
 ```
+
+> The `react` tier (UI components, hooks, `error-display`, browser-context utils)
+> was extracted to [`@withwiz/ui`](https://github.com/greeun) in 0.8 and removed
+> from this package. Migrate `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 
 ## Package Exports
 
 The full export map is defined in `package.json` `exports` (the source of
 truth). Every subpath is namespaced under a framework tier (`core` / `next` /
-`react` / `prisma`) — see [`FRAMEWORK_TIERS.md`](./FRAMEWORK_TIERS.md) for the
+`prisma`) — see [`FRAMEWORK_TIERS.md`](./FRAMEWORK_TIERS.md) for the
 tier breakdown.
 
 - `./initialize` → `dist/initialize.js` (composition root, all tiers)
 - `./core/*` — zero framework dependency (pure TS)
 - `./next/*` — Next.js dependent
-- `./react/*` — React dependent
 - `./prisma/*` — Prisma adapter
 
 **Pattern**: public APIs are exported through `index.ts` files; internal helpers
