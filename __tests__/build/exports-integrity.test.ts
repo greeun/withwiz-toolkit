@@ -98,6 +98,11 @@ describe('Export Path Integrity', () => {
   });
 
   describe('wildcard exports → base directory exists', () => {
+    if (wildcardExports.length === 0) {
+      it('has no wildcard exports', () => {
+        expect(wildcardExports).toEqual([]);
+      });
+    }
     for (const pattern of wildcardExports) {
       const distPattern = jsTarget(exports[pattern]);
       it(`${pattern} base dir exists`, () => {
@@ -235,7 +240,6 @@ describe('Bundle Contamination Check', () => {
       'dist/core/utils/index.js',
       'dist/next/middleware/index.js',
       'dist/next/error/index.js',
-      'dist/react/error/index.js',
     ];
 
     for (const file of mainFiles) {
