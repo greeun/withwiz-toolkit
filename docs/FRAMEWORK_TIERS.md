@@ -1,15 +1,18 @@
-# Framework Tiers (0.7+)
+# Framework Tiers (0.8+)
 
-`@withwiz/toolkit` 0.7부터 모든 모듈은 프레임워크 의존성에 따라 4개 티어로
+`@withwiz/toolkit` 0.7부터 모든 모듈은 프레임워크 의존성에 따라 티어로
 분리됩니다. 소비자는 실제로 쓰는 티어만 임포트하므로 불필요한 프레임워크
 의존성을 끌어오지 않습니다.
+
+> **0.8 변경**: `react` 티어(UI 컴포넌트·hooks·`error-display`·브라우저 utils)는
+> 독립 패키지 [`@withwiz/ui`](https://github.com/greeun) 로 추출되어 toolkit 에서
+> 제거되었습니다. 현재 toolkit 은 `core` / `next` / `prisma` 3개 티어입니다.
 
 ## 티어 모델
 
 ```
 core/   ← 의존성 없음, pure TypeScript
   ↑
-  ├─ react    React / React-DOM 의존
   ├─ next     Next.js 의존 (core 사용 가능)
   └─ prisma   Prisma 어댑터 (core 사용 가능)
 ```
@@ -17,8 +20,8 @@ core/   ← 의존성 없음, pure TypeScript
 ## 규칙
 
 - `core`는 **어떤 프레임워크도 import 하지 않는다** (zero framework dependency).
-- `react` / `next` / `prisma`는 **`core`만 import 할 수 있다**.
-- `react` / `next` / `prisma`는 **서로 import 할 수 없다**.
+- `next` / `prisma`는 **`core`만 import 할 수 있다**.
+- `next` / `prisma`는 **서로 import 할 수 없다**.
 - 예외: `@withwiz/toolkit/initialize`는 composition root로, 모든 티어를 조립한다.
 
 ## 티어별 모듈

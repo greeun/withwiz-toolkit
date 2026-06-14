@@ -1,17 +1,17 @@
 # Shared Utilities
 
-This folder contains utility functions that can be reused across other projects.
+이 폴더는 다른 프로젝트에서 재사용할 수 있는 유틸리티 함수들을 포함합니다.
 
-## 📁 Structure
+## 📁 구조
 
-- `client/` - Client-only utilities
-- `common/` - Utilities shared between server and client
-- `server/` - Server-only utilities
+- `client/` - 클라이언트 전용 유틸리티
+- `common/` - 서버와 클라이언트 공통 유틸리티
+- `server/` - 서버 전용 유틸리티
 
-## 🖥️ Client Utilities
+## 🖥️ 클라이언트 유틸리티
 
-### cn (class merge)
-A function that merges Tailwind CSS classes.
+### cn (클래스 병합)
+Tailwind CSS 클래스를 병합하는 함수입니다.
 
 ```tsx
 import { cn } from '@/shared/utils/client/client-utils';
@@ -20,7 +20,7 @@ import { cn } from '@/shared/utils/client/client-utils';
 ```
 
 ### copyToClipboard
-A function that copies text to the clipboard.
+클립보드에 텍스트를 복사하는 함수입니다.
 
 ```tsx
 import { copyToClipboard } from '@/shared/utils/client/client-utils';
@@ -31,10 +31,10 @@ if (success) {
 }
 ```
 
-## 🌐 Common Utilities
+## 🌐 공통 유틸리티
 
-### Timezone Utilities
-Timezone-related functions for global services.
+### 타임존 유틸리티
+글로벌 서비스를 위한 타임존 관련 함수들입니다.
 
 ```tsx
 import { 
@@ -47,26 +47,26 @@ import {
   localToUTC
 } from '@/shared/utils/common/timezone';
 
-// User-friendly date format
+// 사용자 친화적인 날짜 포맷
 const formatted = formatUserFriendlyDate(new Date());
 
-// Date/time format for tables (two-line display)
+// 테이블용 날짜/시간 포맷 (2줄 표시)
 const { date, time } = formatTableDateTime(new Date());
 
-// Relative time display
+// 상대적 시간 표시
 const relative = getRelativeTime(new Date()); // "2시간 전"
 
-// Get the user's timezone
+// 사용자 타임존 가져오기
 const timezone = getUserTimezone();
 
-// UTC time manipulation
+// UTC 시간 조작
 const utc = getCurrentUTC();
 const local = utcToLocal(utc);
 const backToUtc = localToUTC(local);
 ```
 
-### GeoIP Utilities
-Functions that retrieve geolocation information for an IP address.
+### GeoIP 유틸리티
+IP 주소의 지리적 위치 정보를 가져오는 함수들입니다.
 
 ```tsx
 import { 
@@ -77,7 +77,7 @@ import {
   type IGeoIPResponse
 } from '@/shared/geolocation/geoip';
 
-// Single IP lookup
+// 단일 IP 조회
 const geoData: IGeoIPResponse = await getGeoLocation('192.168.1.1');
 
 if (geoData.success && geoData.data) {
@@ -85,16 +85,16 @@ if (geoData.success && geoData.data) {
   console.log(geoData.data.city); // "Seoul"
 }
 
-// Batch IP lookup (performance optimized)
+// 배치 IP 조회 (성능 최적화)
 const ipAddresses = ['192.168.1.1', '8.8.8.8', '1.1.1.1'];
 const geoMap = await getGeoLocationBatch(ipAddresses);
 
-// Private IP check
+// Private IP 체크
 const isPrivate = isPrivateIP('192.168.1.1'); // true
 ```
 
-### Logging Utilities
-Functions for structured logging.
+### 로깅 유틸리티
+구조화된 로깅을 위한 함수들입니다.
 
 ```tsx
 import { 
@@ -106,17 +106,17 @@ import {
   logApiResponse
 } from '@/shared/logger/logger';
 
-// Basic logging
+// 기본 로깅
 logInfo('정보 메시지');
 logError('에러 메시지', { error: new Error('test'), userId: '123' });
 
-// API request/response logging
+// API 요청/응답 로깅
 logApiRequest(request, { userId: '123', action: 'create_link' });
 logApiResponse(response, { duration: 150, statusCode: 200 });
 ```
 
-### Cache Utilities
-Functions for managing the Redis cache.
+### 캐시 유틸리티
+Redis 캐시 관리를 위한 함수들입니다.
 
 ```tsx
 import { 
@@ -127,50 +127,50 @@ import {
   checkRedisConnection
 } from '@/shared/cache/cache';
 
-// Get/set cache
+// 캐시 조회/설정
 const cached = await getCache('user:123');
-await setCache('user:123', userData, 3600); // 1 hour TTL
+await setCache('user:123', userData, 3600); // 1시간 TTL
 
-// Cache wrapper function (runs the function and stores the result if not cached)
+// 캐시 래퍼 함수 (캐시가 없으면 함수 실행 후 캐시 저장)
 const result = await withCache('expensive-operation', async () => {
   return await expensiveOperation();
 }, 3600);
 
-// Delete cache
+// 캐시 삭제
 await deleteCache('user:123');
 
-// Redis connection check
+// Redis 연결 체크
 const status = await checkRedisConnection();
 if (status.success) {
   console.log('Redis 연결 성공');
 }
 ```
 
-## 📋 Checklist
+## 📋 체크리스트
 
-### Client Utilities
-- [ ] Install clsx, tailwind-merge
-- [ ] Verify browser compatibility
+### 클라이언트 유틸리티
+- [ ] clsx, tailwind-merge 설치
+- [ ] 브라우저 호환성 확인
 
-### Common Utilities
-- [ ] Install timezone library (if needed)
-- [ ] Configure GeoIP API key
-- [ ] Configure Redis connection
-- [ ] Configure logging
+### 공통 유틸리티
+- [ ] 타임존 라이브러리 설치 (필요시)
+- [ ] GeoIP API 키 설정
+- [ ] Redis 연결 설정
+- [ ] 로깅 설정
 
-### Environment Variables
+### 환경 변수
 ```env
-# GeoIP (optional)
+# GeoIP (선택사항)
 IPGEO_API_KEY=your_api_key_here
 
-# Redis (when using cache)
+# Redis (캐시 사용시)
 REDIS_REST_URL=your_redis_url
 REDIS_REST_TOKEN=your_redis_token
 ```
 
-## 🔧 Configuration
+## 🔧 설정
 
-### TypeScript Configuration
+### TypeScript 설정
 ```json
 {
   "compilerOptions": {
@@ -181,7 +181,7 @@ REDIS_REST_TOKEN=your_redis_token
 }
 ```
 
-### Next.js Configuration
+### Next.js 설정
 ```javascript
 // next.config.js
 module.exports = {

@@ -7,13 +7,12 @@ Shared utility library for [withwiz](https://github.com/greeun) projects — 인
 ## Features
 
 - **Composition root** — 단일 `initialize()`로 모든 티어 설정을 한 번에 조립
-- **Framework tiers** — `core` / `next` / `react` / `prisma` 4개 티어로 의존성 분리 (0.7+)
+- **Framework tiers** — `core` / `next` / `prisma` 3개 티어로 의존성 분리 (0.8+)
 - **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF 바인딩, Prisma adapter
 - **Cache** — Redis / in-memory / hybrid / noop 백엔드, factory, invalidation, defaults
 - **Constants** — Error codes, messages, pagination, security constants
-- **Error** — Typed `AppError`, framework-aware error handler / display (core · next · react)
+- **Error** — Typed `AppError`, framework-aware error handler (core · next)
 - **Geolocation** — GeoIP lookup, batch processing, provider factory
-- **Hooks** — `useDataTable`, `useDebounce`, `useExitIntent`, `useTimezone`
 - **Logger** — Winston-based structured logger with daily rotation
 - **Middleware** — Auth, rate-limiting, CORS, security middleware wrappers (Next.js)
 - **Storage** — Cloudflare R2 (AWS S3-compatible) storage
@@ -38,14 +37,16 @@ yarn add @withwiz/toolkit
 
 ```bash
 # next 티어를 쓸 때
-npm install next
-
-# react 티어를 쓸 때
-npm install react react-dom
+# (React 도 필요 — next/error/ErrorBoundary 가 React 컴포넌트)
+npm install next react react-dom
 
 # core 티어만 쓰는 백엔드 / CLI
 # (별도 peer 설치 불필요)
 ```
+
+> **React 컴포넌트 분리 (0.8).** `react` 티어(UI 컴포넌트, hooks, `error-display`)는
+> 독립 패키지 [`@withwiz/ui`](https://github.com/greeun) 로 추출되었습니다.
+> `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*` 로 import 경로를 치환하세요.
 
 ## Quick start
 
@@ -87,13 +88,6 @@ const geo = await getGeoLocation('8.8.8.8')
 // { country: 'US', city: 'Mountain View', ... }
 ```
 
-```tsx
-// Hooks (React)
-import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce'
-
-const debouncedQuery = useDebounce(query, 300)
-```
-
 ```ts
 // Utils
 import { sanitizeInput } from '@withwiz/toolkit/core/utils/sanitizer'
@@ -132,9 +126,10 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 ## Module reference
 
-0.7부터 모든 subpath는 프레임워크 의존성에 따라 4개 티어로 분리됩니다.
+0.7부터 모든 subpath는 프레임워크 의존성에 따라 티어로 분리됩니다
+(0.8부터 `core` / `next` / `prisma` 3개 — `react` 티어는 `@withwiz/ui` 로 이동).
 자세한 티어 모델·규칙·마이그레이션 매핑은 [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md)
-및 [`CHANGELOG.md`](CHANGELOG.md) 의 0.7.0 항목을 참조하세요.
+및 [`CHANGELOG.md`](CHANGELOG.md) 의 0.7.0 / 0.8.0 항목을 참조하세요.
 
 ### Composition root
 
@@ -179,14 +174,11 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
 
-### `react` — React 의존
+### `react` — `@withwiz/ui` 로 이동 (0.8)
 
-| Subpath | Description |
-|---|---|
-| `/react/components/ui/*` | Button, Table, Badge, DataTable, ... |
-| `/react/hooks/{useDataTable,useDebounce,useExitIntent,useTimezone}` | React hooks |
-| `/react/error` | `error-display` (sonner toast) |
-| `/react/utils/{client-utils,qr-code}` | Browser-context utilities |
+React 티어(UI 컴포넌트, hooks, `error-display`, 브라우저 컨텍스트 utils)는 독립 패키지
+[`@withwiz/ui`](https://github.com/greeun) 로 추출되었습니다.
+import 경로 치환: `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 
 ### `prisma` — Prisma 의존
 
@@ -205,8 +197,7 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 사용하는 티어가 요구하는 peer만 설치하세요:
 
 - `core` 티어만 쓰는 백엔드 / CLI: peer 불필요
-- `next` 티어: Next.js >= 15
-- `react` 티어: React >= 18, React-DOM >= 18
+- `next` 티어: Next.js >= 15, 그리고 React >= 18 / React-DOM >= 18 (`next/error/ErrorBoundary` 가 React 컴포넌트)
 - `prisma` 티어: Prisma 호환 클라이언트 (덕 타이핑)
 - Prisma 어댑터의 `EmailTokenRepository` 등 일부 모듈: `date-fns >= 3` (optional)
 - 이메일 전송: `nodemailer >= 6` (optional)

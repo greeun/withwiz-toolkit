@@ -7,13 +7,12 @@ Shared utility library for [withwiz](https://github.com/greeun) projects — a c
 ## Features
 
 - **Composition root** — assemble every tier's configuration at once with a single `initialize()`
-- **Framework tiers** — dependencies split across four tiers: `core` / `next` / `react` / `prisma` (0.7+)
+- **Framework tiers** — dependencies split across three tiers: `core` / `next` / `prisma` (0.8+)
 - **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF binding, Prisma adapter
 - **Cache** — Redis / in-memory / hybrid / noop backends, factory, invalidation, defaults
 - **Constants** — Error codes, messages, pagination, security constants
-- **Error** — Typed `AppError`, framework-aware error handler / display (core · next · react)
+- **Error** — Typed `AppError`, framework-aware error handler (core · next)
 - **Geolocation** — GeoIP lookup, batch processing, provider factory
-- **Hooks** — `useDataTable`, `useDebounce`, `useExitIntent`, `useTimezone`
 - **Logger** — Winston-based structured logger with daily rotation
 - **Middleware** — Auth, rate-limiting, CORS, security middleware wrappers (Next.js)
 - **Storage** — Cloudflare R2 (AWS S3-compatible) storage
@@ -38,14 +37,16 @@ yarn add @withwiz/toolkit
 
 ```bash
 # When using the next tier
-npm install next
-
-# When using the react tier
-npm install react react-dom
+# (React is also needed — next/error/ErrorBoundary is a React component)
+npm install next react react-dom
 
 # Backend / CLI using only the core tier
 # (no extra peers required)
 ```
+
+> **React components moved out (0.8).** The `react` tier (UI components, hooks,
+> `error-display`) was extracted to [`@withwiz/ui`](https://github.com/greeun).
+> Migrate by replacing `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 
 ## Quick start
 
@@ -87,13 +88,6 @@ const geo = await getGeoLocation('8.8.8.8')
 // { country: 'US', city: 'Mountain View', ... }
 ```
 
-```tsx
-// Hooks (React)
-import { useDebounce } from '@withwiz/toolkit/react/hooks/useDebounce'
-
-const debouncedQuery = useDebounce(query, 300)
-```
-
 ```ts
 // Utils
 import { sanitizeInput } from '@withwiz/toolkit/core/utils/sanitizer'
@@ -132,9 +126,10 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 ## Module reference
 
-Since 0.7, every subpath is split into four tiers based on its framework dependencies.
+Since 0.7, every subpath is split into tiers based on its framework dependencies
+(`core` / `next` / `prisma` since 0.8 — the `react` tier moved to `@withwiz/ui`).
 For the detailed tier model, rules, and migration mapping, see [`docs/FRAMEWORK_TIERS.md`](docs/FRAMEWORK_TIERS.md)
-and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
+and the 0.7.0 / 0.8.0 entries in [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Composition root
 
@@ -179,14 +174,11 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
 
-### `react` — depends on React
+### `react` — moved to `@withwiz/ui` (0.8)
 
-| Subpath | Description |
-|---|---|
-| `/react/components/ui/*` | Button, Table, Badge, DataTable, ... |
-| `/react/hooks/{useDataTable,useDebounce,useExitIntent,useTimezone}` | React hooks |
-| `/react/error` | `error-display` (sonner toast) |
-| `/react/utils/{client-utils,qr-code}` | Browser-context utilities |
+The React tier (UI components, hooks, `error-display`, browser-context utils) was
+extracted to the standalone [`@withwiz/ui`](https://github.com/greeun) package.
+Migrate imports: `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 
 ### `prisma` — depends on Prisma
 
@@ -205,8 +197,7 @@ and the 0.7.0 entry in [`CHANGELOG.md`](CHANGELOG.md).
 Install only the peers required by the tiers you use:
 
 - Backend / CLI using only the `core` tier: no peers required
-- `next` tier: Next.js >= 15
-- `react` tier: React >= 18, React-DOM >= 18
+- `next` tier: Next.js >= 15, plus React >= 18 / React-DOM >= 18 (`next/error/ErrorBoundary` is a React component)
 - `prisma` tier: a Prisma-compatible client (duck-typed)
 - Some modules such as the Prisma adapter's `EmailTokenRepository`: `date-fns >= 3` (optional)
 - Email delivery: `nodemailer >= 6` (optional)

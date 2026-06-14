@@ -1,73 +1,73 @@
 # Auth Module (core tier)
 
-**Package**: `@withwiz/toolkit` v0.7+
-**Tier**: `core` — framework-independent (pure TypeScript)
-**Status**: ✅ Production ready
+**패키지**: `@withwiz/toolkit` v0.7+
+**티어**: `core` — 프레임워크 독립 (pure TypeScript)
+**상태**: ✅ 프로덕션 사용 가능
 
-## Overview
+## 개요
 
-`@withwiz/toolkit/core/auth` is a **framework-independent** authentication module.
-It contains only pure logic such as JWT, password hashing, OAuth, and email tokens,
-and can be used in any Node.js runtime — Next.js / Express / Fastify / NestJS, and more.
+`@withwiz/toolkit/core/auth`는 **프레임워크에 독립적인** 인증 모듈입니다.
+JWT·비밀번호 해싱·OAuth·이메일 토큰 등 순수 로직만 포함하며,
+Next.js / Express / Fastify / NestJS 등 어떤 Node.js 런타임에서도 사용할 수 있습니다.
 
-### Its Place in the 0.7 4-Tier Model
+### 0.7 4-Tier 모델에서의 위치
 
 ```
-core/   ← here (auth: jwt · password · oauth · services · types · email — zero framework dep)
+core/   ← 여기 (auth: jwt · password · oauth · services · types · email — zero framework dep)
   ↑
-  ├─ next/    Next.js request handlers  → @withwiz/toolkit/next/auth-handlers
-  │           handler types             → @withwiz/toolkit/next/auth-types
-  └─ prisma/  Prisma adapter            → @withwiz/toolkit/prisma/auth-adapter
+  ├─ next/    Next.js 요청 핸들러  → @withwiz/toolkit/next/auth-handlers
+  │           핸들러 타입          → @withwiz/toolkit/next/auth-types
+  └─ prisma/  Prisma 어댑터        → @withwiz/toolkit/prisma/auth-adapter
 ```
 
-The framework-coupled parts (request/response handlers, DB adapters) are intentionally
-split into separate tiers, so importing only `core/auth` brings zero framework dependencies.
+프레임워크 결합 부분(요청/응답 핸들러, DB 어댑터)은 의도적으로 별도 티어로
+분리되어 있으므로, `core/auth`만 임포트하면 프레임워크 의존성이 전혀 없습니다.
 
-## Features
+## 특징
 
-✅ **Zero Framework Dependency (`core/auth` only)**: `core/auth` has no Next.js or Prisma
-   dependencies. Next handlers and the Prisma adapter are split into the `next`/`prisma` tiers respectively
-✅ **Pure TypeScript**: Contains only pure TypeScript logic
-✅ **Minimal Dependencies**: Uses only minimal libraries such as `jose`, `bcryptjs`, `zod`
-✅ **Fully Typed**: Complete TypeScript type support
-✅ **Portable**: Can be copied into other projects and used immediately
+✅ **Zero Framework Dependency (`core/auth` 한정)**: `core/auth`는 Next.js·Prisma
+   의존성이 없음. Next 핸들러·Prisma 어댑터는 각각 `next`/`prisma` 티어로 분리
+✅ **Pure TypeScript**: 순수 TypeScript 로직만 포함
+✅ **Minimal Dependencies**: `jose`, `bcryptjs`, `zod` 등 최소한의 라이브러리만 사용
+✅ **Fully Typed**: 완벽한 TypeScript 타입 지원
+✅ **Portable**: 다른 프로젝트에 복사하여 즉시 사용 가능
 
-## Directory Structure
+## 디렉토리 구조
 
 ```
 src/shared/auth/
 ├── core/
 │   ├── jwt/
-│   │   ├── index.ts              # JWTManager (server)
-│   │   ├── client.ts             # JWTClientManager (browser)
-│   │   └── types.ts              # JWT type definitions
+│   │   ├── index.ts              # JWTManager (서버용)
+│   │   ├── client.ts             # JWTClientManager (브라우저용)
+│   │   └── types.ts              # JWT 타입 정의
 │   ├── password/                 # (TODO)
 │   ├── oauth/                    # (TODO)
 │   └── email/                    # (TODO)
 ├── errors/
-│   └── index.ts                  # AuthError, JWTError, etc.
+│   └── index.ts                  # AuthError, JWTError 등
 ├── types/
-│   └── index.ts                  # Common type definitions
+│   └── index.ts                  # 공통 타입 정의
 ├── utils/                        # (TODO)
-├── index.ts                      # Main export
-└── README.md                     # This document
+├── index.ts                      # 메인 export
+└── README.md                     # 이 문서
 ```
 
-## Installation & Usage
+## 설치 및 사용
 
-### Required Dependencies
+### 필수 의존성
 
 ```bash
 npm install jose zod
 ```
 
-### Basic Usage
+### 기본 사용법
 
 ```typescript
 import { JWTManager } from '@/shared/auth/core/jwt';
 import type { JWTConfig, Logger } from '@/shared/auth/types';
 
-// Logger implementation (customize to your framework)
+// Logger 구현 (프레임워크에 맞게 커스터마이즈)
 const logger: Logger = {
   debug: (msg, meta) => console.debug(msg, meta),
   info: (msg, meta) => console.info(msg, meta),
@@ -83,10 +83,10 @@ const jwtConfig: JWTConfig = {
   algorithm: 'HS256',
 };
 
-// Create a JWTManager instance
+// JWTManager 인스턴스 생성
 const jwt = new JWTManager(jwtConfig, logger);
 
-// Create a token pair
+// 토큰 쌍 생성
 const tokens = await jwt.createTokenPair({
   id: 'user-123',
   email: 'user@example.com',
@@ -97,12 +97,12 @@ const tokens = await jwt.createTokenPair({
 console.log(tokens.accessToken);
 console.log(tokens.refreshToken);
 
-// Verify a token
+// 토큰 검증
 const payload = await jwt.verifyAccessToken(tokens.accessToken);
 console.log(payload.userId, payload.email);
 ```
 
-### Usage on the Client (Browser)
+### 클라이언트 (브라우저)에서 사용
 
 ```typescript
 'use client';
@@ -114,21 +114,21 @@ import {
   clearStoredTokens,
 } from '@/shared/auth/core/jwt/client';
 
-// Store tokens after login
-storeTokens(accessToken, refreshToken, 7 * 24 * 60 * 60); // 7 days
+// 로그인 후 토큰 저장
+storeTokens(accessToken, refreshToken, 7 * 24 * 60 * 60); // 7일
 
-// Get stored tokens
+// 저장된 토큰 가져오기
 const tokens = getStoredTokens();
 if (tokens) {
   const user = extractUserFromToken(tokens.accessToken);
   console.log(user?.userId, user?.email);
 }
 
-// Logout
+// 로그아웃
 clearStoredTokens();
 ```
 
-## Framework Integration Guides
+## 프레임워크별 통합 가이드
 
 ### Next.js (App Router)
 
@@ -146,7 +146,7 @@ const tokens = await jwt.createTokenPair(user);
 import { JWTManager } from '@/shared/auth/core/jwt';
 import type { JWTConfig, Logger } from '@/shared/auth/types';
 
-// Integrate with a Winston or Pino logger
+// Winston 또는 Pino logger와 통합
 const logger: Logger = {
   debug: (msg, meta) => winston.debug(msg, meta),
   info: (msg, meta) => winston.info(msg, meta),
@@ -156,7 +156,7 @@ const logger: Logger = {
 
 const jwt = new JWTManager(jwtConfig, logger);
 
-// Express middleware
+// Express 미들웨어
 app.use(async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = jwt.extractTokenFromHeader(authHeader);
@@ -182,7 +182,7 @@ import { JWTManager } from '@/shared/auth/core/jwt';
 
 const jwt = new JWTManager(jwtConfig, logger);
 
-// Fastify plugin
+// Fastify 플러그인
 fastify.decorateRequest('user', null);
 
 fastify.addHook('onRequest', async (request, reply) => {
@@ -202,39 +202,39 @@ fastify.addHook('onRequest', async (request, reply) => {
 });
 ```
 
-## API Reference
+## API 레퍼런스
 
 ### JWTManager
 
 #### `createAccessToken(payload)`
-Create an access token
+Access 토큰 생성
 
 ```typescript
 const token = await jwt.createAccessToken({
   id: 'user-123',
   userId: 'user-123',
   email: 'user@example.com',
-  role: 'USER', // role is a plain string — define your own role vocabulary in your app
+  role: 'USER', // role은 평범한 string — 역할 어휘는 앱에서 직접 정의한다
   emailVerified: new Date(),
 });
 ```
 
 #### `createRefreshToken(userId)`
-Create a refresh token
+Refresh 토큰 생성
 
 ```typescript
 const refreshToken = await jwt.createRefreshToken('user-123');
 ```
 
 #### `createTokenPair(user)`
-Create an access + refresh token pair
+Access + Refresh 토큰 쌍 생성
 
 ```typescript
 const { accessToken, refreshToken } = await jwt.createTokenPair(user);
 ```
 
 #### `verifyAccessToken(token)`
-Verify an access token
+Access 토큰 검증
 
 ```typescript
 const payload = await jwt.verifyAccessToken(token);
@@ -242,14 +242,14 @@ console.log(payload.userId, payload.email);
 ```
 
 #### `verifyRefreshToken(token)`
-Verify a refresh token
+Refresh 토큰 검증
 
 ```typescript
 const { userId } = await jwt.verifyRefreshToken(refreshToken);
 ```
 
 #### `extractTokenFromHeader(authHeader)`
-Extract the token from the Authorization header
+Authorization 헤더에서 토큰 추출
 
 ```typescript
 const token = jwt.extractTokenFromHeader('Bearer abc123...');
@@ -259,41 +259,41 @@ const token = jwt.extractTokenFromHeader('Bearer abc123...');
 ### JWTClientManager (Browser)
 
 #### `storeTokens(accessToken, refreshToken, expiresIn)`
-Store tokens in LocalStorage
+LocalStorage에 토큰 저장
 
 ```typescript
 storeTokens(accessToken, refreshToken, 7 * 24 * 60 * 60);
 ```
 
 #### `getStoredTokens()`
-Get stored tokens
+저장된 토큰 가져오기
 
 ```typescript
 const tokens = getStoredTokens();
 ```
 
 #### `clearStoredTokens()`
-Delete tokens
+토큰 삭제
 
 ```typescript
 clearStoredTokens();
 ```
 
 #### `extractUserFromToken(token)`
-Extract user information from a token
+토큰에서 사용자 정보 추출
 
 ```typescript
 const user = extractUserFromToken(accessToken);
 console.log(user?.userId, user?.email, user?.role);
 ```
 
-## Type Definitions
+## 타입 정의
 
 ### JWTConfig
 
 ```typescript
 interface JWTConfig {
-  secret: string; // at least 32 characters
+  secret: string; // 최소 32자
   accessTokenExpiry: string; // '7d', '1h', etc.
   refreshTokenExpiry: string; // '30d', '7d', etc.
   algorithm: 'HS256' | 'HS384' | 'HS512';
@@ -307,7 +307,7 @@ interface JWTPayload {
   id: string;
   userId: string;
   email: string;
-  role: string; // consumer-owned vocabulary — the toolkit never ships a fixed role enum
+  role: string; // 소비자 소유 어휘 — toolkit은 고정 role enum을 제공하지 않는다
   emailVerified?: Date | null;
   tokenType?: 'access' | 'refresh';
   iat?: number;
@@ -315,10 +315,10 @@ interface JWTPayload {
 }
 ```
 
-> **Roles are consumer-owned.** `role` is a plain `string`. The toolkit does **not**
-> define a `UserRole` enum — your app owns its own role vocabulary
-> (`USER` / `EDITOR` / `ADMIN`, `PATIENT` / `DOCTOR`, …). Declare it in your app and
-> pass the values through; the toolkit only carries and matches the string.
+> **역할(role)은 소비자 소유.** `role`은 평범한 `string`이다. toolkit은 `UserRole`
+> enum을 **정의하지 않는다** — 앱이 자체 역할 어휘를 소유한다
+> (`USER` / `EDITOR` / `ADMIN`, `PATIENT` / `DOCTOR` 등). 앱에서 선언하고 값을
+> 넘기면 toolkit은 그 문자열을 운반·매칭만 한다.
 
 ### Logger
 
@@ -331,7 +331,7 @@ interface Logger {
 }
 ```
 
-## Error Handling
+## 에러 처리
 
 ### JWTError
 
@@ -348,7 +348,7 @@ try {
 }
 ```
 
-### Error Codes
+### 에러 코드
 
 ```typescript
 import { AUTH_ERROR_CODES } from '@/shared/auth/errors';
@@ -357,32 +357,32 @@ AUTH_ERROR_CODES.TOKEN_EXPIRED
 AUTH_ERROR_CODES.TOKEN_INVALID
 AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED
 AUTH_ERROR_CODES.INVALID_PAYLOAD
-// ... etc.
+// ... 등
 ```
 
-## TODO (Planned Additions)
+## TODO (향후 추가 예정)
 
-- [ ] Password module (`core/password/`)
-- [ ] OAuth module (`core/oauth/`)
-- [ ] Email token generation (`core/email/`)
-- [ ] Utility functions (`utils/`)
+- [ ] Password 모듈 (`core/password/`)
+- [ ] OAuth 모듈 (`core/oauth/`)
+- [ ] Email Token 생성 (`core/email/`)
+- [ ] 유틸리티 함수들 (`utils/`)
 
-## Migration
+## 마이그레이션
 
-Code that used the existing `@/lib/@auth/core/jwt` continues to work without changes.
+기존 `@/lib/@auth/core/jwt`를 사용하던 코드는 변경 없이 계속 작동합니다.
 
 ```typescript
 import { JWTManager } from '@withwiz/toolkit/core/auth';
 ```
 
-## License
+## 라이센스
 
-Written for internal project use. Copying and modification are freely permitted.
+프로젝트 내부용으로 작성되었습니다. 복사 및 수정은 자유롭게 가능합니다.
 
-## Contact
+## 문의
 
-- **Issues**: GitHub Issues
-- **Docs**: [AUTH_3TIER_REFACTORING_PLAN.md](../../../docs/AUTH_3TIER_REFACTORING_PLAN.md)
+- **이슈**: GitHub Issues
+- **문서**: [AUTH_3TIER_REFACTORING_PLAN.md](../../../docs/AUTH_3TIER_REFACTORING_PLAN.md)
 
 ---
 
