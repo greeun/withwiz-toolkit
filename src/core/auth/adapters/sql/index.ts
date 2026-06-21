@@ -1,3 +1,4 @@
+export { SqlUserRepository } from './user-repository';
 export { getDialect, ParamBuilder, columnList } from './dialect';
 export type { DialectStrategy } from './dialect';
 export { resolveConfig } from './types';
