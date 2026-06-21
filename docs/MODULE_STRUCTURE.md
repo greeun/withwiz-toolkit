@@ -47,6 +47,7 @@ tier breakdown.
 
 - `./initialize` → `dist/initialize.js` (composition root, all tiers)
 - `./core/*` — zero framework dependency (pure TS)
+  - `@withwiz/toolkit/core/auth/adapters/sql` — raw SQL(pg/mysql2) 어댑터, Repository 3종
 - `./next/*` — Next.js dependent
 - `./prisma/*` — Prisma adapter
 
