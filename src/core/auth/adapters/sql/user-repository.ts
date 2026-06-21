@@ -69,6 +69,7 @@ export class SqlUserRepository implements UserRepository {
       [c.role, data.role ?? null],
       [c.emailVerified, data.emailVerified ?? null],
       [c.image, data.image ?? null],
+      [c.isActive, true],
       [c.createdAt, now],
       [c.updatedAt, now],
     ];
@@ -82,7 +83,7 @@ export class SqlUserRepository implements UserRepository {
       id,
       email: data.email,
       name: data.name ?? null,
-      role: data.role,
+      role: data.role ?? undefined,
       emailVerified: data.emailVerified ?? null,
       image: data.image ?? null,
       isActive: true,

@@ -84,8 +84,8 @@ describe('SqlUserRepository (postgres)', () => {
       const result = await repo.create({ email: 'new@example.com', password: 'h', name: 'New', role: 'USER' });
 
       expect(exec.query).toHaveBeenCalledWith(
-        'INSERT INTO "users" ("id", "email", "name", "password", "role", "email_verified", "image", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-        ['generated-id', 'new@example.com', 'New', 'h', 'USER', null, null, now, now],
+        'INSERT INTO "users" ("id", "email", "name", "password", "role", "email_verified", "image", "is_active", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+        ['generated-id', 'new@example.com', 'New', 'h', 'USER', null, null, true, now, now],
       );
       expect(result).toMatchObject({
         id: 'generated-id',
