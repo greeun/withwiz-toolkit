@@ -20,3 +20,7 @@ docs/superpowers/
 logs/
 .harness-audit/
 .axt-profile*
+
+# superpowers (auto-installed; do not track)
+.superpowers/
+docs/superpowers/
