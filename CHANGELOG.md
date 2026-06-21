@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0]
+
+### Added
+- Raw SQL auth adapter (`@withwiz/toolkit/core/auth/adapters/sql`): built-in
+  `SqlUserRepository`, `SqlOAuthAccountRepository`, `SqlEmailTokenRepository`
+  implementing the `core/auth` repository interfaces over raw SQL. Supports
+  PostgreSQL and MySQL via a driver-independent `QueryExecutor`, with
+  overridable table/column names (snake_case defaults). The auth module can now
+  run with Prisma or raw SQL.
+
 ## [0.8.0] - 2026-06-15
 
 ### Breaking — React layer removed (extracted to `@withwiz/ui`)
