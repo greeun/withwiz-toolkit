@@ -22,8 +22,10 @@ import { DEFAULT_INMEMORY_CONFIG } from '@withwiz/toolkit/core/cache/cache-types
  * RedisCacheManager와 동일한 인터페이스를 구현하여 호환성 보장
  */
 export class InMemoryCacheManager implements IUnifiedCacheManager {
+  // LRU 순서는 Map의 삽입 순서로 표현한다(별도 배열 불필요).
+  // - 접근(hit) 시 delete+set 재삽입으로 항목을 끝(MRU)으로 이동 → O(1)
+  // - eviction 시 keys().next()로 첫 항목(LRU)을 제거 → O(1)
   private cache: Map<string, CacheEntry<unknown>>;
-  private accessOrder: string[] = [];  // LRU 추적용
   private config: InMemoryCacheConfig;
   private currentMemoryBytes: number = 0;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -70,7 +72,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
     if (!entry) {
       this.metrics.misses++;
       this.updateHitRate();
-      logger.debug(`[Cache:M] miss: ${fullKey}`);
       return null;
     }
 
@@ -80,21 +81,18 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
       this.metrics.misses++;
       this.metrics.expirations++;
       this.updateHitRate();
-      logger.debug(`[Cache:M] miss (expired): ${fullKey}`);
       return null;
     }
 
-    // LRU: 접근 순서 업데이트
+    // LRU: 접근한 항목을 Map의 끝(MRU)으로 이동 (delete+set 재삽입, O(1))
     entry.accessedAt = Date.now();
-    this.updateAccessOrder(fullKey);
+    if (this.config.evictionPolicy === 'lru') {
+      this.cache.delete(fullKey);
+      this.cache.set(fullKey, entry);
+    }
 
     this.metrics.hits++;
     this.updateHitRate();
-
-    logger.debug(`[Cache:M] hit: ${fullKey}`, {
-      key: fullKey,
-      prefix: this.prefix,
-    });
 
     return entry.value as T;
   }
@@ -112,14 +110,14 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
       this.evict();
     }
 
-    // 기존 항목이 있으면 메모리 사용량 조정
+    // 기존 항목이 있으면 메모리 사용량 조정 + 순서 리셋(재삽입으로 끝으로 이동)
     const existingEntry = this.cache.get(fullKey);
     if (existingEntry) {
       this.currentMemoryBytes -= existingEntry.size;
-      this.removeFromAccessOrder(fullKey);
+      this.cache.delete(fullKey);
     }
 
-    // 새 항목 저장
+    // 새 항목 저장 (Map 끝 = MRU)
     const now = Date.now();
     const entry: CacheEntry<T> = {
       value,
@@ -130,7 +128,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
     };
 
     this.cache.set(fullKey, entry);
-    this.accessOrder.push(fullKey);
     this.currentMemoryBytes += size;
   }
 
@@ -140,11 +137,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
   async delete(key: string): Promise<void> {
     const fullKey = this.getFullKey(key);
     this.deleteEntry(fullKey);
-
-    logger.debug('[InMemoryCache] Cache deleted', {
-      key: fullKey,
-      prefix: this.prefix,
-    });
   }
 
   /**
@@ -228,7 +220,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
    */
   clear(): void {
     this.cache.clear();
-    this.accessOrder = [];
     this.currentMemoryBytes = 0;
 
     logger.info('[InMemoryCache] Cache cleared', { prefix: this.prefix });
@@ -329,7 +320,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
     if (entry) {
       this.currentMemoryBytes -= entry.size;
       this.cache.delete(fullKey);
-      this.removeFromAccessOrder(fullKey);
     }
   }
 
@@ -398,7 +388,8 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
    * LRU 교체: 가장 오래 접근되지 않은 항목 제거
    */
   private evictLRU(): void {
-    const lruKey = this.accessOrder.shift();
+    // Map 삽입 순서의 첫 항목 = 가장 오래 접근되지 않은 항목(LRU). O(1)
+    const lruKey = this.cache.keys().next().value as string | undefined;
     if (lruKey) {
       this.deleteEntry(lruKey);
 
@@ -454,27 +445,6 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
         evictedKey: nearestExpiryKey,
         prefix: this.prefix,
       });
-    }
-  }
-
-  /**
-   * 접근 순서 업데이트 (LRU용)
-   */
-  private updateAccessOrder(key: string): void {
-    const index = this.accessOrder.indexOf(key);
-    if (index !== -1) {
-      this.accessOrder.splice(index, 1);
-    }
-    this.accessOrder.push(key);
-  }
-
-  /**
-   * 접근 순서에서 제거
-   */
-  private removeFromAccessOrder(key: string): void {
-    const index = this.accessOrder.indexOf(key);
-    if (index !== -1) {
-      this.accessOrder.splice(index, 1);
     }
   }
 
