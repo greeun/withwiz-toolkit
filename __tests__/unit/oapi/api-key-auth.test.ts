@@ -42,4 +42,10 @@ describe('createApiKeyAuth', () => {
     const r = await createApiKeyAuth(o)(req({ 'x-api-key': 'sk_live_x' }));
     expect('response' in r && r.response.status).toBe(403);
   });
+  it('validateApiKey throw → 500 (예외 안전 degrade)', async () => {
+    const o = opts();
+    o.service.validateApiKey = vi.fn(async () => { throw new Error('db down'); });
+    const r = await createApiKeyAuth(o)(req({ 'x-api-key': 'sk_live_x' }));
+    expect('response' in r && r.response.status).toBe(500);
+  });
 });

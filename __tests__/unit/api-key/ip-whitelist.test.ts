@@ -21,4 +21,13 @@ describe('ip-whitelist', () => {
   it('잘못된 CIDR → false (throw 안 함)', () => {
     expect(isIpInCidr('1.2.3.4', 'garbage')).toBe(false);
   });
+  it('마스크 범위 0~32 밖 → false (fail-open 방지)', () => {
+    expect(isIpInCidr('192.99.99.99', '192.168.1.0/40')).toBe(false); // /40이 /8로 오작동 방지
+    expect(isIpInCidr('1.2.3.4', '1.2.3.0/33')).toBe(false);
+    expect(isIpInCidr('1.2.3.4', '1.2.3.0/-1')).toBe(false);
+  });
+  it('옥텟 0~255 밖 → false', () => {
+    expect(isIpInCidr('999.1.1.1', '231.1.1.1/32')).toBe(false); // 999&0xFF=231 매칭 방지
+    expect(isIpInCidr('1.2.3.4', '999.1.1.0/24')).toBe(false);
+  });
 });

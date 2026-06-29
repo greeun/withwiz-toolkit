@@ -1,6 +1,6 @@
 import type {
   ApiKeyEnvironment, ApiKeyPermission, ApiKeyFilters, ApiKeyValidationResult,
-} from './types';
+} from '@withwiz/toolkit/core/api-key/types';
 
 export interface ApiKeyRecord {
   id: string; userId: string; name: string; description: string | null;
@@ -65,7 +65,8 @@ export interface UsageLogInput {
 }
 export interface IUsageTracker {
   canMakeApiCall(userId: string, plan: string): Promise<UsageCheckResult>;
-  logUsage(data: UsageLogInput): Promise<void>;
+  /** 코어/미들웨어는 호출하지 않음 — 소비자 라우트 계층 선택 사용(optional). */
+  logUsage?(data: UsageLogInput): Promise<void>;
 }
 
 export interface ApiKeyServiceEnv {

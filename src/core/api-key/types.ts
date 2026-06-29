@@ -34,14 +34,23 @@ export interface ApiKeyInfo {
   expiresAt?: Date; createdAt: Date; updatedAt: Date;
 }
 
+/** validate FSM이 반환하는 검증 실패 코드. */
+export type ApiKeyValidationError =
+  | 'INVALID_API_KEY'
+  | 'INACTIVE_API_KEY'
+  | 'EXPIRED_API_KEY'
+  | 'INACTIVE_USER'
+  | 'PLAN_RESTRICTED';
+
 export interface ApiKeyValidationResult {
   valid: boolean;
-  error?: string;
+  error?: ApiKeyValidationError;
   message?: string;
   apiKey?: {
     id: string; userId: string; permissions: ApiKeyPermission[];
     rateLimit: number; endpointLimits?: Record<string, number>;
     ipWhitelist: string[]; environment: ApiKeyEnvironment;
+    expiresAt?: Date | null; // 캐시 hit 시 자연 만료 재검사용
   };
   user?: { id: string; email: string; plan: string }; // plan: string (enum 비의존)
 }

@@ -1,13 +1,13 @@
-import { generateRawKey, hashKey, keyPreview } from './key-generator';
-import { validateApiKeyRecord } from './validate';
+import { generateRawKey, hashKey, keyPreview } from '@withwiz/toolkit/core/api-key/key-generator';
+import { validateApiKeyRecord } from '@withwiz/toolkit/core/api-key/validate';
 import type {
   IApiKeyRepository, IApiKeyCacheStore, IPlanConfigProvider, IUsageTracker, ApiKeyServiceEnv,
   ApiKeyRecord,
-} from './ports';
+} from '@withwiz/toolkit/core/api-key/ports';
 import type {
   CreateApiKeyOptions, ApiKeyResult, ApiKeyValidationResult,
   ApiKeyInfo, ApiKeyFilters, ApiKeyListResponse, UpdateApiKeyData,
-} from './types';
+} from '@withwiz/toolkit/core/api-key/types';
 
 export interface ApiKeyServiceDeps {
   repo: IApiKeyRepository;
@@ -44,6 +44,10 @@ export class ApiKeyService {
 
   async generateApiKey(userId: string, options: CreateApiKeyOptions, plan: string): Promise<ApiKeyResult> {
     const { repo, planConfig, env } = this.deps;
+    // FREEMIUM 등 제한 플랜은 한도(0) 의존이 아닌 명시 차단 — generate/validate 단일원천
+    if (env.restrictedPlans.includes(plan)) {
+      throw new Error(`API key is not available for the ${plan} plan. Please upgrade.`);
+    }
     const maxKeys = await planConfig.getApiKeyLimit(plan);
     const active = await repo.countActive(userId);
     if (active >= maxKeys) throw new Error(`API key limit reached. Max ${maxKeys} keys.`);
@@ -73,7 +77,12 @@ export class ApiKeyService {
     const keyHash = hashKey(rawKey);
 
     const cached = await cache.getValidation(keyHash);
-    if (cached) return cached;
+    if (cached) {
+      // 캐시 hit이라도 자연 만료(expiresAt)는 재검사 — stale-auth 방지
+      const exp = cached.apiKey?.expiresAt;
+      if (!(exp && new Date(exp) < new Date())) return cached;
+      await cache.invalidate(keyHash); // 만료 → 캐시 제거 후 재조회
+    }
 
     const record = await repo.findByHash(keyHash);
     const result = validateApiKeyRecord(record, { freemiumPlans: env.restrictedPlans });
@@ -81,15 +90,16 @@ export class ApiKeyService {
     return result;
   }
 
-  async getApiKey(id: string): Promise<ApiKeyInfo> {
-    const rec = await this.deps.repo.findById(id);
-    if (!rec) throw new Error('API key not found');
+  async getApiKey(id: string, userId: string, isAdmin = false): Promise<ApiKeyInfo> {
+    const rec = await this.requireOwned(id, userId, isAdmin);
     return this.toInfo(rec);
   }
 
-  async getApiKeys(filters: ApiKeyFilters): Promise<ApiKeyListResponse> {
-    const page = filters.page ?? 1, pageSize = filters.pageSize ?? 10;
-    const { items, total } = await this.deps.repo.findMany({ ...filters, page, pageSize });
+  async getApiKeys(filters: ApiKeyFilters, requesterId: string, isAdmin = false): Promise<ApiKeyListResponse> {
+    // 非admin은 본인 userId로 스코프 강제 (IDOR 방지)
+    const scoped = isAdmin ? filters : { ...filters, userId: requesterId };
+    const page = scoped.page ?? 1, pageSize = scoped.pageSize ?? 10;
+    const { items, total } = await this.deps.repo.findMany({ ...scoped, page, pageSize });
     return { keys: items.map((r) => this.toInfo(r)), total, page, pageSize, hasMore: total > page * pageSize };
   }
 
