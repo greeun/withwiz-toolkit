@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { setTokenCookies, clearTokenCookies } from "@withwiz/toolkit/core/auth/jwt";
+import { initializeAuth, resetAuth } from "@withwiz/toolkit/core/auth/config";
 import type { TokenPair } from "@withwiz/toolkit/core/auth/types";
 
 const mockTokenPair: TokenPair = {
@@ -16,6 +17,8 @@ const mockTokenPair: TokenPair = {
 };
 
 describe("SC-UNIT-COOKIE-001: setTokenCookies", () => {
+  beforeEach(() => resetAuth()); // 전역 싱글톤 격리 — 각 TC 미초기화 시작
+
   test("TC-UNIT-COOKIE-001: access_token 쿠키 설정", () => {
     const response = NextResponse.json({ success: true });
     const result = setTokenCookies(response, mockTokenPair);
@@ -86,20 +89,32 @@ describe("SC-UNIT-COOKIE-001: setTokenCookies", () => {
     expect(refreshCookie).toContain("Path=/api/auth");
   });
 
-  test("TC-UNIT-COOKIE-007: access_token Max-Age=900, refresh_token Max-Age=604800", () => {
+  test("TC-UNIT-COOKIE-007: maxAge는 auth config 만료값에서 도출 (JWT 만료와 단일 소스)", () => {
+    // 미초기화 → JWT_DEFAULTS (access 7d=604800, refresh 30d=2592000)
+    const res1 = NextResponse.json({ success: true });
+    setTokenCookies(res1, mockTokenPair);
+    const h1 = res1.headers.getSetCookie();
+    expect(h1.find((c) => c.startsWith("access_token="))).toContain("Max-Age=604800");
+    expect(h1.find((c) => c.startsWith("refresh_token="))).toContain("Max-Age=2592000");
+
+    // config 초기화 → accessTokenExpiry/refreshTokenExpiry(=JWT 만료)에서 도출 → 동일 값
+    initializeAuth({ jwtSecret: "test-secret", accessTokenExpiry: "15m", refreshTokenExpiry: "7d" });
+    const res2 = NextResponse.json({ success: true });
+    setTokenCookies(res2, mockTokenPair);
+    const h2 = res2.headers.getSetCookie();
+    expect(h2.find((c) => c.startsWith("access_token="))).toContain("Max-Age=900");
+    expect(h2.find((c) => c.startsWith("refresh_token="))).toContain("Max-Age=604800");
+  });
+
+  test("TC-UNIT-COOKIE-007b: accessTokenMaxAge/refreshTokenMaxAge override가 config보다 우선", () => {
     const response = NextResponse.json({ success: true });
-    setTokenCookies(response, mockTokenPair);
-
-    const setCookieHeaders = response.headers.getSetCookie();
-    const accessCookie = setCookieHeaders.find((h) =>
-      h.startsWith("access_token="),
-    );
-    const refreshCookie = setCookieHeaders.find((h) =>
-      h.startsWith("refresh_token="),
-    );
-
-    expect(accessCookie).toContain("Max-Age=900");
-    expect(refreshCookie).toContain("Max-Age=604800");
+    setTokenCookies(response, mockTokenPair, {
+      accessTokenMaxAge: 1800,
+      refreshTokenMaxAge: 1209600,
+    });
+    const h = response.headers.getSetCookie();
+    expect(h.find((c) => c.startsWith("access_token="))).toContain("Max-Age=1800");
+    expect(h.find((c) => c.startsWith("refresh_token="))).toContain("Max-Age=1209600");
   });
 
   test("TC-UNIT-COOKIE-008: 테스트 환경에서 Secure 미포함 (NODE_ENV=test)", () => {
