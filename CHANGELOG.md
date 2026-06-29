@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0]
+
+### Added
+- `core/api-key`: framework- and DB-agnostic API key core. `ApiKeyService`
+  (generate / validate / CRUD / regenerate / track-usage) wired through
+  hexagonal ports (`IApiKeyRepository`, `IApiKeyCacheStore`,
+  `IPlanConfigProvider`, `IUsageTracker`), plus pure building blocks:
+  `key-generator` (`generateRawKey` / `hashKey` / `keyPreview`), `ip-whitelist`
+  (single-IP + CIDR matching), and a `validateApiKeyRecord` FSM. `plan` is a
+  plain `string` (no enum dependency); update / delete / regenerate all
+  invalidate the validation cache.
+- `next/oapi`: `createApiKeyAuth` (x-api-key auth middleware over the core
+  service, with IP whitelist + usage checks), `buildOpenApiSpec` (auto-injects
+  the `X-API-Key` securityScheme), and pure pagination / search / `requireParam`
+  helpers.
+
 ## [0.9.2]
 
 ### Chore
