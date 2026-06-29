@@ -1,5 +1,5 @@
-import type { ApiKeyWithUser } from './ports';
-import type { ApiKeyValidationResult } from './types';
+import type { ApiKeyWithUser } from '@withwiz/toolkit/core/api-key/ports';
+import type { ApiKeyValidationResult } from '@withwiz/toolkit/core/api-key/types';
 
 /**
  * API 키 레코드 검증 FSM(순수). 우선순위:
@@ -23,6 +23,7 @@ export function validateApiKeyRecord(
       id: record.id, userId: record.user.id, permissions: record.permissions,
       rateLimit: record.rateLimit, endpointLimits: record.endpointLimits ?? undefined,
       ipWhitelist: record.ipWhitelist, environment: record.environment,
+      expiresAt: record.expiresAt,
     },
     user: { id: record.user.id, email: record.user.email, plan: record.user.plan },
   };

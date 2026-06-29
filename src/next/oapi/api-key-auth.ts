@@ -21,25 +21,30 @@ const err = (code: number, status: number, message: string): { response: NextRes
  */
 export function createApiKeyAuth(options: ApiKeyAuthOptions) {
   return async (req: NextRequest): Promise<AuthResult> => {
-    const apiKey = req.headers.get('x-api-key');
-    if (!apiKey) return err(40101, 401, 'X-API-Key header is required');
-
-    const v = await options.service.validateApiKey(apiKey);
-    if (!v.valid || !v.apiKey || !v.user) return err(40101, 401, v.message || 'Invalid API key');
-
-    const ip = options.extractClientIp(req.headers);
-    if (!isIpAllowed(ip, v.apiKey.ipWhitelist ?? null)) return err(40301, 403, 'Access denied: IP not in whitelist');
-
     try {
-      const usage = await options.usage.canMakeApiCall(v.user.id, v.user.plan);
-      if (!usage.allowed) {
-        const t = usage.reason === 'DAILY_LIMIT' ? 'daily' : 'monthly';
-        return err(40301, 403, `API ${t} usage limit exceeded. Please upgrade your plan or wait until reset.`);
-      }
-    } catch { /* 사용량 확인 실패 → 가용성 우선 허용 */ }
+      const apiKey = req.headers.get('x-api-key');
+      if (!apiKey) return err(40101, 401, 'X-API-Key header is required');
 
-    options.service.trackUsage(v.apiKey.id, ip).catch(() => {});
-    const role = await options.resolveRole(v.user.id);
-    return { user: { id: v.user.id, email: v.user.email, role, plan: v.user.plan, apiKeyId: v.apiKey.id } };
+      const v = await options.service.validateApiKey(apiKey);
+      if (!v.valid || !v.apiKey || !v.user) return err(40101, 401, v.message || 'Invalid API key');
+
+      const ip = options.extractClientIp(req.headers);
+      if (!isIpAllowed(ip, v.apiKey.ipWhitelist ?? null)) return err(40301, 403, 'Access denied: IP not in whitelist');
+
+      try {
+        const usage = await options.usage.canMakeApiCall(v.user.id, v.user.plan);
+        if (!usage.allowed) {
+          const t = usage.reason === 'DAILY_LIMIT' ? 'daily' : 'monthly';
+          return err(40301, 403, `API ${t} usage limit exceeded. Please upgrade your plan or wait until reset.`);
+        }
+      } catch { /* 사용량 확인 실패 → 가용성 우선 허용 */ }
+
+      options.service.trackUsage(v.apiKey.id, ip).catch(() => {});
+      const role = await options.resolveRole(v.user.id);
+      return { user: { id: v.user.id, email: v.user.email, role, plan: v.user.plan, apiKeyId: v.apiKey.id } };
+    } catch {
+      // validateApiKey/resolveRole 등 예기치 못한 예외 → 안전한 500 degrade
+      return err(50001, 500, 'Internal authentication error');
+    }
   };
 }

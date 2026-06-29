@@ -104,3 +104,41 @@ describe('ApiKeyService.updateApiKey/deleteApiKey 캐시 무효화', () => {
     await expect(svc.trackUsage('k1', '1.2.3.4')).resolves.toBeUndefined();
   });
 });
+
+describe('ApiKeyService 보안 강화 (audit)', () => {
+  it('generateApiKey: restrictedPlans는 전용 메시지로 차단 (단일원천)', async () => {
+    const deps = makeDeps();
+    const svc = new ApiKeyService(deps);
+    await expect(svc.generateApiKey('u1', { name: 'k', permissions: ['read'], environment: 'production' }, 'FREEMIUM'))
+      .rejects.toThrow(/not available for the FREEMIUM/i);
+  });
+  it('validateApiKey: 캐시 hit이라도 만료된 키면 재조회 (stale-auth 방지)', async () => {
+    const deps = makeDeps();
+    const expiredCached = {
+      valid: true,
+      apiKey: { id: 'k1', userId: 'u1', permissions: ['read'], rateLimit: 100, ipWhitelist: [], environment: 'production', expiresAt: new Date('2000-01-01') },
+      user: { id: 'u1', email: 'a@b', plan: 'PRO' },
+    };
+    deps.cache.getValidation = vi.fn(async () => expiredCached as any);
+    deps.repo.findByHash = vi.fn(async () => null); // 재조회 → null → INVALID
+    const svc = new ApiKeyService(deps);
+    const res = await svc.validateApiKey('sk_test_x');
+    expect(deps.cache.invalidate).toHaveBeenCalled();
+    expect(deps.repo.findByHash).toHaveBeenCalled();
+    expect(res.valid).toBe(false);
+  });
+  it('getApiKey: 비소유자 + 非admin → throw (IDOR 방지)', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'OTHER', key: 'h' }));
+    const svc = new ApiKeyService(deps);
+    await expect(svc.getApiKey('k1', 'u1')).rejects.toThrow(/unauthorized/i);
+  });
+  it('getApiKeys: 非admin은 본인 userId로 스코프', async () => {
+    const deps = makeDeps();
+    const findMany = vi.fn(async () => ({ items: [], total: 0 }));
+    deps.repo.findMany = findMany;
+    const svc = new ApiKeyService(deps);
+    await svc.getApiKeys({ page: 1 }, 'u1', false);
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1' }));
+  });
+});
