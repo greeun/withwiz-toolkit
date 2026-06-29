@@ -214,7 +214,13 @@ export class HybridCacheManager implements IUnifiedCacheManager {
       promises.push(this.memoryCache.delete(key));
     }
 
-    await Promise.allSettled(promises);
+    // 단일 백엔드(가장 흔한 경로: redis 미가용 시 memory만)에서는
+    // allSettled 래핑 오버헤드를 피한다. redis는 위에서 .catch로 이미 보호됨.
+    if (promises.length === 1) {
+      await promises[0];
+    } else if (promises.length > 1) {
+      await Promise.allSettled(promises);
+    }
   }
 
   /**
