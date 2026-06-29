@@ -39,7 +39,7 @@ describe('ApiKeyService.generateApiKey', () => {
   it('raw key 반환 + repo.create 호출 + dev prefix', async () => {
     const deps = makeDeps();
     const svc = new ApiKeyService(deps);
-    const res = await svc.generateApiKey('u1', { name: 'k', permissions: ['read'], environment: 'development' });
+    const res = await svc.generateApiKey('u1', { name: 'k', permissions: ['read'], environment: 'development' }, 'PRO');
     expect(res.key.startsWith('sk_test_')).toBe(true);
     expect(deps.repo.create).toHaveBeenCalledOnce();
   });
@@ -48,7 +48,7 @@ describe('ApiKeyService.generateApiKey', () => {
     deps.planConfig.getApiKeyLimit = vi.fn(async () => 2);
     deps.repo.countActive = vi.fn(async () => 2);
     const svc = new ApiKeyService(deps);
-    await expect(svc.generateApiKey('u1', { name: 'k', permissions: ['read'], environment: 'production' }))
+    await expect(svc.generateApiKey('u1', { name: 'k', permissions: ['read'], environment: 'production' }, 'PRO'))
       .rejects.toThrow(/limit reached/i);
   });
 });
@@ -71,5 +71,36 @@ describe('ApiKeyService.validateApiKey', () => {
     const res = await svc.validateApiKey('sk_test_x');
     expect(res.valid).toBe(true);
     expect(deps.cache.setValidation).toHaveBeenCalledOnce();
+  });
+});
+
+describe('ApiKeyService.updateApiKey/deleteApiKey 캐시 무효화', () => {
+  it('updateApiKey: 소유자 검증 후 update + cache.invalidate(키해시)', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'u1', key: 'HASH' }));
+    const svc = new ApiKeyService(deps);
+    await svc.updateApiKey('k1', 'u1', { name: 'new' });
+    expect(deps.repo.update).toHaveBeenCalled();
+    expect(deps.cache.invalidate).toHaveBeenCalledWith('HASH');
+  });
+  it('updateApiKey: 비소유자 + 非admin → throw', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'OTHER', key: 'HASH' }));
+    const svc = new ApiKeyService(deps);
+    await expect(svc.updateApiKey('k1', 'u1', { name: 'x' })).rejects.toThrow(/unauthorized/i);
+  });
+  it('deleteApiKey: delete + cache.invalidate', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'u1', key: 'HASH' }));
+    const svc = new ApiKeyService(deps);
+    await svc.deleteApiKey('k1', 'u1');
+    expect(deps.repo.delete).toHaveBeenCalledWith('k1');
+    expect(deps.cache.invalidate).toHaveBeenCalledWith('HASH');
+  });
+  it('trackUsage: repo.incrementUsage 호출(실패해도 throw 안 함)', async () => {
+    const deps = makeDeps();
+    deps.repo.incrementUsage = vi.fn(async () => { throw new Error('db'); });
+    const svc = new ApiKeyService(deps);
+    await expect(svc.trackUsage('k1', '1.2.3.4')).resolves.toBeUndefined();
   });
 });
