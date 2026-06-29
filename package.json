@@ -31,6 +31,7 @@
   },
   "exports": {
     "./initialize": "./dist/initialize.js",
+    "./core/api-key": { "types": "./dist/core/api-key/index.d.ts", "import": "./dist/core/api-key/index.js" },
     "./core/auth": "./dist/core/auth/index.js",
     "./core/auth/adapters/sql": "./dist/core/auth/adapters/sql/index.js",
     "./core/auth/config": "./dist/core/auth/config.js",
