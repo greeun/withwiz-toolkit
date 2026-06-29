@@ -2,8 +2,12 @@ import { generateRawKey, hashKey, keyPreview } from './key-generator';
 import { validateApiKeyRecord } from './validate';
 import type {
   IApiKeyRepository, IApiKeyCacheStore, IPlanConfigProvider, IUsageTracker, ApiKeyServiceEnv,
+  ApiKeyRecord,
 } from './ports';
-import type { CreateApiKeyOptions, ApiKeyResult, ApiKeyValidationResult } from './types';
+import type {
+  CreateApiKeyOptions, ApiKeyResult, ApiKeyValidationResult,
+  ApiKeyInfo, ApiKeyFilters, ApiKeyListResponse, UpdateApiKeyData,
+} from './types';
 
 export interface ApiKeyServiceDeps {
   repo: IApiKeyRepository;
@@ -20,18 +24,33 @@ export class ApiKeyService {
     return env === 'production' ? this.deps.env.prefixProd : this.deps.env.prefixDev;
   }
 
-  async generateApiKey(userId: string, options: CreateApiKeyOptions): Promise<ApiKeyResult> {
+  private toInfo(r: ApiKeyRecord): ApiKeyInfo {
+    return {
+      id: r.id, name: r.name, description: r.description ?? undefined, keyPreview: keyPreview(r.key),
+      permissions: r.permissions, environment: r.environment, rateLimit: r.rateLimit,
+      endpointLimits: r.endpointLimits ?? undefined, ipWhitelist: r.ipWhitelist,
+      lastUsedAt: r.lastUsedAt ?? undefined, lastUsedIp: r.lastUsedIp ?? undefined,
+      usageCount: r.usageCount, isActive: r.isActive, expiresAt: r.expiresAt ?? undefined,
+      createdAt: r.createdAt, updatedAt: r.updatedAt,
+    };
+  }
+
+  private async requireOwned(id: string, userId: string, isAdmin: boolean): Promise<ApiKeyRecord> {
+    const rec = await this.deps.repo.findById(id);
+    if (!rec) throw new Error('API key not found');
+    if (!isAdmin && rec.userId !== userId) throw new Error('Unauthorized');
+    return rec;
+  }
+
+  async generateApiKey(userId: string, options: CreateApiKeyOptions, plan: string): Promise<ApiKeyResult> {
     const { repo, planConfig, env } = this.deps;
-    const maxKeys = await planConfig.getApiKeyLimit(/* plan 불명 시 */ 'UNKNOWN').catch(() => Infinity);
-    // 플랜은 호출측(어댑터 repo)이 user 기준으로 한도를 알지만, 코어는 plan을 모름 →
-    // 한도는 countActive vs planConfig 결과로 판정. plan 해석은 어댑터 책임.
+    const maxKeys = await planConfig.getApiKeyLimit(plan);
     const active = await repo.countActive(userId);
     if (active >= maxKeys) throw new Error(`API key limit reached. Max ${maxKeys} keys.`);
 
     const rawKey = generateRawKey(this.prefix(options.environment));
-    const rateLimit = options.customRateLimit
-      ? Math.min(options.customRateLimit, await planConfig.getRateLimit('UNKNOWN').catch(() => options.customRateLimit))
-      : await planConfig.getRateLimit('UNKNOWN').catch(() => 100);
+    const planRate = await planConfig.getRateLimit(plan);
+    const rateLimit = options.customRateLimit ? Math.min(options.customRateLimit, planRate) : planRate;
     const expiresAt = options.expiresAt
       ?? new Date(Date.now() + env.defaultExpiryDays * 86400_000);
 
@@ -60,5 +79,55 @@ export class ApiKeyService {
     const result = validateApiKeyRecord(record, { freemiumPlans: env.restrictedPlans });
     if (result.valid) await cache.setValidation(keyHash, result);
     return result;
+  }
+
+  async getApiKey(id: string): Promise<ApiKeyInfo> {
+    const rec = await this.deps.repo.findById(id);
+    if (!rec) throw new Error('API key not found');
+    return this.toInfo(rec);
+  }
+
+  async getApiKeys(filters: ApiKeyFilters): Promise<ApiKeyListResponse> {
+    const page = filters.page ?? 1, pageSize = filters.pageSize ?? 10;
+    const { items, total } = await this.deps.repo.findMany({ ...filters, page, pageSize });
+    return { keys: items.map((r) => this.toInfo(r)), total, page, pageSize, hasMore: total > page * pageSize };
+  }
+
+  async updateApiKey(id: string, userId: string, data: UpdateApiKeyData, isAdmin = false): Promise<ApiKeyInfo> {
+    const rec = await this.requireOwned(id, userId, isAdmin);
+    const updated = await this.deps.repo.update(id, {
+      name: data.name, description: data.description, isActive: data.isActive,
+      permissions: data.permissions, ipWhitelist: data.ipWhitelist,
+      rateLimit: data.customRateLimit, endpointLimits: data.endpointLimits,
+    });
+    await this.deps.cache.invalidate(rec.key);
+    return this.toInfo(updated);
+  }
+
+  async deleteApiKey(id: string, userId: string, isAdmin = false): Promise<void> {
+    const rec = await this.requireOwned(id, userId, isAdmin);
+    await this.deps.repo.delete(id);
+    await this.deps.cache.invalidate(rec.key);
+  }
+
+  async trackUsage(apiKeyId: string, ip?: string): Promise<void> {
+    try { await this.deps.repo.incrementUsage(apiKeyId, ip); } catch { /* 추적 실패는 무시 */ }
+  }
+
+  async regenerateApiKey(userId: string, apiKeyId: string, plan: string,
+    options: { name?: string; description?: string; keepOldKeyActive?: boolean } = {}): Promise<ApiKeyResult> {
+    const old = await this.requireOwned(apiKeyId, userId, false);
+    if (!options.keepOldKeyActive) {
+      const max = await this.deps.planConfig.getApiKeyLimit(plan);
+      if (await this.deps.repo.countActive(userId) >= max) throw new Error(`API key limit reached. Max ${max} keys.`);
+      await this.deps.repo.deactivate(apiKeyId);
+      await this.deps.cache.invalidate(old.key);
+    }
+    return this.generateApiKey(userId, {
+      name: options.name ?? old.name, description: options.description ?? old.description ?? undefined,
+      permissions: old.permissions, environment: old.environment, customRateLimit: old.rateLimit,
+      ipWhitelist: old.ipWhitelist, endpointLimits: old.endpointLimits ?? undefined,
+      expiresAt: old.expiresAt ?? undefined,
+    }, plan);
   }
 }
