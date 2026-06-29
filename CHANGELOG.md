@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1]
+
+### Performance
+- `InMemoryCacheManager` now tracks LRU order through the entry `Map`'s
+  insertion order instead of a parallel `accessOrder` array. Cache hits
+  re-insert the entry and eviction pops the oldest key, making both paths
+  O(1) and removing the previous O(n) `indexOf`/`splice` scans. Per-op
+  debug logging in the hot path was also dropped.
+- `HybridCacheManager.invalidate*` skips the `Promise.allSettled` wrapper
+  when only one backend is active (the common memory-only path); the Redis
+  branch remains independently error-guarded.
+
+### Docs
+- Added `docs/FEATURES.md`: a feature catalog for all source modules.
+
 ## [0.9.0]
 
 ### Added
