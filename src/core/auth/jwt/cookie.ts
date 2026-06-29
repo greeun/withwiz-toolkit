@@ -50,8 +50,8 @@ function getDefaultOptions(): CookieOptions {
  * 미초기화 시 JWT_DEFAULTS 기본값. → JWT 만료와 단일 소스 일치.
  */
 function resolveMaxAge(): { access: number; refresh: number } {
-  let access = JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES;
-  let refresh = JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES;
+  let access: string = JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES;
+  let refresh: string = JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES;
   try {
     const cfg = getAuthConfig();
     access = cfg.accessTokenExpiry;

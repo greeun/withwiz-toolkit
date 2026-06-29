@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3]
+
+### Fixed
+- `setTokenCookies` no longer hard-codes cookie `maxAge` (previously 15min for
+  access / 7d for refresh). It now derives `access_token` / `refresh_token`
+  maxAge from the auth config's `accessTokenExpiry` / `refreshTokenExpiry`
+  (injected at `initializeAuth`), making the cookie lifetime a single source of
+  truth with the JWT expiry. Falls back to `JWT_DEFAULTS` when auth is
+  uninitialized. Adds `durationToSeconds` (`@withwiz/toolkit/core/auth/duration`)
+  to convert jose-style strings ("7d" / "15m") to seconds, and
+  `CookieOptions.accessTokenMaxAge` / `refreshTokenMaxAge` for explicit overrides.
+
 ## [0.9.2]
 
 ### Chore
