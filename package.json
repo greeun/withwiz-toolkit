@@ -163,6 +163,7 @@
       "import": "./dist/next/error/index.js"
     },
     "./next/error/locale-detector": "./dist/next/error/locale-detector.js",
+    "./next/oapi": { "types": "./dist/next/oapi/index.d.ts", "import": "./dist/next/oapi/index.js" },
     "./next/middleware": "./dist/next/middleware/index.js",
     "./next/middleware/auth": "./dist/next/middleware/auth.js",
     "./next/middleware/cors": "./dist/next/middleware/cors.js",
