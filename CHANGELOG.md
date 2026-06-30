@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `X-API-Key` securityScheme), and pure pagination / search / `requireParam`
   helpers.
 
+### Changed
+- `setTokenCookies`: cookie `maxAge` is now derived from the auth config's
+  `accessTokenExpiry` / `refreshTokenExpiry` (injected at `initializeAuth`)
+  instead of being hard-coded (was 15min access / 7d refresh), making the cookie
+  lifetime a single source of truth with the JWT expiry. Falls back to
+  `JWT_DEFAULTS` when uninitialized. Adds `durationToSeconds`
+  (`@withwiz/toolkit/core/auth/duration`) and `CookieOptions.accessTokenMaxAge`
+  / `refreshTokenMaxAge` overrides. (Also shipped standalone as the 0.9.3 patch.)
+
 ### Security & packaging (pre-release audit — 5 reviewers + harness Evaluator)
 - `ip-whitelist`: validate CIDR mask range (0–32) and octet range (0–255),
   closing an IP-whitelist **fail-open** (e.g. a `/40` typo was treated as `/8`,
