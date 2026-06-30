@@ -21,6 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `X-API-Key` securityScheme), and pure pagination / search / `requireParam`
   helpers.
 
+### Security & packaging (pre-release audit — 5 reviewers + harness Evaluator)
+- `ip-whitelist`: validate CIDR mask range (0–32) and octet range (0–255),
+  closing an IP-whitelist **fail-open** (e.g. a `/40` typo was treated as `/8`,
+  `999.x` matched via `& 0xFF`).
+- `ApiKeyService.getApiKey` / `getApiKeys` enforce ownership (admin override),
+  preventing cross-user metadata access (IDOR).
+- `validateApiKey` re-checks natural expiry on cache hits (avoids a stale-auth
+  window where an expired key stays valid for the cache TTL).
+- `generateApiKey` blocks restricted plans explicitly (single source of truth
+  with `validateApiKeyRecord`, no longer relying on a `0` key limit).
+- `createApiKeyAuth` wraps the flow in a top-level try/catch, degrading
+  unexpected errors to a controlled `500`.
+- `ApiKeyValidationResult.error` is now a string-literal union; `IUsageTracker.logUsage`
+  is optional (the core/middleware never call it).
+- **NodeNext/node16 compatibility**: per-file subpath exports + self-referential
+  imports (matching `core/auth`) so every named export resolves for strict
+  ESM consumers.
+
 ## [0.9.2]
 
 ### Chore
