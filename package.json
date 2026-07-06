@@ -41,6 +41,7 @@
     "./core/auth": "./dist/core/auth/index.js",
     "./core/auth/adapters/sql": "./dist/core/auth/adapters/sql/index.js",
     "./core/auth/config": "./dist/core/auth/config.js",
+    "./core/auth/cookie-names": "./dist/core/auth/cookie-names.js",
     "./core/auth/duration": "./dist/core/auth/duration.js",
     "./core/auth/email": "./dist/core/auth/email/index.js",
     "./core/auth/email/sender": "./dist/core/auth/email/sender.js",

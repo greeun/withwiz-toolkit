@@ -12,6 +12,10 @@ import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
 import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 import { durationToSeconds } from '@withwiz/toolkit/core/auth/duration';
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from '@withwiz/toolkit/core/auth/cookie-names';
 
 /** cookies.set()을 지원하는 Response 타입 */
 interface CookieSettableResponse {
@@ -70,7 +74,7 @@ export function setTokenCookies<T extends CookieSettableResponse>(
   const opts = { ...getDefaultOptions(), ...options };
   const maxAge = resolveMaxAge();
 
-  response.cookies.set('access_token', tokenPair.accessToken, {
+  response.cookies.set(ACCESS_TOKEN_COOKIE, tokenPair.accessToken, {
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,
@@ -78,7 +82,7 @@ export function setTokenCookies<T extends CookieSettableResponse>(
     maxAge: opts.accessTokenMaxAge ?? maxAge.access,
   });
 
-  response.cookies.set('refresh_token', tokenPair.refreshToken, {
+  response.cookies.set(REFRESH_TOKEN_COOKIE, tokenPair.refreshToken, {
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,
@@ -95,7 +99,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
 ): T {
   const opts = { ...getDefaultOptions(), ...options };
 
-  response.cookies.set('access_token', '', {
+  response.cookies.set(ACCESS_TOKEN_COOKIE, '', {
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,
@@ -103,7 +107,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
     maxAge: 0,
   });
 
-  response.cookies.set('refresh_token', '', {
+  response.cookies.set(REFRESH_TOKEN_COOKIE, '', {
     httpOnly: true,
     secure: opts.secure,
     sameSite: opts.sameSite,

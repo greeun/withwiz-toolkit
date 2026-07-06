@@ -10,6 +10,10 @@ import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
 import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
 import { setTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
 import type { CookieOptions } from '@withwiz/toolkit/core/auth/jwt/cookie';
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from '@withwiz/toolkit/core/auth/cookie-names';
 
 /** cookies/headers/json 만 구조적으로 요구 — NextRequest 미의존 (core 티어 규칙) */
 export interface TokenSource {
@@ -57,8 +61,8 @@ async function readBodyRefreshToken(source: TokenSource): Promise<string | undef
 }
 
 const cookieStrategy: TokenDeliveryStrategy = {
-  extractAccessToken: (source) => source.cookies.get('access_token')?.value ?? null,
-  extractRefreshToken: async (source) => source.cookies.get('refresh_token')?.value,
+  extractAccessToken: (source) => source.cookies.get(ACCESS_TOKEN_COOKIE)?.value ?? null,
+  extractRefreshToken: async (source) => source.cookies.get(REFRESH_TOKEN_COOKIE)?.value,
   buildTokenResponse: (body) => body,
   attachCookies: (response, tokens, options) => setTokenCookies(response, tokens, options),
 };
@@ -72,11 +76,11 @@ const headerStrategy: TokenDeliveryStrategy = {
 
 const hybridStrategy: TokenDeliveryStrategy = {
   extractAccessToken: (source, parseHeader) =>
-    source.cookies.get('access_token')?.value ??
+    source.cookies.get(ACCESS_TOKEN_COOKIE)?.value ??
     parseHeader(source.headers.get('authorization')),
   // 쿠키 우선 — 쿠키가 있으면 body 를 소비하지 않는다 (빈 body 요청 보호)
   extractRefreshToken: async (source) =>
-    source.cookies.get('refresh_token')?.value ?? (await readBodyRefreshToken(source)),
+    source.cookies.get(REFRESH_TOKEN_COOKIE)?.value ?? (await readBodyRefreshToken(source)),
   buildTokenResponse: (body, fragment) => ({ ...body, ...fragment }),
   attachCookies: (response, tokens, options) => setTokenCookies(response, tokens, options),
 };
