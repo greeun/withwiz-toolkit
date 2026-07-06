@@ -175,6 +175,7 @@
     "./next/oapi/api-key-auth": "./dist/next/oapi/api-key-auth.js",
     "./next/oapi/openapi-spec": "./dist/next/oapi/openapi-spec.js",
     "./next/oapi/helpers": "./dist/next/oapi/helpers.js",
+    "./next/proxy": "./dist/next/proxy.js",
     "./next/middleware": "./dist/next/middleware/index.js",
     "./next/middleware/auth": "./dist/next/middleware/auth.js",
     "./next/middleware/cors": "./dist/next/middleware/cors.js",
