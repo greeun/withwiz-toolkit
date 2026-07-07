@@ -62,6 +62,7 @@
     "./core/auth/password/client-helper": "./dist/core/auth/password/client-helper.js",
     "./core/auth/password/hasher": "./dist/core/auth/password/hasher.js",
     "./core/auth/services": "./dist/core/auth/services/index.js",
+    "./core/auth/services/cache-token-stores": "./dist/core/auth/services/cache-token-stores.js",
     "./core/auth/services/email-verification.service": "./dist/core/auth/services/email-verification.service.js",
     "./core/auth/services/login.service": "./dist/core/auth/services/login.service.js",
     "./core/auth/services/oauth-callback.service": "./dist/core/auth/services/oauth-callback.service.js",
