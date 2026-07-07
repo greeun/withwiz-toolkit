@@ -43,6 +43,45 @@ describe('Auth Config', () => {
     });
   });
 
+  describe('long-lived access warning (C-2)', () => {
+    const SECRET = 'my-secret-key-that-is-long-enough-32chars';
+
+    it('warns when accessTokenExpiry exceeds 24h', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      initializeAuth({ jwtSecret: SECRET, accessTokenExpiry: '2d', refreshTokenExpiry: '30d' });
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('24h를 초과'));
+      spy.mockRestore();
+    });
+
+    it('warns for the default 7d access expiry when not provided', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      initializeAuth({ jwtSecret: SECRET });
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('24h를 초과'));
+      spy.mockRestore();
+    });
+
+    it('does NOT warn about long access when accessTokenExpiry <= 24h', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      initializeAuth({ jwtSecret: SECRET, accessTokenExpiry: '15m', refreshTokenExpiry: '30d' });
+      expect(spy).not.toHaveBeenCalledWith(expect.stringContaining('24h를 초과'));
+      spy.mockRestore();
+    });
+
+    it('does NOT warn at the 24h boundary (strictly greater triggers)', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      initializeAuth({ jwtSecret: SECRET, accessTokenExpiry: '24h', refreshTokenExpiry: '30d' });
+      expect(spy).not.toHaveBeenCalledWith(expect.stringContaining('24h를 초과'));
+      spy.mockRestore();
+    });
+
+    it('keeps the 7d default constant unchanged (warning only, no value change)', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      initializeAuth({ jwtSecret: SECRET });
+      expect(getAuthConfig().accessTokenExpiry).toBe('7d');
+      spy.mockRestore();
+    });
+  });
+
   describe('resetAuth', () => {
     it('should reset config', () => {
       initializeAuth({ jwtSecret: 'my-secret-key-that-is-long-enough-32chars' });
