@@ -141,6 +141,29 @@ describe("SC-UNIT-COOKIE-001: setTokenCookies", () => {
 
     expect(accessCookie?.toLowerCase()).toContain("samesite=strict");
   });
+
+  test("TC-UNIT-COOKIE-009b: domain 지정 시 access/refresh 양쪽 Set-Cookie에 Domain= 포함", () => {
+    const response = NextResponse.json({ success: true });
+    setTokenCookies(response, mockTokenPair, { domain: ".example.com" });
+
+    const h = response.headers.getSetCookie();
+    const accessCookie = h.find((c) => c.startsWith("access_token="));
+    const refreshCookie = h.find((c) => c.startsWith("refresh_token="));
+
+    expect(accessCookie).toContain("Domain=.example.com");
+    expect(refreshCookie).toContain("Domain=.example.com");
+  });
+
+  test("TC-UNIT-COOKIE-009c: domain 미지정 시 Domain 속성 미포함", () => {
+    const response = NextResponse.json({ success: true });
+    setTokenCookies(response, mockTokenPair);
+
+    const accessCookie = response.headers
+      .getSetCookie()
+      .find((c) => c.startsWith("access_token="));
+
+    expect(accessCookie).not.toContain("Domain=");
+  });
 });
 
 describe("SC-UNIT-COOKIE-002: clearTokenCookies", () => {
@@ -186,5 +209,17 @@ describe("SC-UNIT-COOKIE-002: clearTokenCookies", () => {
     const result = clearTokenCookies(response);
 
     expect(result).toBe(response);
+  });
+
+  test("TC-UNIT-COOKIE-014: domain 지정 시 삭제 쿠키에도 Domain= 포함 (서브도메인 쿠키 제거)", () => {
+    const response = NextResponse.json({ success: true });
+    clearTokenCookies(response, { domain: ".example.com" });
+
+    const h = response.headers.getSetCookie();
+    const accessCookie = h.find((c) => c.startsWith("access_token="));
+    const refreshCookie = h.find((c) => c.startsWith("refresh_token="));
+
+    expect(accessCookie).toContain("Domain=.example.com");
+    expect(refreshCookie).toContain("Domain=.example.com");
   });
 });

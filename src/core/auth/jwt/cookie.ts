@@ -79,6 +79,7 @@ export function setTokenCookies<T extends CookieSettableResponse>(
     secure: opts.secure,
     sameSite: opts.sameSite,
     path: '/',
+    ...(opts.domain ? { domain: opts.domain } : {}),
     maxAge: opts.accessTokenMaxAge ?? maxAge.access,
   });
 
@@ -87,6 +88,7 @@ export function setTokenCookies<T extends CookieSettableResponse>(
     secure: opts.secure,
     sameSite: opts.sameSite,
     path: opts.refreshTokenPath ?? '/api/auth',
+    ...(opts.domain ? { domain: opts.domain } : {}),
     maxAge: opts.refreshTokenMaxAge ?? maxAge.refresh,
   });
 
@@ -104,6 +106,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
     secure: opts.secure,
     sameSite: opts.sameSite,
     path: '/',
+    ...(opts.domain ? { domain: opts.domain } : {}),
     maxAge: 0,
   });
 
@@ -112,6 +115,7 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
     secure: opts.secure,
     sameSite: opts.sameSite,
     path: opts.refreshTokenPath ?? '/api/auth',
+    ...(opts.domain ? { domain: opts.domain } : {}),
     maxAge: 0,
   });
 
