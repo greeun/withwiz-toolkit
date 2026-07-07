@@ -23,6 +23,116 @@ core/   ← here (auth: jwt · password · oauth · services · types · email �
 The framework-coupled parts (request/response handlers, DB adapters) are intentionally
 split into separate tiers, so importing only `core/auth` brings zero framework dependencies.
 
+## Recommended Default Recipe (org standard)
+
+The organization's standard auth default is:
+
+> **httpOnly cookies (server-managed) + hybrid extraction + short access +
+> refresh rotation/reuse-detection + access revoke + edge route guard +
+> role re-fetched from the DB**
+
+Wire it as follows.
+
+### 1. Initialize (short access, secure cookies in prod)
+
+```typescript
+import { initializeAuth } from '@withwiz/toolkit/core/auth/config';
+
+initializeAuth({
+  jwtSecret: process.env.JWT_SECRET!,
+  accessTokenExpiry: '15m',   // short access — maximizes revoke/expiry effect
+  refreshTokenExpiry: '30d',
+  cookieSecure: process.env.NODE_ENV === 'production',
+  tokenDelivery: 'hybrid',    // default — cookie first, Authorization header fallback
+});
+```
+
+> Access expiry longer than 24h emits a warning nudging you toward a short access.
+> The built-in default is still `7d` for backward compatibility; it is scheduled to
+> be shortened in the next major (1.0).
+
+### 2. Endpoints — wire the handlers, don't hand-roll them
+
+`@withwiz/toolkit/next/auth-handlers` already ships login / logout / refresh / me /
+oauth-* handlers. Use them instead of writing your own.
+
+```typescript
+import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
+// or individually: createLoginHandler / createLogoutHandler / createRefreshHandler /
+// createMeHandler / createOAuthAuthorizeHandler / createOAuthCallbackHandler ...
+```
+
+Cookies are set/cleared with `setTokenCookies` / `clearTokenCookies`
+(`@withwiz/toolkit/core/auth/jwt/cookie`); token extraction uses the hybrid strategy
+by default.
+
+### 3. revoke + rotation — inject the cache-backed stores (batteries included)
+
+```typescript
+import { setAccessTokenBlacklistChecker } from '@withwiz/toolkit/next/middleware';
+import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+import {
+  createCacheBlacklistChecker,
+  createCacheRefreshTokenStore,
+} from '@withwiz/toolkit/core/auth/services/cache-token-stores';
+
+// `cache` = your backend (redis / inmemory / hybrid) from @withwiz/toolkit/core/cache
+const blacklist = createCacheBlacklistChecker(cache);
+const refreshStore = createCacheRefreshTokenStore(cache);
+
+// access revoke — consulted by authMiddleware
+setAccessTokenBlacklistChecker(blacklist);
+
+// refresh rotation + reuse detection
+const refreshService = new TokenRefreshService({
+  userRepository,
+  jwtSecret: process.env.JWT_SECRET!,
+  accessTokenExpiry: '15m',
+  refreshTokenExpiry: '30d',
+  refreshTokenStore: refreshStore,
+  isTokenBlacklisted: (t) => blacklist.isAccessTokenRevoked(t),
+});
+```
+
+### 4. Edge route guard — `createAuthProxy`
+
+Validate the access-token cookie at the edge (`middleware.ts` / `proxy.ts`) and
+redirect unauthenticated requests. Edge-safe: imports only `next/server` + `jose`
+(never pulls in `node:crypto` / winston).
+
+```typescript
+// src/proxy.ts (or middleware.ts)
+import { NextResponse, type NextRequest } from 'next/server';
+import { createAuthProxy } from '@withwiz/toolkit/next/proxy';
+
+const guard = createAuthProxy({
+  secret: process.env.JWT_SECRET!,
+  isProtected: (p) => p === '/dashboard' || p.startsWith('/dashboard/'),
+  redirectParam: 'redirect',
+});
+
+export async function proxy(req: NextRequest) {
+  const guarded = await guard(req);
+  if (guarded) return guarded;   // redirect (unauth/invalid) or next() (valid)
+  // ...your existing routing / locale logic continues here...
+  return NextResponse.next();
+}
+
+export const config = { matcher: ['/dashboard/:path*'] };
+```
+
+For protected paths the guard returns a login redirect (unauthenticated/invalid) or
+`NextResponse.next()` (valid); for unprotected paths it returns `undefined`, so you
+can compose it with an existing proxy. `verifyAccessTokenEdge(token, { secret })` is
+the low-level primitive for custom composition.
+
+### 5. Authorization — re-fetch role from the DB
+
+The access token carries `role` for convenience, but treat it as a hint. For
+authorization decisions, **re-fetch the role from the DB**. With short access, this
+keeps authz fresh even after a role change (the token may still carry the old role
+until it expires).
+
 ## Features
 
 ✅ **Zero Framework Dependency (`core/auth` only)**: `core/auth` has no Next.js or Prisma
