@@ -23,6 +23,111 @@ core/   ← 여기 (auth: jwt · password · oauth · services · types · email
 프레임워크 결합 부분(요청/응답 핸들러, DB 어댑터)은 의도적으로 별도 티어로
 분리되어 있으므로, `core/auth`만 임포트하면 프레임워크 의존성이 전혀 없습니다.
 
+## 권장 Default 레시피 (조직 표준)
+
+조직 표준 인증 default:
+
+> **httpOnly 쿠키(서버관리) + hybrid 추출 + 짧은 access + refresh 회전/재사용탐지
+> + access revoke + 엣지 라우트 가드 + role은 DB 재조회**
+
+배선 방법은 다음과 같습니다.
+
+### 1. 초기화 (짧은 access, 운영에서 secure 쿠키)
+
+```typescript
+import { initializeAuth } from '@withwiz/toolkit/core/auth/config';
+
+initializeAuth({
+  jwtSecret: process.env.JWT_SECRET!,
+  accessTokenExpiry: '15m',   // 짧은 access — revoke/만료 효과 극대화
+  refreshTokenExpiry: '30d',
+  cookieSecure: process.env.NODE_ENV === 'production',
+  tokenDelivery: 'hybrid',    // 기본 — 쿠키 우선, Authorization 헤더 폴백
+});
+```
+
+> access 만료가 24h를 초과하면 짧은 access를 권장하는 경고가 출력됩니다. 하위
+> 호환을 위해 기본 상수는 아직 `7d`이며, 차기 major(1.0)에서 단축 예정입니다.
+
+### 2. 엔드포인트 — 핸들러를 배선, 손수 구현 금지
+
+`@withwiz/toolkit/next/auth-handlers`가 login / logout / refresh / me / oauth-*
+핸들러를 이미 제공합니다. 직접 만들지 말고 이를 사용하세요.
+
+```typescript
+import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
+// 개별 사용: createLoginHandler / createLogoutHandler / createRefreshHandler /
+// createMeHandler / createOAuthAuthorizeHandler / createOAuthCallbackHandler ...
+```
+
+쿠키는 `setTokenCookies` / `clearTokenCookies`(`@withwiz/toolkit/core/auth/jwt/cookie`)로
+설정/삭제하고, 토큰 추출은 기본 hybrid 전략을 사용합니다.
+
+### 3. revoke + rotation — cache 기반 store 주입 (배터리 포함)
+
+```typescript
+import { setAccessTokenBlacklistChecker } from '@withwiz/toolkit/next/middleware';
+import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+import {
+  createCacheBlacklistChecker,
+  createCacheRefreshTokenStore,
+} from '@withwiz/toolkit/core/auth/services/cache-token-stores';
+
+// `cache` = @withwiz/toolkit/core/cache 의 백엔드(redis / inmemory / hybrid)
+const blacklist = createCacheBlacklistChecker(cache);
+const refreshStore = createCacheRefreshTokenStore(cache);
+
+// access revoke — authMiddleware 가 참조
+setAccessTokenBlacklistChecker(blacklist);
+
+// refresh 회전 + 재사용 탐지
+const refreshService = new TokenRefreshService({
+  userRepository,
+  jwtSecret: process.env.JWT_SECRET!,
+  accessTokenExpiry: '15m',
+  refreshTokenExpiry: '30d',
+  refreshTokenStore: refreshStore,
+  isTokenBlacklisted: (t) => blacklist.isAccessTokenRevoked(t),
+});
+```
+
+### 4. 엣지 라우트 가드 — `createAuthProxy`
+
+엣지(`middleware.ts` / `proxy.ts`)에서 access 토큰 쿠키를 검증해 미인증 요청을
+리다이렉트합니다. 엣지 안전: `next/server` + `jose`만 임포트(`node:crypto`/winston
+미포함).
+
+```typescript
+// src/proxy.ts (또는 middleware.ts)
+import { NextResponse, type NextRequest } from 'next/server';
+import { createAuthProxy } from '@withwiz/toolkit/next/proxy';
+
+const guard = createAuthProxy({
+  secret: process.env.JWT_SECRET!,
+  isProtected: (p) => p === '/dashboard' || p.startsWith('/dashboard/'),
+  redirectParam: 'redirect',
+});
+
+export async function proxy(req: NextRequest) {
+  const guarded = await guard(req);
+  if (guarded) return guarded;   // 리다이렉트(미인증/무효) 또는 next()(유효)
+  // ...기존 라우팅/locale 로직 계속...
+  return NextResponse.next();
+}
+
+export const config = { matcher: ['/dashboard/:path*'] };
+```
+
+보호 경로면 로그인 리다이렉트(미인증/무효) 또는 `NextResponse.next()`(유효)를,
+미보호 경로면 `undefined`를 반환하므로 기존 proxy와 합성할 수 있습니다. 커스텀
+합성에는 저수준 `verifyAccessTokenEdge(token, { secret })`를 사용하세요.
+
+### 5. 인가 — role은 DB 재조회
+
+access 토큰은 편의상 `role`을 담지만 힌트로만 다루세요. 인가 판정은 **DB에서
+role을 재조회**합니다. 짧은 access와 함께라면 role 변경 후에도 인가가 신선하게
+유지됩니다(토큰은 만료 전까지 옛 role을 담고 있을 수 있음).
+
 ## 특징
 
 ✅ **Zero Framework Dependency (`core/auth` 한정)**: `core/auth`는 Next.js·Prisma

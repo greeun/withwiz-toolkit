@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0]
+
+### Added
+- `next/proxy`: edge route guard for Next `middleware.ts` / `proxy.ts`.
+  `createAuthProxy({ secret, isProtected, loginPath?, redirectParam?, cookieName?,
+  algorithms? })` verifies the access-token cookie with `jose` (HS256) and returns
+  a login redirect (unauthenticated / invalid), `NextResponse.next()` (valid), or
+  `undefined` for unprotected paths so it composes with an existing proxy. Also
+  `verifyAccessTokenEdge(token, { secret, algorithms? })` as the low-level
+  primitive. **Edge-safe**: imports only `next/server` + `jose` + a pure
+  cookie-name leaf — never `node:crypto` / winston (verified against the built
+  `dist/next/proxy.js` import closure).
+- `core/auth/services/cache-token-stores`: batteries-included token stores over
+  `core/cache` (redis / inmemory / hybrid). `createCacheBlacklistChecker(cache)`
+  for access revoke (structurally compatible with `IAccessTokenBlacklistChecker`,
+  so it drops into `setAccessTokenBlacklistChecker`) and
+  `createCacheRefreshTokenStore(cache)` implementing `IRefreshTokenStore`
+  (rotation / reuse-detection / family revoke). Keys are namespaced and derived
+  from a sha256 identifier (the raw token is never used as a key); TTLs align with
+  token expiry.
+- `core/auth/cookie-names`: pure constant leaf (`ACCESS_TOKEN_COOKIE` /
+  `REFRESH_TOKEN_COOKIE`) exposing the cookie names as a single source that is safe
+  to share across node and edge.
+- `core/auth` README: a **recommended default recipe** section
+  (initialize → handlers → revoke/rotation stores → edge guard → DB role re-fetch),
+  in both the English and Korean module READMEs.
+
+### Changed
+- `initializeAuth`: warns when the resolved `accessTokenExpiry` exceeds 24h,
+  nudging toward a short access (e.g. `15m`) + refresh rotation to maximize the
+  revoke/expiry effect. The default constant (`JWT_DEFAULTS` = `7d`) is
+  **unchanged** this release; shortening the default is reserved for the next
+  major (1.0).
+
+### Fixed
+- `setTokenCookies` / `clearTokenCookies`: the `domain` option was accepted but
+  never forwarded to `cookies.set(...)`, so subdomain-shared cookies
+  (`Domain=.example.com`) were impossible. It is now applied (when provided) to
+  both the access and refresh cookies, on both set and clear.
+  **Compat note**: a consumer that previously passed `domain` expecting it to be
+  ignored will now see it take effect (cookies scoped to the given domain).
+
 ## [0.10.0]
 
 ### Added
