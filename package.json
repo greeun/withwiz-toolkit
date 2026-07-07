@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -31,7 +31,10 @@
   },
   "exports": {
     "./initialize": "./dist/initialize.js",
-    "./core/api-key": { "types": "./dist/core/api-key/index.d.ts", "import": "./dist/core/api-key/index.js" },
+    "./core/api-key": {
+      "types": "./dist/core/api-key/index.d.ts",
+      "import": "./dist/core/api-key/index.js"
+    },
     "./core/api-key/types": "./dist/core/api-key/types.js",
     "./core/api-key/ports": "./dist/core/api-key/ports.js",
     "./core/api-key/key-generator": "./dist/core/api-key/key-generator.js",
@@ -172,7 +175,10 @@
       "import": "./dist/next/error/index.js"
     },
     "./next/error/locale-detector": "./dist/next/error/locale-detector.js",
-    "./next/oapi": { "types": "./dist/next/oapi/index.d.ts", "import": "./dist/next/oapi/index.js" },
+    "./next/oapi": {
+      "types": "./dist/next/oapi/index.d.ts",
+      "import": "./dist/next/oapi/index.js"
+    },
     "./next/oapi/api-key-auth": "./dist/next/oapi/api-key-auth.js",
     "./next/oapi/openapi-spec": "./dist/next/oapi/openapi-spec.js",
     "./next/oapi/helpers": "./dist/next/oapi/helpers.js",
