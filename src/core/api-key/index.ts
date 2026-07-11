@@ -1,4 +1,5 @@
 export * from '@withwiz/toolkit/core/api-key/types';
+export * from '@withwiz/toolkit/core/api-key/errors';
 export * from '@withwiz/toolkit/core/api-key/ports';
 export * from '@withwiz/toolkit/core/api-key/key-generator';
 export * from '@withwiz/toolkit/core/api-key/ip-whitelist';

@@ -12,6 +12,7 @@ export interface ApiKeyAuthOptions {
 }
 type AuthResult = { user: AuthedUser } | { response: NextResponse };
 
+// 응답 code(40101/40301/50001)는 소비처 wire 계약 — constants/error-codes와 값 변경 금지
 const err = (code: number, status: number, message: string): { response: NextResponse } =>
   ({ response: NextResponse.json({ success: false, error: { code, message } }, { status }) });
 
