@@ -28,8 +28,8 @@ core/   ← 의존성 없음, pure TypeScript
 
 | 티어 | 대표 subpath | 비고 |
 |---|---|---|
-| **core** | `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
-| **next** | `next/middleware`, `next/auth-handlers`, `next/auth-types`, `next/error`, `next/error/error-handler`, `next/utils` | `next/server`, `next/link` 등 Next.js 의존 |
+| **core** | `core/api-key`, `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
+| **next** | `next/middleware`, `next/auth-handlers`, `next/auth-types`, `next/error`, `next/error/error-handler`, `next/oapi`, `next/utils` | `next/server`, `next/link` 등 Next.js 의존 |
 | **prisma** | `prisma/auth-adapter` | Prisma 클라이언트 덕 타이핑 어댑터 |
 
 `error`와 `utils`는 의존성에 따라 티어가 갈립니다:
@@ -38,6 +38,13 @@ core/   ← 의존성 없음, pure TypeScript
 - `next/error` — `error-handler`(NextResponse), `LocaleDetector`(NextRequest), `ErrorBoundary`(React 컴포넌트)
 - `core/utils` — `sanitizer`, `type-guards`, `format-number`, `ip-utils` 등 pure 유틸
 - `next/utils` — `api-helpers`, `cors`, `csv-export`, `error-processor` (NextResponse)
+
+`api-key`도 같은 원리로 갈립니다:
+
+- `core/api-key` — `ApiKeyService`(repo/cache/planConfig/usage 전부 ports DI), 순수
+  key-generator·validate FSM·ip-whitelist, typed error(`ApiKeyError`). DB·프레임워크 무관.
+- `next/oapi` — `createApiKeyAuth`(x-api-key 인증, NextResponse), OpenAPI 스펙 빌더,
+  pagination helpers. `core/api-key` 위에서만 동작.
 
 (`react/error` 의 `error-display`, `react/utils` 의 `client-utils`·`qr-code` 는 0.8 에서 `@withwiz/ui` 로 이동했습니다.)
 

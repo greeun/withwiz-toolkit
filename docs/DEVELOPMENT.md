@@ -11,32 +11,41 @@ Tests are organized by type and category:
 ```
 __tests__/
 ├── unit/                          # Unit tests by module
+│   ├── api-key/
 │   ├── auth/
 │   ├── cache/
-│   ├── components/
+│   ├── config/
 │   ├── error/
 │   ├── geolocation/
-│   ├── hooks/
 │   ├── logger/
 │   ├── middleware/
+│   ├── oapi/
+│   ├── storage/
 │   ├── system/
 │   ├── utils/
-│   └── validators/
-├── integration/                   # Integration tests
+│   ├── initialize.test.ts
+│   └── proxy.test.ts
+├── integration/                   # Integration tests (port wiring, flows)
+│   ├── api-key/
 │   └── cache.integration.test.ts
 ├── security/                      # Security-focused tests
+│   ├── api-key/
 │   ├── auth/
+│   ├── error/
 │   ├── utils/ (sanitizer)
 │   └── validators/
 ├── performance/                   # Performance tests
+│   ├── api-key/
 │   └── cache/
-├── accessibility/                 # Accessibility tests
-│   ├── components/
-│   └── hooks/
-└── docs/                          # Test documentation
+├── chaos/                         # Port-fault injection (deps throwing/failing)
+├── build/                         # Built-dist consumer-runtime checks
+└── docs/                          # Test documentation, scenarios, testcases
 ```
 
-**Naming**: `<module>.test.ts` or `.test.tsx` for React components
+> The `components/` / `hooks/` / `accessibility/` test dirs moved to
+> `@withwiz/ui` together with the `react` tier in 0.8.
+
+**Naming**: `<module>.test.ts`
 
 Unit tests mirror source structure: `src/core/auth/index.ts` →
 `__tests__/unit/auth/index.test.ts` (test dirs are not tier-prefixed). Category
@@ -57,7 +66,8 @@ npm run test:watch -- app-error.test.ts
 ```bash
 npm test -- __tests__/security/
 npm test -- __tests__/performance/
-npm test -- __tests__/accessibility/
+npm test -- __tests__/chaos/
+npm test -- __tests__/build/     # requires a fresh `npm run build` first
 ```
 
 ### Debugging Tests
@@ -70,10 +80,15 @@ npm run test:watch -- --inspect-brk
 ### Building Locally
 
 ```bash
-npm run build        # Full build (JS + types)
+npm run build        # Full build (JS + types) — use this for anything consumed from dist
 npm run build:js     # Only JS (tsup)
 npm run build:types  # Only types (tsc)
 ```
+
+> **Build-order trap**: tsup runs with `clean: true`, so running `build:types`
+> **and then** `build:js` wipes the freshly emitted `.d.ts` files from `dist`.
+> The `build` script runs them in the safe order (tsup first, then tsc).
+> Before publishing (or running `__tests__/build/`), always use `npm run build`.
 
 ### Checking Type Coverage
 

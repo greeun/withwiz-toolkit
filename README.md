@@ -8,6 +8,7 @@ Shared utility library for [withwiz](https://github.com/greeun) projects — a c
 
 - **Composition root** — assemble every tier's configuration at once with a single `initialize()`
 - **Framework tiers** — dependencies split across three tiers: `core` / `next` / `prisma` (0.8+)
+- **API key** — framework/DB-agnostic API key core (generation with sha256-hashed storage, validation FSM, IP whitelist, plan limits, typed errors) over injectable ports, plus an x-api-key auth middleware and OpenAPI spec builder for Next.js (`next/oapi`)
 - **Auth** — JWT, password hashing, OAuth helpers (Google / GitHub / Kakao / Microsoft / Meta), state-cookie CSRF binding, Prisma adapter
 - **Cache** — Redis / in-memory / hybrid / noop backends, factory, invalidation, defaults
 - **Constants** — Error codes, messages, pagination, security constants
@@ -141,6 +142,10 @@ and the 0.7.0 / 0.8.0 entries in [`CHANGELOG.md`](CHANGELOG.md).
 
 | Subpath | Description |
 |---|---|
+| `/core/api-key` | API key core barrel (service + generator + validate + ip-whitelist + errors) |
+| `/core/api-key/api-key.service` | `ApiKeyService` — generate / validate / CRUD / regenerate over injected ports |
+| `/core/api-key/errors` | `ApiKeyError`, `API_KEY_ERROR_CODES`, `isApiKeyError` structural guard |
+| `/core/api-key/{types,ports,key-generator,ip-whitelist,validate}` | Pure types, DI ports, and helpers |
 | `/core/auth` | Full auth (JWT + password + OAuth + services + email + types) |
 | `/core/auth/jwt` | JWT sign / verify |
 | `/core/auth/password` | bcrypt helpers |
@@ -172,6 +177,7 @@ and the 0.7.0 / 0.8.0 entries in [`CHANGELOG.md`](CHANGELOG.md).
 | `/next/auth-handlers` | Route handlers (login / refresh / oauth callback / me) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
+| `/next/oapi` | `createApiKeyAuth` (x-api-key auth middleware), OpenAPI 3.0.3 spec builder, pagination helpers |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
 
 ### `react` — moved to `@withwiz/ui` (0.8)
