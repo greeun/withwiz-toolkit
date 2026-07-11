@@ -1,5 +1,6 @@
 import { generateRawKey, hashKey, keyPreview } from '@withwiz/toolkit/core/api-key/key-generator';
 import { validateApiKeyRecord } from '@withwiz/toolkit/core/api-key/validate';
+import { ApiKeyError, API_KEY_ERROR_CODES } from '@withwiz/toolkit/core/api-key/errors';
 import type {
   IApiKeyRepository, IApiKeyCacheStore, IPlanConfigProvider, IUsageTracker, ApiKeyServiceEnv,
   ApiKeyRecord,
@@ -37,20 +38,29 @@ export class ApiKeyService {
 
   private async requireOwned(id: string, userId: string, isAdmin: boolean): Promise<ApiKeyRecord> {
     const rec = await this.deps.repo.findById(id);
-    if (!rec) throw new Error('API key not found');
-    if (!isAdmin && rec.userId !== userId) throw new Error('Unauthorized');
+    if (!rec) throw new ApiKeyError('API key not found', API_KEY_ERROR_CODES.NOT_FOUND);
+    if (!isAdmin && rec.userId !== userId) throw new ApiKeyError('Unauthorized', API_KEY_ERROR_CODES.OWNERSHIP);
     return rec;
+  }
+
+  // FREEMIUM 등 제한 플랜은 한도(0) 의존이 아닌 명시 차단 — generate/validate 단일원천
+  private assertPlanNotRestricted(plan: string): void {
+    if (this.deps.env.restrictedPlans.includes(plan)) {
+      throw new ApiKeyError(
+        `API key is not available for the ${plan} plan. Please upgrade.`,
+        API_KEY_ERROR_CODES.PLAN_RESTRICTED
+      );
+    }
   }
 
   async generateApiKey(userId: string, options: CreateApiKeyOptions, plan: string): Promise<ApiKeyResult> {
     const { repo, planConfig, env } = this.deps;
-    // FREEMIUM 등 제한 플랜은 한도(0) 의존이 아닌 명시 차단 — generate/validate 단일원천
-    if (env.restrictedPlans.includes(plan)) {
-      throw new Error(`API key is not available for the ${plan} plan. Please upgrade.`);
-    }
+    this.assertPlanNotRestricted(plan);
     const maxKeys = await planConfig.getApiKeyLimit(plan);
     const active = await repo.countActive(userId);
-    if (active >= maxKeys) throw new Error(`API key limit reached. Max ${maxKeys} keys.`);
+    if (active >= maxKeys) {
+      throw new ApiKeyError(`API key limit reached. Max ${maxKeys} keys.`, API_KEY_ERROR_CODES.LIMIT_REACHED);
+    }
 
     const rawKey = generateRawKey(this.prefix(options.environment));
     const planRate = await planConfig.getRateLimit(plan);
@@ -76,17 +86,19 @@ export class ApiKeyService {
     const { repo, cache, env } = this.deps;
     const keyHash = hashKey(rawKey);
 
-    const cached = await cache.getValidation(keyHash);
+    // 캐시는 최적화 계층 — validate 경로의 캐시 장애는 miss 취급 (가용성 우선).
+    // update/delete의 invalidate는 revoke 확실성을 위해 전파 유지.
+    const cached = await cache.getValidation(keyHash).catch(() => null);
     if (cached) {
       // 캐시 hit이라도 자연 만료(expiresAt)는 재검사 — stale-auth 방지
       const exp = cached.apiKey?.expiresAt;
       if (!(exp && new Date(exp) < new Date())) return cached;
-      await cache.invalidate(keyHash); // 만료 → 캐시 제거 후 재조회
+      await cache.invalidate(keyHash).catch(() => {}); // 만료 → 캐시 제거 후 재조회
     }
 
     const record = await repo.findByHash(keyHash);
     const result = validateApiKeyRecord(record, { freemiumPlans: env.restrictedPlans });
-    if (result.valid) await cache.setValidation(keyHash, result);
+    if (result.valid) await cache.setValidation(keyHash, result).catch(() => {});
     return result;
   }
 
@@ -127,9 +139,16 @@ export class ApiKeyService {
   async regenerateApiKey(userId: string, apiKeyId: string, plan: string,
     options: { name?: string; description?: string; keepOldKeyActive?: boolean } = {}): Promise<ApiKeyResult> {
     const old = await this.requireOwned(apiKeyId, userId, false);
+    // 파괴적 단계(deactivate) 전에 발급 가능성 선검증 — 구키만 죽는 부분 실패 방지
+    this.assertPlanNotRestricted(plan);
     if (!options.keepOldKeyActive) {
       const max = await this.deps.planConfig.getApiKeyLimit(plan);
-      if (await this.deps.repo.countActive(userId) >= max) throw new Error(`API key limit reached. Max ${max} keys.`);
+      const active = await this.deps.repo.countActive(userId);
+      // 활성 구키 회전은 순증 0 — 비활성화 반영한 유효 카운트로 한도 판정
+      const effective = old.isActive ? active - 1 : active;
+      if (effective >= max) {
+        throw new ApiKeyError(`API key limit reached. Max ${max} keys.`, API_KEY_ERROR_CODES.LIMIT_REACHED);
+      }
       await this.deps.repo.deactivate(apiKeyId);
       await this.deps.cache.invalidate(old.key);
     }
