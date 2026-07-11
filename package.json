@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -36,6 +36,7 @@
       "import": "./dist/core/api-key/index.js"
     },
     "./core/api-key/types": "./dist/core/api-key/types.js",
+    "./core/api-key/errors": "./dist/core/api-key/errors.js",
     "./core/api-key/ports": "./dist/core/api-key/ports.js",
     "./core/api-key/key-generator": "./dist/core/api-key/key-generator.js",
     "./core/api-key/ip-whitelist": "./dist/core/api-key/ip-whitelist.js",

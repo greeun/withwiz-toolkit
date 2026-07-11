@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0]
+
+### Added
+- `core/api-key/errors`: typed errors for the api-key core. `ApiKeyError`
+  (extends `Error`, carries a stable `code`), `API_KEY_ERROR_CODES`
+  (`API_KEY_NOT_FOUND` / `API_KEY_OWNERSHIP` / `API_KEY_PLAN_RESTRICTED` /
+  `API_KEY_LIMIT_REACHED`) and the `isApiKeyError(error, code?)` guard.
+  The guard checks `name` + `code` structurally (not `instanceof`) so it keeps
+  working across duplicated package instances. Consumers should branch on the
+  code instead of matching error message strings — messages are unchanged for
+  backward compatibility, but they are no longer part of the contract.
+- `core/api-key` README: module usage guide (ports wiring, key lifecycle,
+  typed-error handling at the HTTP boundary, rotation / cache-resilience
+  semantics, `next/oapi` middleware recipe), in English and Korean.
+
+### Changed
+- `core/api-key/api-key.service`: all five throw sites (`requireOwned` not-found /
+  ownership, restricted-plan generate, key-limit on generate and regenerate) now
+  throw `ApiKeyError` with the matching code. Messages are byte-identical to
+  0.11.0, so message-based handling keeps working during migration.
+- `regenerateApiKey`: rotating an **active** key without `keepOldKeyActive` no
+  longer fails at the plan limit — the limit check now accounts for the old key
+  being deactivated (a rotation leaves the net key count unchanged).
+  Regenerating an inactive key, or rotating with `keepOldKeyActive: true`, still
+  enforces the limit as before (both are a net +1).
+
+### Fixed
+- `regenerateApiKey`: the restricted-plan check now runs **before** the old key
+  is deactivated. Previously a regenerate under a restricted plan (e.g. after a
+  plan downgrade) deactivated the old key and then failed, leaving the user
+  with no working key.
+- `validateApiKey`: cache-store failures (read, write, and the expired-entry
+  invalidation) are now treated as a cache miss instead of failing validation —
+  previously a cache outage (e.g. Redis down) failed every API-key
+  authentication even though the repository was healthy. Cache invalidation on
+  `updateApiKey`/`deleteApiKey` still propagates failures so a revoke is never
+  silently skipped.
+- `ApiKeyError.code` is now `readonly`.
+
 ## [0.11.0]
 
 ### Added
