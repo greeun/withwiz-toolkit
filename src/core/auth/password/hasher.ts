@@ -108,7 +108,7 @@ async function loadArgon2(): Promise<Argon2Module> {
   if (argon2Cache) return argon2Cache;
   try {
     // optional peer dependency — 설치된 경우에만 로드된다.
-    // @ts-expect-error 'argon2' 는 optional 의존성이라 타입/모듈이 없을 수 있다.
+    // @ts-ignore 'argon2' 는 optional 의존성이라 타입/모듈이 없을 수 있다 (설치 환경에서는 지시어가 불필요해도 유효해야 함).
     const mod = (await import('argon2')) as unknown as { default?: Argon2Module } & Argon2Module;
     argon2Cache = (mod.default ?? mod) as Argon2Module;
     return argon2Cache;
