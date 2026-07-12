@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
   "private": false,
@@ -151,6 +151,7 @@
     "./core/utils/optimistic-lock": "./dist/core/utils/optimistic-lock.js",
     "./core/utils/sanitizer": "./dist/core/utils/sanitizer.js",
     "./core/utils/short-code-generator": "./dist/core/utils/short-code-generator.js",
+    "./core/utils/startup-banner": "./dist/core/utils/startup-banner.js",
     "./core/utils/timezone": "./dist/core/utils/timezone.js",
     "./core/utils/type-guards": "./dist/core/utils/type-guards.js",
     "./core/utils/url-normalizer": "./dist/core/utils/url-normalizer.js",
