@@ -74,11 +74,21 @@ describe('Argon2idPasswordHasher', () => {
   });
 
   it('throws ARGON2_NOT_INSTALLED when the optional dependency is absent', async () => {
-    // argon2 패키지는 devDependency 가 아니므로 이 환경에서 import 실패해야 한다.
-    await expect(hasher.hash('password123')).rejects.toMatchObject({
-      code: 'ARGON2_NOT_INSTALLED',
+    // 환경에 argon2 설치 여부와 무관하게 부재 상황을 시뮬레이션한다
+    // (pnpm auto-install-peers 환경에서는 optional peer 도 설치되므로 mock 필수).
+    vi.doMock('argon2', () => {
+      throw new Error("Cannot find module 'argon2'");
     });
-    await expect(hasher.verify('password123', ARGON2_HASH_STRONG)).rejects.toBeInstanceOf(AuthError);
+    __resetArgon2Cache();
+    try {
+      await expect(hasher.hash('password123')).rejects.toMatchObject({
+        code: 'ARGON2_NOT_INSTALLED',
+      });
+      await expect(hasher.verify('password123', ARGON2_HASH_STRONG)).rejects.toBeInstanceOf(AuthError);
+    } finally {
+      vi.doUnmock('argon2');
+      __resetArgon2Cache();
+    }
   });
 });
 
