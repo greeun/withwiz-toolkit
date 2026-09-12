@@ -94,6 +94,11 @@ await service.regenerateApiKey(userId, apiKeyId, plan);
   propagate failures, so a revoke is never silently skipped.
 - **Stale-auth guard**: a cache hit still re-checks natural expiry (`expiresAt`),
   so an expired key cannot ride out the cache TTL.
+- **Rate limit is capped on update too** (0.14+): `updateApiKey` clamps
+  `customRateLimit` and every `endpointLimits` value to the plan limit, exactly
+  like `generateApiKey`. Pass the caller's `plan` as the 5th argument to cap
+  against the current plan; when omitted, the key's stored `rateLimit` is the
+  cap, so the update path can never raise a limit.
 
 ## Typed Errors
 

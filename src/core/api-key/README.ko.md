@@ -92,6 +92,11 @@ await service.regenerateApiKey(userId, apiKeyId, plan);
   캐시 무효화는 장애를 **전파**하므로 revoke가 조용히 누락되지 않습니다.
 - **stale-auth 가드**: 캐시 hit이라도 자연 만료(`expiresAt`)를 재검사하므로
   만료 키가 캐시 TTL 동안 살아남지 못합니다.
+- **수정 경로에서도 rate limit 상한 적용** (0.14+): `updateApiKey`는
+  `customRateLimit`과 `endpointLimits`의 모든 값을 `generateApiKey`와 동일하게
+  플랜 한도로 클램프합니다. 5번째 인자로 호출자의 `plan`을 전달하면 현재
+  플랜 기준으로, 생략하면 키에 저장된 `rateLimit`을 상한으로 사용하므로 수정
+  경로로 한도를 상향할 수 없습니다.
 
 ## Typed Error
 
