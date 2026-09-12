@@ -39,14 +39,40 @@ const ALLOWED_URL_SCHEMES = [
 /**
  * 사설/예약 IPv4 대역 여부 (a.b.c.d 의 a,b 기준)
  */
-function isPrivateV4(a: number, b: number): boolean {
+function isPrivateV4(a: number, b: number, c: number = 0): boolean {
   if (a === 0) return true; // 0.0.0.0/8 "this network"
   if (a === 127) return true; // loopback 127.0.0.0/8
   if (a === 10) return true; // private 10.0.0.0/8
+  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
   if (a === 169 && b === 254) return true; // link-local 169.254.0.0/16 (cloud metadata 포함)
+  if (a === 192 && b === 0 && c === 0) return true; // IETF protocol assignments 192.0.0.0/24
   if (a === 192 && b === 168) return true; // private 192.168.0.0/16
   if (a === 172 && b >= 16 && b <= 31) return true; // private 172.16.0.0/12
+  if (a >= 224) return true; // multicast 224.0.0.0/4, reserved 240.0.0.0/4, broadcast
   return false;
+}
+
+/**
+ * IPv4-mapped IPv6(`::ffff:a.b.c.d`) 의 하위 32비트를 IPv4 옥텟으로 변환한다.
+ * WHATWG 파서는 `[::ffff:127.0.0.1]` 을 `[::ffff:7f00:1]` 로 직렬화하므로
+ * 16진 두 그룹 형태와 점표기 형태를 모두 처리한다. 해당하지 않으면 null.
+ */
+function mappedV4Octets(h: string): number[] | null {
+  const prefix = '::ffff:';
+  if (!h.startsWith(prefix)) return null;
+  const rest = h.slice(prefix.length);
+
+  const dotted = rest.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (dotted) {
+    const o = dotted.slice(1, 5).map(Number);
+    return o.some((n) => n > 255) ? null : o;
+  }
+
+  const hex = rest.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (!hex) return null;
+  const hi = parseInt(hex[1], 16);
+  const lo = parseInt(hex[2], 16);
+  return [hi >> 8, hi & 0xff, lo >> 8, lo & 0xff];
 }
 
 /**
@@ -54,11 +80,14 @@ function isPrivateV4(a: number, b: number): boolean {
  *
  * WHATWG URL 파서가 10진수/16진수 IPv4 를 점표기로 정규화하므로
  * 점표기 IPv4 와 IPv6 리터럴, localhost 만 판정하면 된다.
+ * IPv4-mapped IPv6 는 하위 32비트를 IPv4 규칙으로 재판정한다.
  */
 function isInternalHost(hostname: string): boolean {
   let h = hostname.toLowerCase();
   // IPv6 리터럴 대괄호 제거
   if (h.startsWith('[') && h.endsWith(']')) h = h.slice(1, -1);
+  // FQDN 후행 점 제거 (`localhost.` 우회 방지)
+  if (h.endsWith('.')) h = h.slice(0, -1);
 
   if (h === 'localhost' || h.endsWith('.localhost')) return true;
 
@@ -67,6 +96,9 @@ function isInternalHost(hostname: string): boolean {
     if (h === '::1' || h === '::') return true; // loopback / unspecified
     // unique-local fc00::/7 (fc/fd), link-local fe80::/10 (fe8-feb)
     if (/^f[cd]/.test(h) || /^fe[89ab]/.test(h)) return true;
+    // IPv4-mapped (::ffff:a.b.c.d) — 실제 접속은 IPv4 로 이뤄지므로 IPv4 규칙 적용
+    const mapped = mappedV4Octets(h);
+    if (mapped) return isPrivateV4(mapped[0], mapped[1], mapped[2]);
     return false;
   }
 
@@ -75,7 +107,7 @@ function isInternalHost(hostname: string): boolean {
   if (v4) {
     const o = v4.slice(1, 5).map(Number);
     if (o.some((n) => n > 255)) return false;
-    return isPrivateV4(o[0], o[1]);
+    return isPrivateV4(o[0], o[1], o[2]);
   }
 
   return false;
