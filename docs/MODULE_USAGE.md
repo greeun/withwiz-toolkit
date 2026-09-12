@@ -404,6 +404,7 @@ npm test -- __tests__/unit/auth/oauth- __tests__/security/auth/oauth.test.ts
 
 ```typescript
 import { createAuthHandlers } from '@withwiz/toolkit/core/auth';
+import { createCacheRefreshTokenStore } from '@withwiz/toolkit/core/auth/services/cache-token-stores';
 
 const auth = createAuthHandlers({
   dependencies: { userRepository },
@@ -413,6 +414,9 @@ const auth = createAuthHandlers({
     google: { clientId: '...', clientSecret: '...', redirectUri: '...' },
   },
   features: { emailVerificationRequired: true },
+  // 권장: refresh 회전 + 재사용 탐지 + stateful 로그아웃 활성화.
+  // 미주입 시 refresh 는 access 재발급만, logout 은 쿠키 삭제만 수행한다.
+  refreshTokenStore: createCacheRefreshTokenStore(cache),
 });
 
 // Next.js App Router

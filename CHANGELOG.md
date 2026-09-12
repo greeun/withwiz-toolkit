@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- `core/system/environment`: `checkEnvironmentVariables()` no longer returns the
+  first 20 characters of the JWT secret — `JWT_SECRET.value` is now `'***'`
+  (same masking as `REDIS_REST_TOKEN`). Anything that surfaced `getSystemInfo()`
+  (admin dashboards, `/api/system`) was leaking a usable prefix of the HMAC key.
+- `core/cache/inmemory-cache-manager`: `set()` skips (with a warning) an item
+  whose estimated size exceeds `maxMemoryMB`, and any item when `maxSize <= 0`.
+  Previously the eviction loop could never free enough space and spun forever,
+  freezing the event loop — a single oversized cached response could take the
+  whole process down. The loop now also stops as soon as the cache is empty.
+- `core/utils/input-validation`: `validateURL` SSRF guard now rejects
+  IPv4-mapped IPv6 literals (`http://[::ffff:127.0.0.1]/`,
+  `[::ffff:169.254.169.254]`, hex form `[::ffff:7f00:1]`), `localhost.` with a
+  trailing dot, and the previously missing reserved ranges 100.64.0.0/10,
+  192.0.0.0/24, 224.0.0.0/4 and above. `allowLocalhost: true` still permits all
+  of them.
+- `next/auth-handlers`: new `refreshTokenStore` option on `AuthHandlerOptions`.
+  When set, the refresh handler runs rotation + reuse detection and attaches the
+  **rotated** refresh token to the response (it previously re-attached the old
+  one, and never wired the store), and the logout handler revokes the submitted
+  refresh token's family via `revokeByToken` before clearing cookies (logout
+  still succeeds if the token is expired or forged). Without the option the
+  handlers behave exactly as before.
+- `core/api-key/api-key.service`: `updateApiKey` now clamps `customRateLimit`
+  and every `endpointLimits` value to the plan limit, matching `generateApiKey`.
+  New optional 5th argument `plan`; when omitted the current stored `rateLimit`
+  is used as the cap, so the update path can never raise a limit. Previously a
+  user could PATCH their own key above the plan limit.
+- deps: `npm audit fix` — `@aws-sdk/xml-builder` 3.972.16 → 3.972.40 drops the
+  vulnerable `fast-xml-builder` (GHSA-5wm8-gmm8-39j9, high) and
+  `fast-xml-parser` (GHSA-gh4j-gqv2-49f6, moderate). Production audit is clean.
+
 ## [0.12.0]
 
 ### Added

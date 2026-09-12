@@ -101,6 +101,53 @@ describe('validateURL', () => {
     expect(validateURL('http://169.254.169.254', { allowLocalhost: true }).valid).toBe(true)
   })
 
+  describe('SSRF bypass hardening', () => {
+    it('rejects IPv4-mapped IPv6 loopback ([::ffff:127.0.0.1])', () => {
+      expect(validateURL('http://[::ffff:127.0.0.1]/').valid).toBe(false)
+    })
+
+    it('rejects IPv4-mapped IPv6 in hex form ([::ffff:7f00:1])', () => {
+      expect(validateURL('http://[::ffff:7f00:1]/').valid).toBe(false)
+    })
+
+    it('rejects IPv4-mapped IPv6 cloud metadata ([::ffff:169.254.169.254])', () => {
+      expect(validateURL('http://[::ffff:169.254.169.254]/latest/meta-data/').valid).toBe(false)
+    })
+
+    it('rejects IPv4-mapped private ranges (10/8, 192.168/16)', () => {
+      expect(validateURL('http://[::ffff:10.0.0.1]/').valid).toBe(false)
+      expect(validateURL('http://[::ffff:192.168.1.1]/').valid).toBe(false)
+    })
+
+    it('allows IPv4-mapped public address', () => {
+      expect(validateURL('http://[::ffff:93.184.216.34]/').valid).toBe(true)
+    })
+
+    it('rejects localhost with trailing dot (localhost.)', () => {
+      expect(validateURL('http://localhost./').valid).toBe(false)
+      expect(validateURL('http://LOCALHOST.:3000/').valid).toBe(false)
+    })
+
+    it('rejects additional reserved IPv4 ranges', () => {
+      expect(validateURL('http://100.64.0.1').valid).toBe(false) // CGNAT
+      expect(validateURL('http://192.0.0.1').valid).toBe(false) // IETF protocol assignments
+      expect(validateURL('http://224.0.0.1').valid).toBe(false) // multicast
+      expect(validateURL('http://255.255.255.255').valid).toBe(false) // broadcast
+    })
+
+    it('still allows neighbouring public ranges', () => {
+      expect(validateURL('http://100.63.255.255').valid).toBe(true)
+      expect(validateURL('http://100.128.0.1').valid).toBe(true)
+      expect(validateURL('http://192.0.1.1').valid).toBe(true)
+      expect(validateURL('http://223.255.255.255').valid).toBe(true)
+    })
+
+    it('allows mapped/dotted variants when allowLocalhost is true', () => {
+      expect(validateURL('http://[::ffff:127.0.0.1]/', { allowLocalhost: true }).valid).toBe(true)
+      expect(validateURL('http://localhost./', { allowLocalhost: true }).valid).toBe(true)
+    })
+  })
+
   it('rejects URL exceeding maxLength', () => {
     const longUrl = 'https://example.com/' + 'a'.repeat(2100)
     const result = validateURL(longUrl)
