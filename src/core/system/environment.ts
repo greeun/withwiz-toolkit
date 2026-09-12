@@ -18,12 +18,9 @@ export function checkEnvironmentVariables(): IEnvironmentInfo[] {
 
   // Auth 설정 체크
   try {
-    const auth = getAuthConfig();
-    results.push({
-      key: 'JWT_SECRET',
-      ok: true,
-      value: auth.jwtSecret.length > 20 ? auth.jwtSecret.substring(0, 20) + '...' : auth.jwtSecret
-    });
+    // 시크릿은 일부라도 노출하지 않는다 — 설정 여부(ok)와 마스킹 값만 반환.
+    getAuthConfig();
+    results.push({ key: 'JWT_SECRET', ok: true, value: '***' });
   } catch {
     results.push({ key: 'JWT_SECRET', ok: false });
   }
