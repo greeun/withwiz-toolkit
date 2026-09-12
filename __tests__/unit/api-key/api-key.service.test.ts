@@ -84,6 +84,31 @@ describe('ApiKeyService.updateApiKey/deleteApiKey 캐시 무효화', () => {
     expect(deps.repo.update).toHaveBeenCalled();
     expect(deps.cache.invalidate).toHaveBeenCalledWith('HASH');
   });
+  it('updateApiKey: plan 전달 시 customRateLimit/endpointLimits 를 플랜 한도로 클램프', async () => {
+    const deps = makeDeps(); // planRate 100
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'u1', key: 'HASH', rateLimit: 100 }));
+    const svc = new ApiKeyService(deps);
+    await svc.updateApiKey('k1', 'u1', { customRateLimit: 1_000_000_000, endpointLimits: { '/a': 5, '/b': 999 } }, false, 'PRO');
+    expect(deps.planConfig.getRateLimit).toHaveBeenCalledWith('PRO');
+    expect(deps.repo.update).toHaveBeenCalledWith('k1', expect.objectContaining({
+      rateLimit: 100, endpointLimits: { '/a': 5, '/b': 100 },
+    }));
+  });
+  it('updateApiKey: plan 미전달 시 현재 rateLimit 을 상한으로 사용 (상향 불가)', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'u1', key: 'HASH', rateLimit: 50 }));
+    const svc = new ApiKeyService(deps);
+    await svc.updateApiKey('k1', 'u1', { customRateLimit: 500 });
+    expect(deps.planConfig.getRateLimit).not.toHaveBeenCalled();
+    expect(deps.repo.update).toHaveBeenCalledWith('k1', expect.objectContaining({ rateLimit: 50 }));
+  });
+  it('updateApiKey: 한도 이하 값은 그대로 저장, 미전달 필드는 undefined 유지', async () => {
+    const deps = makeDeps();
+    deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'u1', key: 'HASH', rateLimit: 100 }));
+    const svc = new ApiKeyService(deps);
+    await svc.updateApiKey('k1', 'u1', { customRateLimit: 30 }, false, 'PRO');
+    expect(deps.repo.update).toHaveBeenCalledWith('k1', expect.objectContaining({ rateLimit: 30, endpointLimits: undefined }));
+  });
   it('updateApiKey: 비소유자 + 非admin → throw', async () => {
     const deps = makeDeps();
     deps.repo.findById = vi.fn(async () => ({ ...recordDefaults(), id: 'k1', userId: 'OTHER', key: 'HASH' }));
