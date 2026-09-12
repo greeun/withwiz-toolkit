@@ -36,9 +36,13 @@ vi.mock('@withwiz/toolkit/core/auth/services/register.service', () => ({
 }));
 
 const mockRefresh = vi.fn();
+const mockRevokeByToken = vi.fn();
+const mockTokenRefreshServiceCtor = vi.fn();
 vi.mock('@withwiz/toolkit/core/auth/services/token-refresh.service', () => ({
-  TokenRefreshService: vi.fn().mockImplementation(function (this: any) {
+  TokenRefreshService: vi.fn().mockImplementation(function (this: any, config: unknown) {
+    mockTokenRefreshServiceCtor(config);
     this.refresh = mockRefresh;
+    this.revokeByToken = mockRevokeByToken;
   }),
 }));
 
@@ -678,6 +682,43 @@ describe('Auth Handlers', () => {
       expect(body.success).toBe(true);
       expect(mockClearTokenCookies).toHaveBeenCalled();
     });
+
+    it('should not touch the refresh service when no refreshTokenStore is configured', async () => {
+      const handler = createLogoutHandler(createMockOptions());
+      const req = makeRequestWithCookies('http://localhost/api/auth/logout', { refresh_token: 'rt-1' }, { method: 'POST' });
+
+      await handler(req);
+      expect(mockTokenRefreshServiceCtor).not.toHaveBeenCalled();
+      expect(mockRevokeByToken).not.toHaveBeenCalled();
+    });
+
+    it('should revoke the submitted refresh token family when refreshTokenStore is configured', async () => {
+      const refreshTokenStore = {
+        isUsed: vi.fn(), markUsed: vi.fn(), isFamilyRevoked: vi.fn(), revokeFamily: vi.fn(),
+      };
+      const handler = createLogoutHandler(createMockOptions({ refreshTokenStore }));
+      const req = makeRequestWithCookies('http://localhost/api/auth/logout', { refresh_token: 'rt-1' }, { method: 'POST' });
+
+      const res = await handler(req);
+      expect(res.status).toBe(200);
+      expect(mockTokenRefreshServiceCtor).toHaveBeenCalledWith(expect.objectContaining({ refreshTokenStore }));
+      expect(mockRevokeByToken).toHaveBeenCalledWith('rt-1');
+      expect(mockClearTokenCookies).toHaveBeenCalled();
+    });
+
+    it('should still succeed and clear cookies when revoke fails (expired/forged token)', async () => {
+      const refreshTokenStore = {
+        isUsed: vi.fn(), markUsed: vi.fn(), isFamilyRevoked: vi.fn(), revokeFamily: vi.fn(),
+      };
+      mockRevokeByToken.mockRejectedValueOnce(new AuthError('Invalid token', 'TOKEN_INVALID', 401));
+      const handler = createLogoutHandler(createMockOptions({ refreshTokenStore }));
+      const req = makeRequestWithCookies('http://localhost/api/auth/logout', { refresh_token: 'bad' }, { method: 'POST' });
+
+      const res = await handler(req);
+      expect(res.status).toBe(200);
+      expect((await parseJsonResponse(res)).success).toBe(true);
+      expect(mockClearTokenCookies).toHaveBeenCalled();
+    });
   });
 
   // ==========================================================================
@@ -901,6 +942,63 @@ describe('Auth Handlers', () => {
 
       const res = await handler(req);
       expect(res.status).toBe(429);
+    });
+
+    it('should pass refreshTokenStore through to TokenRefreshService', async () => {
+      const refreshTokenStore = {
+        isUsed: vi.fn(), markUsed: vi.fn(), isFamilyRevoked: vi.fn(), revokeFamily: vi.fn(),
+      };
+      createRefreshHandler(createMockOptions({ refreshTokenStore }));
+      expect(mockTokenRefreshServiceCtor).toHaveBeenCalledWith(expect.objectContaining({ refreshTokenStore }));
+    });
+
+    it('should attach the rotated refresh token (not the old one) when rotation occurred', async () => {
+      const options = createMockOptions();
+      mockRefresh.mockResolvedValue({
+        accessToken: 'new-at',
+        refreshToken: 'new-rt',
+        user: { id: 'user-1', email: 'test@example.com', role: 'USER' },
+      });
+      const handler = createRefreshHandler(options);
+      const req = makeRequestWithCookies(
+        'http://localhost/api/auth/refresh',
+        { refresh_token: 'old-rt' },
+        { method: 'POST' },
+      );
+
+      const res = await handler(req);
+      expect(res.status).toBe(200);
+      const body = await parseJsonResponse(res);
+      expect(body.accessToken).toBe('new-at');
+      expect(body.refreshToken).toBe('new-rt');
+      expect(mockSetTokenCookies).toHaveBeenCalledWith(
+        expect.anything(),
+        { accessToken: 'new-at', refreshToken: 'new-rt' },
+        expect.anything(),
+      );
+    });
+
+    it('should keep the existing refresh token when no rotation occurred (store not configured)', async () => {
+      const options = createMockOptions();
+      mockRefresh.mockResolvedValue({
+        accessToken: 'new-at',
+        user: { id: 'user-1', email: 'test@example.com', role: 'USER' },
+      });
+      const handler = createRefreshHandler(options);
+      const req = makeRequestWithCookies(
+        'http://localhost/api/auth/refresh',
+        { refresh_token: 'old-rt' },
+        { method: 'POST' },
+      );
+
+      const res = await handler(req);
+      const body = await parseJsonResponse(res);
+      expect(body.refreshToken).toBeUndefined();
+      expect(mockSetTokenCookies).toHaveBeenCalledWith(
+        expect.anything(),
+        { accessToken: 'new-at', refreshToken: 'old-rt' },
+        expect.anything(),
+      );
     });
   });
 

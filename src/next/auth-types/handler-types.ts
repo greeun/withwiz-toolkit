@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import type { BaseUser, OAuthProviderName, UserRepository, OAuthAccountRepository, EmailTokenRepository, EmailSender, Logger } from '@withwiz/toolkit/core/auth/types';
 import type { TokenDelivery } from '@withwiz/toolkit/core/auth/config';
+import type { IRefreshTokenStore } from '@withwiz/toolkit/core/auth/services/refresh-token-store';
 
 export interface AuthHandlerDependencies {
   userRepository: UserRepository;
@@ -53,6 +54,14 @@ export interface AuthHandlerOptions {
   };
   /** 토큰 전달 모드. 미지정 시 전역 AuthConfig → 'hybrid' 순으로 해석 */
   tokenDelivery?: TokenDelivery;
+  /**
+   * refresh 토큰 store. 주입 시:
+   * - refresh 핸들러가 회전(rotation) + 재사용 탐지(reuse detection)를 수행하고
+   *   새 refresh 토큰을 쿠키/응답에 반영한다.
+   * - logout 핸들러가 제출된 refresh 토큰의 family 를 즉시 무효화한다.
+   * 미주입 시 0.13 이전과 동일하게 동작한다(access 재발급만, 로그아웃은 쿠키 삭제만).
+   */
+  refreshTokenStore?: IRefreshTokenStore;
 }
 
 export interface AuthHandlerResult {

@@ -6,13 +6,14 @@ import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 
 export function createRefreshHandler(options: AuthHandlerOptions) {
-  const { dependencies, jwt, hooks, cookie, tokenDelivery } = options;
+  const { dependencies, jwt, hooks, cookie, tokenDelivery, refreshTokenStore } = options;
   const refreshService = new TokenRefreshService({
     userRepository: dependencies.userRepository,
     jwtSecret: jwt.secret,
     accessTokenExpiry: jwt.accessTokenExpiry,
     refreshTokenExpiry: jwt.refreshTokenExpiry,
     isTokenBlacklisted: hooks?.isTokenBlacklisted,
+    refreshTokenStore,
     logger: dependencies.logger,
   });
 
@@ -30,15 +31,21 @@ export function createRefreshHandler(options: AuthHandlerOptions) {
       }
 
       const result = await refreshService.refresh(refreshToken);
+      // 회전이 일어났으면(store 주입) 새 refresh 로 교체해야 한다.
+      // 구 토큰을 재부착하면 다음 refresh 에서 reuse 로 탐지되어 family 가 폐기된다.
+      const rotated = result.refreshToken !== undefined;
+      const nextRefreshToken = result.refreshToken ?? refreshToken;
       const response = NextResponse.json(
         strategy.buildTokenResponse(
           { success: true, user: result.user },
-          { accessToken: result.accessToken },
+          rotated
+            ? { accessToken: result.accessToken, refreshToken: nextRefreshToken }
+            : { accessToken: result.accessToken },
         ),
       );
       strategy.attachCookies(
         response,
-        { accessToken: result.accessToken, refreshToken },
+        { accessToken: result.accessToken, refreshToken: nextRefreshToken },
         { secure: cookie?.secure },
       );
       return response;
