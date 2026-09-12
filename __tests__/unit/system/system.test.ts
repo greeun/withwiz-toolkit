@@ -190,10 +190,10 @@ describe('Environment Check', () => {
       expect(jwtResult!.value).toBeUndefined();
     });
 
-    it('should truncate long JWT_SECRET values', async () => {
+    it('should fully mask JWT_SECRET value (no partial secret exposure)', async () => {
       const { initializeAuth } = await import('@withwiz/toolkit/core/auth/config');
-      const longSecret = 'a'.repeat(50); // 50자 JWT secret
-      initializeAuth({ jwtSecret: longSecret });
+      const secret = 'zq7Xv-Jk9pL2mN4rT6wY8bC1dF3gH5jK0sA';
+      initializeAuth({ jwtSecret: secret });
 
       const { checkEnvironmentVariables } = await import('@withwiz/toolkit/core/system/environment');
       const results = checkEnvironmentVariables();
@@ -201,8 +201,8 @@ describe('Environment Check', () => {
       const jwtResult = results.find((r) => r.key === 'JWT_SECRET');
       expect(jwtResult).toBeDefined();
       expect(jwtResult!.ok).toBe(true);
-      expect(jwtResult!.value!.endsWith('...')).toBe(true);
-      expect(jwtResult!.value!.length).toBeLessThanOrEqual(23); // 20 + "..."
+      expect(jwtResult!.value).toBe('***');
+      expect(JSON.stringify(results)).not.toContain(secret.substring(0, 8));
     });
   });
 });

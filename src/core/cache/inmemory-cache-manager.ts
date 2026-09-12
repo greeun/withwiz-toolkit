@@ -105,8 +105,22 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
     const actualTTL = ttl ?? this.config.defaultTTL;
     const size = this.estimateSize(value);
 
-    // 용량 확보 (eviction)
-    while (this.needsEviction(size)) {
+    // 단일 항목이 메모리 상한을 넘거나 maxSize 가 0 이하이면 어떤 eviction 으로도
+    // 공간을 확보할 수 없다. 저장을 건너뛰어야 아래 루프가 무한 반복되지 않는다.
+    const maxMemoryBytes = this.config.maxMemoryMB * 1024 * 1024;
+    if (this.config.maxSize <= 0 || size > maxMemoryBytes) {
+      logger.warn('[InMemoryCache] Item skipped: exceeds cache capacity', {
+        prefix: this.prefix,
+        key,
+        size,
+        maxMemoryBytes,
+        maxSize: this.config.maxSize,
+      });
+      return;
+    }
+
+    // 용량 확보 (eviction) — 캐시가 비면 더 이상 제거할 것이 없으므로 종료
+    while (this.cache.size > 0 && this.needsEviction(size)) {
       this.evict();
     }
 

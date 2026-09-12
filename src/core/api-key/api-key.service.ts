@@ -115,12 +115,25 @@ export class ApiKeyService {
     return { keys: items.map((r) => this.toInfo(r)), total, page, pageSize, hasMore: total > page * pageSize };
   }
 
-  async updateApiKey(id: string, userId: string, data: UpdateApiKeyData, isAdmin = false): Promise<ApiKeyInfo> {
+  /**
+   * rate limit 상한 — generate 와 동일하게 플랜 한도로 클램프한다.
+   * `plan` 미전달 시 현재 저장된 rateLimit(생성 시 이미 플랜 한도로 클램프됨)을
+   * 상한으로 사용해, 수정 경로로 한도를 상향하는 것을 막는다.
+   */
+  async updateApiKey(
+    id: string, userId: string, data: UpdateApiKeyData, isAdmin = false, plan?: string,
+  ): Promise<ApiKeyInfo> {
     const rec = await this.requireOwned(id, userId, isAdmin);
+    const cap = plan !== undefined ? await this.deps.planConfig.getRateLimit(plan) : rec.rateLimit;
+    const rateLimit = data.customRateLimit !== undefined
+      ? Math.min(data.customRateLimit, cap) : undefined;
+    const endpointLimits = data.endpointLimits !== undefined
+      ? Object.fromEntries(Object.entries(data.endpointLimits).map(([k, v]) => [k, Math.min(v, cap)]))
+      : undefined;
     const updated = await this.deps.repo.update(id, {
       name: data.name, description: data.description, isActive: data.isActive,
       permissions: data.permissions, ipWhitelist: data.ipWhitelist,
-      rateLimit: data.customRateLimit, endpointLimits: data.endpointLimits,
+      rateLimit, endpointLimits,
     });
     await this.deps.cache.invalidate(rec.key);
     return this.toInfo(updated);
