@@ -8,6 +8,12 @@ import { z } from 'zod';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
 import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError } from '@withwiz/toolkit/core/constants/error-codes';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
+import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
+import {
+  inspectPrismaError,
+  getPrismaErrorMapping,
+  PRISMA_VALIDATION_MESSAGE,
+} from '@withwiz/toolkit/core/error/prisma-error';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 
 // AuthError.code → ERROR_CODES 키 매핑
@@ -43,15 +49,6 @@ export const AUTH_ERROR_CODE_MAP: Record<string, number> = {
   UNAUTHORIZED: ERROR_CODES.UNAUTHORIZED.code,
 };
 
-// Prisma 에러 코드 매핑
-const PRISMA_ERROR_MAP: Record<string, { code: number; message: string }> = {
-  P2000: { code: 40001, message: '입력값이 너무 깁니다.' },
-  P2001: { code: 40401, message: '레코드를 찾을 수 없습니다.' },
-  P2002: { code: 40905, message: '이미 존재하는 데이터입니다.' },
-  P2003: { code: 40001, message: '외래 키 제약 조건 위반입니다.' },
-  P2025: { code: 40401, message: '레코드를 찾을 수 없습니다.' },
-};
-
 /**
  * 에러 응답 형식
  */
@@ -70,11 +67,21 @@ export interface IErrorResponse {
 export function errorToResponse(error: unknown, requestPath?: string): NextResponse<IErrorResponse> {
   const processed = processError(error);
 
-  // 로깅
+  // 로깅 (난독화된 번들 소스가 통째로 기록되지 않도록 길이 제한)
   if (processed.status >= 500) {
-    logger.error('Server error', { ...processed, path: requestPath, stack: error instanceof Error ? error.stack : undefined });
+    logger.error('Server error', {
+      ...processed,
+      message: truncateErrorMessage(processed.message),
+      path: requestPath,
+      stack: error instanceof Error ? truncateErrorMessage(error.stack) : undefined,
+      cause: summarizeErrorForLog(error),
+    });
   } else if (processed.status >= 400) {
-    logger.warn('Client error', { ...processed, path: requestPath });
+    logger.warn('Client error', {
+      ...processed,
+      message: truncateErrorMessage(processed.message),
+      path: requestPath,
+    });
   }
 
   return NextResponse.json(
@@ -116,13 +123,23 @@ export function processError(error: unknown): { code: number; message: string; s
 
   // 4. 일반 Error
   if (error instanceof Error) {
-    // Prisma 에러 확인
-    const prismaMatch = error.message.match(/P\d{4}/);
-    if (prismaMatch) {
-      const mapping = PRISMA_ERROR_MAP[prismaMatch[0]];
+    // Prisma 에러 확인 (code 속성/클래스 이름 우선, 메시지 스캔은 제한적 폴백)
+    const prismaInfo = inspectPrismaError(error);
+    if (prismaInfo) {
+      // PrismaClientValidationError 등 code 가 없는 입력 검증 오류 → 400
+      if (prismaInfo.kind === 'validation') {
+        const code = ERROR_CODES.VALIDATION_ERROR.code;
+        return { code, message: formatErrorMessage(code, PRISMA_VALIDATION_MESSAGE), status: getHttpStatus(code) };
+      }
+
+      const mapping = getPrismaErrorMapping(prismaInfo.code);
       if (mapping) {
         return { code: mapping.code, message: formatErrorMessage(mapping.code, mapping.message), status: getHttpStatus(mapping.code) };
       }
+
+      // 매핑되지 않은 Prisma 에러
+      const code = ERROR_CODES.DATABASE_ERROR.code;
+      return { code, message: formatErrorMessage(code), status: getHttpStatus(code) };
     }
 
     // 공통 에러 분류

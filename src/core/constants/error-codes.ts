@@ -19,6 +19,11 @@
  * - 503xx: Service unavailable
  */
 
+import {
+  inspectPrismaError,
+  getPrismaErrorMapping,
+} from "@withwiz/toolkit/core/error/prisma-error";
+
 // HTTP Status Code Mapping
 export const HTTP_STATUS = {
   OK: 200,
@@ -487,12 +492,37 @@ export function formatErrorMessage(
 // ============================================================================
 
 /**
+ * Prisma 에러를 표준 에러 코드로 분류한다. Prisma 에러가 아니면 null.
+ *
+ * 판정은 `error.code` 속성과 오류 클래스 이름을 우선하며,
+ * 메시지 스캔은 앞부분 일정 길이에 한한 폴백이다.
+ * (core/error/prisma-error 참조)
+ */
+export function classifyPrismaError(error: unknown): IErrorCodeInfo | null {
+  const info = inspectPrismaError(error);
+  if (!info) return null;
+
+  // PrismaClientValidationError 등 code 가 없는 입력 검증 오류 → 400
+  if (info.kind === 'validation') return ERROR_CODES.VALIDATION_ERROR;
+
+  const mapping = getPrismaErrorMapping(info.code);
+  if (mapping) return getErrorByCode(mapping.code) ?? ERROR_CODES.DATABASE_ERROR;
+
+  return ERROR_CODES.DATABASE_ERROR;
+}
+
+/**
  * 알 수 없는 Error 인스턴스에서 에러 메시지/코드 패턴을 분석하여
  * 가장 적합한 에러코드를 반환하는 공통 함수.
  *
  * AppError.from(), processError(), resolveErrorCode() 등에서 공유.
  */
 export function classifyError(error: Error): IErrorCodeInfo {
+  // Prisma 에러는 메시지 오염(Prisma 7 번들 소스 포함)과 무관하도록
+  // code 속성/클래스 이름 기준으로 가장 먼저 판정한다.
+  const prismaClassified = classifyPrismaError(error);
+  if (prismaClassified) return prismaClassified;
+
   const msg = error.message.toLowerCase();
   const errCode = (error as NodeJS.ErrnoException).code;
 
@@ -502,8 +532,8 @@ export function classifyError(error: Error): IErrorCodeInfo {
   if (msg.includes('forbidden') || msg.includes('access denied')) return ERROR_CODES.FORBIDDEN;
   if (msg.includes('too many request') || msg.includes('rate limit')) return ERROR_CODES.RATE_LIMIT_EXCEEDED;
 
-  // DB/Prisma 에러
-  if (error.message.match(/P\d{4}/) || msg.includes('database') || msg.includes('prisma')) return ERROR_CODES.DATABASE_ERROR;
+  // DB/Prisma 에러 (구조 판정 실패 시의 키워드 폴백)
+  if (msg.includes('database') || msg.includes('prisma')) return ERROR_CODES.DATABASE_ERROR;
 
   // 네트워크/외부 ���비스 에러
   if (errCode === 'ECONNREFUSED' || errCode === 'ECONNRESET' || errCode === 'ETIMEDOUT' || errCode === 'ENOTFOUND'

@@ -14,6 +14,7 @@ import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
 import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
+import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
 import { getCommonConfig } from '@withwiz/toolkit/core/config/common';
@@ -95,10 +96,11 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
       : ERROR_CODES.INTERNAL_SERVER_ERROR;
 
     // 스택 트레이스는 서버 로그에만 기록 (API 응답에는 포함하지 않음)
+    // 난독화된 번들 소스가 통째로 기록되지 않도록 메시지/스택 길이를 제한한다.
     logger.error('[ErrorHandler] Unexpected error:', {
-      error,
+      error: summarizeErrorForLog(error),
       requestId: context.requestId,
-      stack: error instanceof Error ? error.stack : undefined,
+      stack: error instanceof Error ? truncateErrorMessage(error.stack) : undefined,
     });
 
     return createErrorResponse(
