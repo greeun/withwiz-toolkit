@@ -111,6 +111,7 @@
     "./core/error/friendly-messages-v2": "./dist/core/error/friendly-messages-v2.js",
     "./core/error/messages": "./dist/core/error/messages/index.js",
     "./core/error/messages/types": "./dist/core/error/messages/types.js",
+    "./core/error/prisma-error": "./dist/core/error/prisma-error.js",
     "./core/geolocation": "./dist/core/geolocation/index.js",
     "./core/geolocation/batch-processor": "./dist/core/geolocation/batch-processor.js",
     "./core/geolocation/config": "./dist/core/geolocation/config.js",

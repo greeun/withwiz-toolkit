@@ -18,6 +18,9 @@ export * from "@withwiz/toolkit/core/error/app-error";
 // 에러 정보 추출 (프레임워크 독립)
 export * from "@withwiz/toolkit/core/error/extract-error-info";
 
+// Prisma 오류 판정 (프레임워크 독립, 의존성 없음)
+export * from "@withwiz/toolkit/core/error/prisma-error";
+
 // 친화적 메시지 (v2 - 다중 언어 지원)
 export {
   getFriendlyMessage,

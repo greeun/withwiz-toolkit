@@ -12,29 +12,17 @@ import { logApiRequest, logApiResponse } from '@withwiz/toolkit/core/logger/logg
 import { ERROR_CODES, formatErrorMessage, getHttpStatus } from '@withwiz/toolkit/core/constants/error-codes';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import type { ISerializedError } from '@withwiz/toolkit/core/error/app-error';
+import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
+import {
+  inspectPrismaError,
+  getPrismaErrorMapping,
+  PRISMA_VALIDATION_MESSAGE,
+} from '@withwiz/toolkit/core/error/prisma-error';
 
 // ProcessedError 타입 (AppError의 ISerializedError와 호환)
 export type ProcessedError = ISerializedError;
 
-/**
- * Prisma 에러 코드 매핑 (5자리 코드)
- */
-const PRISMA_ERROR_MAP: Record<string, { code: number; message: string; status: number }> = {
-  P2000: { code: 40001, message: '입력값이 너무 깁니다.', status: 400 },
-  P2001: { code: 40401, message: '요청한 레코드를 찾을 수 없습니다.', status: 404 },
-  P2002: { code: 40905, message: '이미 존재하는 데이터입니다.', status: 409 },
-  P2003: { code: 40001, message: '외래 키 제약 조건 위반입니다.', status: 400 },
-  P2004: { code: 40001, message: '데이터베이스 제약 조건 위반입니다.', status: 400 },
-  P2005: { code: 40001, message: '유효하지 않은 필드 값입니다.', status: 400 },
-  P2006: { code: 40001, message: '유효하지 않은 값입니다.', status: 400 },
-  P2011: { code: 40004, message: 'Null 제약 조건 위반입니다.', status: 400 },
-  P2014: { code: 40001, message: '필수 관계 위반입니다.', status: 400 },
-  P2015: { code: 40401, message: '관련 레코드를 찾을 수 없습니다.', status: 404 },
-  P2016: { code: 40001, message: '쿼리 해석 오류입니다.', status: 400 },
-  P2017: { code: 40001, message: '관계가 연결되지 않았습니다.', status: 400 },
-  P2018: { code: 40401, message: '연결된 레코드를 찾을 수 없습니다.', status: 404 },
-  P2025: { code: 40401, message: '요청한 레코드를 찾을 수 없습니다.', status: 404 },
-};
+// Prisma 에러 코드 매핑은 core/error/prisma-error 의 단일 기준표(PRISMA_ERROR_MAP)를 사용한다.
 
 /**
  * 에러 핸들링 옵션
@@ -159,12 +147,28 @@ export class ErrorProcessor {
    * Prisma 에러 추출 및 처리
    */
   private static extractPrismaError(error: Error): ProcessedError | null {
-    // Prisma 에러 코드 추출 (P2xxx 형식)
-    const codeMatch = error.message.match(/P\d{4}/);
-    if (!codeMatch) return null;
+    // code 속성/클래스 이름 우선 판정. 메시지 스캔은 앞부분 제한 폴백.
+    const info = inspectPrismaError(error);
+    if (!info) return null;
 
-    const prismaCode = codeMatch[0];
-    const mapping = PRISMA_ERROR_MAP[prismaCode];
+    // PrismaClientValidationError 등 code 가 없는 입력 검증 오류 → 400
+    if (info.kind === 'validation') {
+      logger.warn('Prisma validation error', {
+        prismaErrorName: info.name,
+        message: truncateErrorMessage(error.message),
+      });
+      return {
+        code: ERROR_CODES.VALIDATION_ERROR.code,
+        message: formatErrorMessage(ERROR_CODES.VALIDATION_ERROR.code, PRISMA_VALIDATION_MESSAGE),
+        status: 400,
+        key: 'VALIDATION_ERROR',
+        category: 'validation',
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    const prismaCode = info.code;
+    const mapping = getPrismaErrorMapping(prismaCode);
 
     if (mapping) {
       return {
@@ -178,8 +182,12 @@ export class ErrorProcessor {
       };
     }
 
-    // 매핑되지 않은 Prisma 에러 - 내부 코드는 로그에만 기록
-    logger.error('Unmapped Prisma error', { prismaCode, message: error.message });
+    // 매핑되지 않은 Prisma 에러 - 내부 코드는 로그에만 기록 (메시지는 길이 제한)
+    logger.error('Unmapped Prisma error', {
+      prismaCode,
+      prismaErrorName: info.name,
+      message: truncateErrorMessage(error.message),
+    });
     return {
       code: ERROR_CODES.DATABASE_ERROR.code,
       message: formatErrorMessage(ERROR_CODES.DATABASE_ERROR.code),
@@ -204,7 +212,7 @@ export class ErrorProcessor {
         status: processed.status,
         path: requestPath,
         details: processed.details,
-        originalError: error instanceof Error ? error.stack : error,
+        originalError: summarizeErrorForLog(error),
       });
     } else if (processed.status >= 400) {
       logger.warn('Client error', {
@@ -339,8 +347,8 @@ export function withErrorHandling<T extends unknown[], TRequest extends NextRequ
         // 일반 JavaScript 에러
         response = ErrorProcessor.toResponse(error, request.nextUrl.pathname);
         logger.error('Unexpected error:', {
-          error: error.message,
-          stack: error.stack,
+          error: truncateErrorMessage(error.message),
+          stack: truncateErrorMessage(error.stack),
           responseTime: `${responseTime}ms`,
           path: request.nextUrl.pathname,
         });
@@ -358,7 +366,7 @@ export function withErrorHandling<T extends unknown[], TRequest extends NextRequ
         );
 
         logger.error('Unknown error:', {
-          error,
+          error: summarizeErrorForLog(error),
           responseTime: `${responseTime}ms`,
           path: request.nextUrl.pathname,
         });
@@ -407,8 +415,9 @@ async function maskSensitiveInfo(response: NextResponse): Promise<NextResponse> 
  * Prisma 에러 처리 헬퍼
  */
 export function handlePrismaError(error: unknown): NextResponse {
-  if (error && typeof error === 'object' && 'code' in error) {
-    const prismaError = error as { code: string };
+  const prismaCode = inspectPrismaError(error)?.code;
+  if (prismaCode) {
+    const prismaError = { code: prismaCode };
     if (prismaError.code === 'P2002') {
       const errorInfo = ERROR_CODES.DUPLICATE_RESOURCE;
       return NextResponse.json(
