@@ -335,8 +335,9 @@ coverageThreshold: {
 
 ## 문서
 
-- **[TEST_PLAN.md](docs/TEST_PLAN.md)**: 전체 테스트 계획 및 전략
-- **[TEST_SCENARIOS.md](docs/TEST_SCENARIOS.md)**: 모듈별 상세 시나리오
+- **[test-classification.md](../docs/testing/test-classification.md)**: 도메인별 테스트 시나리오·케이스 (SC-/TC- ID)
+- **[docs/scenarios/](docs/scenarios/)**, **[docs/testcases/](docs/testcases/)**: api-key 모듈 갭 시나리오와 테스트 케이스
+- **[FALSE_POSITIVE_AUDIT.md](docs/FALSE_POSITIVE_AUDIT.md)**: 허위 양성 감사 (2026-07-12)
 
 ## 문제 해결
 
