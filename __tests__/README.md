@@ -335,8 +335,9 @@ coverageThreshold: {
 
 ## Documentation
 
-- **[TEST_PLAN.md](docs/TEST_PLAN.md)**: Overall test plan and strategy
-- **[TEST_SCENARIOS.md](docs/TEST_SCENARIOS.md)**: Detailed scenarios per module
+- **[test-classification.md](../docs/testing/test-classification.md)**: Test scenarios and cases per domain (SC-/TC- IDs)
+- **[docs/scenarios/](docs/scenarios/)**, **[docs/testcases/](docs/testcases/)**: api-key module gap scenarios and test cases
+- **[FALSE_POSITIVE_AUDIT.md](docs/FALSE_POSITIVE_AUDIT.md)**: False positive audit (2026-07-12)
 
 ## Troubleshooting
 
