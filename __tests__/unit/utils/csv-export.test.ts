@@ -310,3 +310,60 @@ describe('createStreamingCsvResponse', () => {
     );
   });
 });
+
+// ============================================================================
+// Content-Disposition 파일명 인코딩
+// ============================================================================
+describe('Content-Disposition 파일명 인코딩', () => {
+  const columns: CsvColumn<{ name: string }>[] = [{ header: '이름', accessor: 'name' }];
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(FIXED_NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** filename*=UTF-8''... 값을 디코딩한다. */
+  function decodeExtendedFilename(disposition: string | null): string | null {
+    const match = disposition?.match(/filename\*=UTF-8''([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  it('한글 파일명도 응답을 만들고 ASCII 대체 이름과 UTF-8 filename* 을 함께 싣는다', async () => {
+    const response = createSimpleCsvResponse([{ name: '홍길동' }], { filename: '회원목록', columns });
+    const disposition = response.headers.get('Content-Disposition');
+
+    expect(disposition).toBe(
+      "attachment; filename=\"_____2026-09-15.csv\"; filename*=UTF-8''%ED%9A%8C%EC%9B%90%EB%AA%A9%EB%A1%9D_2026-09-15.csv",
+    );
+    expect(decodeExtendedFilename(disposition)).toBe('회원목록_2026-09-15.csv');
+    expect(decodeWithoutBom(await readBytes(response))).toBe('\uFEFF"이름"\r\n"홍길동"');
+  });
+
+  it('스트리밍 응답도 한글 파일명으로 만들고 본문을 끝까지 읽을 수 있다', async () => {
+    const fetcher = vi.fn(async () => ({ data: [{ name: 'a' }] }));
+
+    const response = createStreamingCsvResponse({ filename: '주문내역', columns, includeBom: false, fetcher });
+
+    expect(decodeExtendedFilename(response.headers.get('Content-Disposition'))).toBe('주문내역_2026-09-15.csv');
+    expect(decodeWithoutBom(await readBytes(response))).toBe('"이름"\r\n"a"\r\n');
+  });
+
+  it('따옴표가 들어간 파일명은 대체 이름에서 치환하고 filename* 에 원래 이름을 싣는다', () => {
+    const response = createSimpleCsvResponse([], { filename: 'report "Q3"', columns });
+    const disposition = response.headers.get('Content-Disposition')!;
+
+    expect(disposition.startsWith('attachment; filename="report _Q3__2026-09-15.csv";')).toBe(true);
+    expect(decodeExtendedFilename(disposition)).toBe('report "Q3"_2026-09-15.csv');
+  });
+
+  it('줄바꿈이 들어간 파일명으로 헤더를 추가 주입할 수 없다', () => {
+    const response = createSimpleCsvResponse([], { filename: 'a\r\nX-Injected: 1', columns });
+
+    expect(response.headers.get('X-Injected')).toBeNull();
+    expect(response.headers.get('Content-Disposition')).not.toMatch(/[\r\n]/);
+  });
+});
