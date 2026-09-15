@@ -116,6 +116,99 @@ describe('createCacheRefreshTokenStore (rotation/reuse/family)', () => {
     expect(await store.isUsed('jti-9')).toBe(false);
   });
 
+  describe('markUsedIfUnused (원자적 사용 표시)', () => {
+    it('처음 표시하면 true, 이미 사용된 jti 는 false 를 반환한다', async () => {
+      const store = createCacheRefreshTokenStore(makeCache('rt-claim1'));
+
+      expect(await store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(true);
+      expect(await store.isUsed('jti-1')).toBe(true);
+      expect(await store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(false);
+    });
+
+    it('markUsed 로 이미 기록된 jti 도 false 를 반환한다', async () => {
+      const store = createCacheRefreshTokenStore(makeCache('rt-claim2'));
+      await store.markUsed('jti-1', { familyId: 'f', userId: 'u' });
+
+      expect(await store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(false);
+    });
+
+    it('원자 연산이 없는 캐시에서도 같은 jti 동시 호출 10건 중 1건만 true 이다', async () => {
+      const store = createCacheRefreshTokenStore(makeCache('rt-claim3'));
+
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () => store.markUsedIfUnused!('jti-race', { familyId: 'f', userId: 'u' })),
+      );
+
+      expect(results.filter(Boolean)).toHaveLength(1);
+    });
+
+    it('서로 다른 jti 는 서로를 막지 않는다', async () => {
+      const store = createCacheRefreshTokenStore(makeCache('rt-claim4'));
+
+      const results = await Promise.all([
+        store.markUsedIfUnused!('jti-a', { familyId: 'f', userId: 'u' }),
+        store.markUsedIfUnused!('jti-b', { familyId: 'f', userId: 'u' }),
+      ]);
+
+      expect(results).toEqual([true, true]);
+    });
+
+    it('캐시가 setIfNotExists 를 제공하면 그 결과를 사용하고 exists·set 을 호출하지 않는다', async () => {
+      const calls: Array<[string, unknown, number | undefined]> = [];
+      const atomicCache = {
+        set: vi.fn(async () => {}),
+        delete: vi.fn(async () => {}),
+        exists: vi.fn(async () => false),
+        setIfNotExists: vi.fn(async (key: string, value: unknown, ttl?: number) => {
+          calls.push([key, value, ttl]);
+          return calls.length === 1;
+        }),
+      };
+      const storeA = createCacheRefreshTokenStore(atomicCache, { defaultTtlSec: 120 });
+      const storeB = createCacheRefreshTokenStore(atomicCache, { defaultTtlSec: 120 });
+
+      expect(await storeA.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(true);
+      expect(await storeB.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(false);
+      expect(calls[0]).toEqual(['rt:used:jti-1', 1, 120]);
+      expect(atomicCache.exists).not.toHaveBeenCalled();
+      expect(atomicCache.set).not.toHaveBeenCalled();
+    });
+
+    it('TTL 은 meta.expiresAt 잔여시간에 정렬된다', async () => {
+      vi.useFakeTimers();
+      try {
+        const store = createCacheRefreshTokenStore(makeCache('rt-claim5'));
+        const expiresAt = new Date(Date.now() + 5_000);
+
+        expect(await store.markUsedIfUnused!('jti-x', { familyId: 'f', userId: 'u', expiresAt })).toBe(true);
+        vi.advanceTimersByTime(6_000);
+        expect(await store.isUsed('jti-x')).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('기록 중 캐시 오류가 나면 reject 하고, 다음 호출은 대기 없이 다시 시도한다', async () => {
+      const inner = makeCache('rt-claim6');
+      let failNextSet = true;
+      const flakyCache = {
+        set: async <T,>(key: string, value: T, ttl?: number) => {
+          if (failNextSet) {
+            failNextSet = false;
+            throw new Error('cache down');
+          }
+          await inner.set(key, value, ttl);
+        },
+        delete: (key: string) => inner.delete(key),
+        exists: (key: string) => inner.exists(key),
+      };
+      const store = createCacheRefreshTokenStore(flakyCache);
+
+      await expect(store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).rejects.toThrow('cache down');
+      expect(await store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })).toBe(true);
+    });
+  });
+
   it('IRefreshTokenStore 계약(4개 필수 메서드)을 만족한다', async () => {
     const store = createCacheRefreshTokenStore(makeCache('rt5'));
     expect(typeof store.isUsed).toBe('function');

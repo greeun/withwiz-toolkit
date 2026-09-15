@@ -416,6 +416,8 @@ const auth = createAuthHandlers({
   features: { emailVerificationRequired: true },
   // 권장: refresh 회전 + 재사용 탐지 + stateful 로그아웃 활성화.
   // 미주입 시 refresh 는 access 재발급만, logout 은 쿠키 삭제만 수행한다.
+  // 같은 토큰의 동시 갱신은 store.markUsedIfUnused 로 한 요청만 성공한다.
+  // 여러 인스턴스가 캐시를 공유하면 setIfNotExists 를 구현한 cache 를 주입한다 (auth README 3절).
   refreshTokenStore: createCacheRefreshTokenStore(cache),
 });
 
