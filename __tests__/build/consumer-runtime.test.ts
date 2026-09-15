@@ -8,6 +8,7 @@
  * 테스트 범위 (e2e-gap-testcases.md):
  * - TC-E2E-AK-001: dist errors.js 런타임 import + typed error 동작
  * - TC-E2E-AK-002: dist ApiKeyService 소비자 전체 여정 (발급→인증→회전→구키 무효)
+ * - TC-E-002: dist Prisma 오류 분류 소비자 여정 (매핑표·classifyError·process·processError·handlePrismaError)
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync } from 'fs';
@@ -84,5 +85,60 @@ describe('dist 소비자 런타임 검증', () => {
     // typed error가 dist 경계에서도 판별 가능
     const err = await svc.getApiKey('missing', 'u1').then(() => null, (e: unknown) => e);
     expect(errMod.isApiKeyError(err, errMod.API_KEY_ERROR_CODES.NOT_FOUND)).toBe(true);
+  });
+
+  describe('TC-E-002: dist Prisma 오류 분류 소비자 여정', () => {
+    /** Prisma 7 오류를 이름과 code 속성으로 모사한다 (dist 코드는 클래스 import 없이 판정). */
+    const prismaKnown = (code: string, message = 'Invalid invocation') =>
+      Object.assign(new Error(message), { name: 'PrismaClientKnownRequestError', code });
+    const prismaValidation = () =>
+      Object.assign(new Error('Argument `email` is missing. unauthorized'), { name: 'PrismaClientValidationError' });
+
+    it('dist prisma-error.js — code 속성 판정, 매핑표 P2011·메시지 스캔 한도', async () => {
+      const mod = await import(distUrl('core/error/prisma-error.js'));
+      const info = mod.inspectPrismaError(prismaKnown('P2002', 'x'.repeat(4000)));
+
+      expect(info).toMatchObject({ code: 'P2002', source: 'property' });
+      expect(mod.PRISMA_ERROR_MAP.P2011.status).toBe(400);
+      expect(mod.PRISMA_MESSAGE_SCAN_LIMIT).toBe(200);
+    });
+
+    it('dist error-codes.js — classifyError 가 Prisma 검증 오류를 400 으로 분류 (401 아님)', async () => {
+      const mod = await import(distUrl('core/constants/error-codes.js'));
+
+      expect(mod.classifyError(prismaValidation()).status).toBe(400);
+    });
+
+    it('dist error-processor.js — ErrorProcessor.process 가 P2025 를 404 와 prismaCode 로 변환', async () => {
+      const mod = await import(distUrl('next/utils/error-processor.js'));
+      const result = mod.ErrorProcessor.process(prismaKnown('P2025', 'Operation failed'));
+
+      expect(result.status).toBe(404);
+      expect(result.details).toEqual({ prismaCode: 'P2025' });
+    });
+
+    it('dist error-handler.js — processError 가 P2002 를 409 (40905) 로 변환', async () => {
+      const mod = await import(distUrl('next/error/error-handler.js'));
+      const result = mod.processError(prismaKnown('P2002', 'x'.repeat(4000)));
+
+      expect(result.status).toBe(409);
+      expect(result.code).toBe(40905);
+    });
+
+    it('dist error-processor.js — handlePrismaError 가 매핑표를 따른다 (P2011 400, P2003 400)', async () => {
+      const [procMod, mapMod] = await Promise.all([
+        import(distUrl('next/utils/error-processor.js')),
+        import(distUrl('core/error/prisma-error.js')),
+      ]);
+
+      for (const prismaCode of ['P2011', 'P2003']) {
+        const response = procMod.handlePrismaError(prismaKnown(prismaCode));
+        const body = await response.json();
+        const mapping = mapMod.PRISMA_ERROR_MAP[prismaCode];
+
+        expect(response.status, `${prismaCode} 상태 코드`).toBe(mapping.status);
+        expect(body).toEqual({ success: false, error: { code: mapping.code, message: mapping.message } });
+      }
+    });
   });
 });
