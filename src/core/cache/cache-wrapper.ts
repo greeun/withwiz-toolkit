@@ -135,60 +135,23 @@ export async function withCache<T>(
     timestamp: new Date().toISOString()
   });
 
+  // 1) 캐시 조회 — 캐시 장애는 원본 함수 실행으로 degrade 한다.
+  let cachedValue: T | typeof NULL_VALUE_WRAPPER | null;
   try {
-    // 캐시에서 데이터 조회 시도 (actualKey 사용 - CacheManager가 prefix 추가)
-    const cachedValue = await cacheManager.get<T | typeof NULL_VALUE_WRAPPER>(actualKey);
-
-    // 캐시 히트: null이 아니면 캐시에 값이 있음 (null 래퍼 포함)
-    if (cachedValue !== null) {
-      const totalTime = Date.now() - startTime;
-      const backendLabel = getCacheBackendLabel();
-      const isNullCached = isNullValueWrapper(cachedValue);
-      const unwrappedValue = unwrapNullValue(cachedValue) as T;
-
-      logger.info(`[${backendLabel}] HIT ${fullKey} (${totalTime}ms)${isNullCached ? ' null' : ''}`);
-      return unwrappedValue;
-    }
-
-    // 캐시 미스: 데이터베이스에서 조회
-    logger.debug(`withCache [${getCacheBackendLabel()}] cache miss: ${fullKey}`, {
-      key: actualKey,
-      prefix,
-      fullKey,
-      ttl: `${finalTTL}s`
-    });
-
-    const freshValue = await fetchFunction();
-    const fetchTime = Date.now() - startTime;
-
-    // 새 데이터를 캐시에 저장 (null은 래퍼로 감싸서 저장)
-    const valueToStore = wrapNullValue(freshValue);
-    await cacheManager.set(actualKey, valueToStore, finalTTL);
-    const totalTime = Date.now() - startTime;
-
-    // 로그 출력
-    const isNullValue = freshValue === null;
-    const backendLabel = getCacheBackendLabel();
-    const valueSize = JSON.stringify(valueToStore).length;
-    logger.info(`[${backendLabel}] SET ${fullKey} (${fetchTime}ms, ${valueSize}B, ttl=${finalTTL}s)${isNullValue ? ' null' : ''}`);
-
-    return freshValue;
-
+    // actualKey 사용 - CacheManager가 prefix 추가
+    cachedValue = await cacheManager.get<T | typeof NULL_VALUE_WRAPPER>(actualKey);
   } catch (error) {
-    const totalTime = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
 
-    logger.error(`withCache execution failed: ${fullKey}`, {
+    logger.error(`withCache cache read failed: ${fullKey}`, {
       key: actualKey,
       prefix,
       fullKey,
       error: errorMessage,
-      totalTime: `${totalTime}ms`,
+      totalTime: `${Date.now() - startTime}ms`,
       ttl: `${finalTTL}s`,
       stack: error instanceof Error ? error.stack : undefined
     });
-
-    // 에러 발생 시에도 원본 함수 실행
     logger.warn(`withCache error occurred, executing original function: ${fullKey}`, {
       key: actualKey,
       prefix,
@@ -198,6 +161,53 @@ export async function withCache<T>(
 
     return await fetchFunction();
   }
+
+  // 캐시 히트: null이 아니면 캐시에 값이 있음 (null 래퍼 포함)
+  if (cachedValue !== null) {
+    const totalTime = Date.now() - startTime;
+    const backendLabel = getCacheBackendLabel();
+    const isNullCached = isNullValueWrapper(cachedValue);
+    const unwrappedValue = unwrapNullValue(cachedValue) as T;
+
+    logger.info(`[${backendLabel}] HIT ${fullKey} (${totalTime}ms)${isNullCached ? ' null' : ''}`);
+    return unwrappedValue;
+  }
+
+  // 2) 캐시 미스: 원본 함수는 한 번만 실행하고, 오류는 호출자에게 그대로 전파한다.
+  //    (부수 효과가 있는 fetch 를 재실행하지 않는다)
+  logger.debug(`withCache [${getCacheBackendLabel()}] cache miss: ${fullKey}`, {
+    key: actualKey,
+    prefix,
+    fullKey,
+    ttl: `${finalTTL}s`
+  });
+
+  const freshValue = await fetchFunction();
+  const fetchTime = Date.now() - startTime;
+
+  // 3) 새 데이터를 캐시에 저장 (null은 래퍼로 감싸서 저장)
+  //    저장·로그 실패는 이미 얻은 결과를 버리지 않고 기록만 한다.
+  try {
+    const valueToStore = wrapNullValue(freshValue);
+    await cacheManager.set(actualKey, valueToStore, finalTTL);
+
+    const isNullValue = freshValue === null;
+    const backendLabel = getCacheBackendLabel();
+    const valueSize = JSON.stringify(valueToStore).length;
+    logger.info(`[${backendLabel}] SET ${fullKey} (${fetchTime}ms, ${valueSize}B, ttl=${finalTTL}s)${isNullValue ? ' null' : ''}`);
+  } catch (error) {
+    logger.error(`withCache cache write failed: ${fullKey}`, {
+      key: actualKey,
+      prefix,
+      fullKey,
+      error: error instanceof Error ? error.message : '알 수 없는 오류',
+      totalTime: `${Date.now() - startTime}ms`,
+      ttl: `${finalTTL}s`,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
+
+  return freshValue;
 }
 
 // ============================================================================
