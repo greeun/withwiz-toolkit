@@ -1,271 +1,312 @@
 /**
- * Unit Tests: @withwiz/core/utils/csv-export tests
- * CSV export utility tests
+ * CSV 내보내기 실제 소스 검증 (TC-U-028)
  *
- * Note: Only pure utility functions are tested due to NextResponse dependency
+ * src/next/utils/csv-export.ts 와 csv-export-format.ts 를 직접 import 해 실행한다.
+ * `next/server` 는 devDependency 실모듈을 사용하고 logger 만 목으로 대체한다.
+ *
+ * 이전 판은 NextResponse 의존을 피하려고 구현을 테스트 파일 안에 복제해
+ * 소스를 한 줄도 실행하지 않았다(복제본 boolFormatter.korean 은 'Yes' 를 반환해
+ * 소스의 '예' 와도 달랐다). 기존 검증 범위(SC-UNIT-CSV-001~004)는 그대로 옮겼다.
  */
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+vi.mock('@withwiz/toolkit/core/logger/logger', () => ({
+  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
 
-// Define utility functions directly to avoid NextResponse dependency
-// Same logic as functions in actual csv-export.ts
+import {
+  escapeCsvField,
+  rowToCsv,
+  createCsvHeader,
+  createSimpleCsvResponse,
+  createStreamingCsvResponse,
+  dateFormatter,
+  boolFormatter,
+  type CsvColumn,
+} from '@withwiz/toolkit/next/utils/csv-export';
+import { customDateFormatter } from '@withwiz/toolkit/next/utils/csv-export-format';
+import { logger } from '@withwiz/toolkit/core/logger/logger';
 
-function escapeCsvField(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '""';
-  }
-  const str = String(value);
-  return `"${str.replace(/"/g, '""')}"`;
+const BOM_BYTES = [0xef, 0xbb, 0xbf];
+const FIXED_NOW = new Date('2026-09-15T08:00:00Z');
+
+/** 응답 본문을 바이트 그대로 읽는다 (Response.text() 는 BOM 을 제거하므로 사용하지 않음). */
+async function readBytes(response: Response): Promise<Uint8Array> {
+  return new Uint8Array(await response.arrayBuffer());
 }
 
-interface CsvColumn<T> {
-  header: string;
-  accessor:
-    | keyof T
-    | ((row: T) => string | number | boolean | null | undefined);
+function decodeWithoutBom(bytes: Uint8Array): string {
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
 }
 
-function getColumnValue<T>(row: T, column: CsvColumn<T>): string {
-  const value =
-    typeof column.accessor === "function"
-      ? column.accessor(row)
-      : row[column.accessor];
-  return escapeCsvField(value);
+function startsWithBom(bytes: Uint8Array): boolean {
+  return BOM_BYTES.every((b, i) => bytes[i] === b);
 }
 
-function rowToCsv<T>(row: T, columns: CsvColumn<T>[]): string {
-  return columns.map((col) => getColumnValue(row, col)).join(",");
-}
-
-function createCsvHeader<T>(columns: CsvColumn<T>[]): string {
-  return columns.map((col) => escapeCsvField(col.header)).join(",");
-}
-
-const dateFormatter = {
-  iso: (date: Date | null | undefined): string => {
-    if (!date) return "";
-    return date.toISOString().split("T")[0];
-  },
-  korean: (date: Date | null | undefined): string => {
-    if (!date) return "";
-    return date.toLocaleString("ko-KR");
-  },
-  english: (date: Date | null | undefined): string => {
-    if (!date) return "";
-    return date.toLocaleString("en-US");
-  },
-  custom: (date: Date | null | undefined, formatStr: string): string => {
-    if (!date) return "";
-    try {
-      const { format } = require("date-fns");
-      return format(date, formatStr);
-    } catch {
-      return date.toISOString();
-    }
-  },
-};
-
-const boolFormatter = {
-  activeInactive: (value: boolean): string => (value ? "Active" : "Inactive"),
-  yesNo: (value: boolean): string => (value ? "Yes" : "No"),
-  numeric: (value: boolean): string => (value ? "1" : "0"),
-  verified: (value: boolean): string => (value ? "Verified" : "Not Verified"),
-  korean: (value: boolean): string => (value ? "Yes" : "No"),
-};
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 // ============================================================================
 // SC-UNIT-CSV-001: CSV 필드 이스케이프
 // ============================================================================
-describe("SC-UNIT-CSV-001: CSV field escaping", () => {
-  // TC-UNIT-CSV-001: escapeCsvField basic behavior
-  describe("TC-UNIT-CSV-001: escapeCsvField basic behavior", () => {
-    test("null -> empty quotes", () => {
-      expect(escapeCsvField(null)).toBe('""');
-    });
+describe('SC-UNIT-CSV-001: escapeCsvField', () => {
+  it('null → 빈 따옴표', () => {
+    expect(escapeCsvField(null)).toBe('""');
+  });
 
-    test("undefined -> empty quotes", () => {
-      expect(escapeCsvField(undefined)).toBe('""');
-    });
+  it('undefined → 빈 따옴표', () => {
+    expect(escapeCsvField(undefined)).toBe('""');
+  });
 
-    test("normal string -> wrap in quotes", () => {
-      expect(escapeCsvField("hello")).toBe('"hello"');
-    });
+  it('일반 문자열 → 따옴표로 감싼다', () => {
+    expect(escapeCsvField('hello')).toBe('"hello"');
+  });
 
-    test("contains quotes -> escape", () => {
-      expect(escapeCsvField('say "hello"')).toBe('"say ""hello"""');
-    });
+  it('따옴표 포함 → 따옴표를 두 번 쓴다', () => {
+    expect(escapeCsvField('a"b')).toBe('"a""b"');
+    expect(escapeCsvField('say "hello"')).toBe('"say ""hello"""');
+  });
 
-    test("number -> convert to string then wrap", () => {
-      expect(escapeCsvField(123)).toBe('"123"');
-    });
+  it('숫자 → 문자열로 바꿔 감싼다', () => {
+    expect(escapeCsvField(123)).toBe('"123"');
+  });
 
-    test("boolean -> convert to string then wrap", () => {
-      expect(escapeCsvField(true)).toBe('"true"');
-      expect(escapeCsvField(false)).toBe('"false"');
-    });
+  it('불리언 → 문자열로 바꿔 감싼다', () => {
+    expect(escapeCsvField(true)).toBe('"true"');
+    expect(escapeCsvField(false)).toBe('"false"');
+  });
+
+  it('쉼표와 줄바꿈은 따옴표 안에 그대로 둔다', () => {
+    expect(escapeCsvField('a,b\nc')).toBe('"a,b\nc"');
   });
 });
 
 // ============================================================================
-// SC-UNIT-CSV-002: CSV row creation
+// SC-UNIT-CSV-002: 행·헤더 생성
 // ============================================================================
-describe("SC-UNIT-CSV-002: CSV row creation", () => {
+describe('SC-UNIT-CSV-002: rowToCsv·createCsvHeader', () => {
   interface TestData {
     name: string;
     age: number;
     active: boolean;
+    memo?: string | null;
   }
 
   const columns: CsvColumn<TestData>[] = [
-    { header: "Name", accessor: "name" },
-    { header: "Age", accessor: "age" },
-    { header: "Active", accessor: (row) => (row.active ? "Yes" : "No") },
+    { header: 'Name', accessor: 'name' },
+    { header: 'Age', accessor: 'age' },
+    { header: 'Active', accessor: (row) => (row.active ? 'Yes' : 'No') },
   ];
 
-  // TC-UNIT-CSV-002: rowToCsv basic behavior
-  describe("TC-UNIT-CSV-002: rowToCsv basic behavior", () => {
-    test("object data -> convert to CSV row", () => {
-      const row: TestData = { name: "John", age: 30, active: true };
-      const result = rowToCsv(row, columns);
-      expect(result).toBe('"John","30","Yes"');
-    });
-
-    test("accessor function used", () => {
-      const row: TestData = { name: "Jane", age: 25, active: false };
-      const result = rowToCsv(row, columns);
-      expect(result).toBe('"Jane","25","No"');
-    });
+  it('객체 데이터 → CSV 행', () => {
+    expect(rowToCsv({ name: 'John', age: 30, active: true }, columns)).toBe('"John","30","Yes"');
   });
 
-  // TC-UNIT-CSV-003: createCsvHeader behavior
-  describe("TC-UNIT-CSV-003: createCsvHeader behavior", () => {
-    test("header row creation", () => {
-      const result = createCsvHeader(columns);
-      expect(result).toBe('"Name","Age","Active"');
-    });
+  it('accessor 함수 결과를 사용한다', () => {
+    expect(rowToCsv({ name: 'Jane', age: 25, active: false }, columns)).toBe('"Jane","25","No"');
+  });
+
+  it('값이 null·undefined 인 컬럼은 빈 따옴표가 된다', () => {
+    const memoColumns: CsvColumn<TestData>[] = [
+      { header: 'Memo', accessor: 'memo' },
+      { header: 'Missing', accessor: () => undefined },
+    ];
+    expect(rowToCsv({ name: 'x', age: 1, active: true, memo: null }, memoColumns)).toBe('"",""');
+  });
+
+  it('헤더 행을 만든다', () => {
+    expect(createCsvHeader(columns)).toBe('"Name","Age","Active"');
   });
 });
 
 // ============================================================================
-// SC-UNIT-CSV-003: Date Formatter
+// SC-UNIT-CSV-003: 날짜 포맷터
 // ============================================================================
-describe("SC-UNIT-CSV-003: Date Formatter (dateFormatter)", () => {
-  const testDate = new Date("2025-01-15T12:30:00Z");
+describe('SC-UNIT-CSV-003: dateFormatter·customDateFormatter', () => {
+  const testDate = new Date('2025-01-15T12:30:00Z');
 
-  // TC-UNIT-CSV-004: dateFormatter.iso
-  describe("TC-UNIT-CSV-004: dateFormatter.iso", () => {
-    test("Date -> YYYY-MM-DD", () => {
-      const result = dateFormatter.iso(testDate);
-      expect(result).toBe("2025-01-15");
-    });
-
-    test("null -> empty string", () => {
-      expect(dateFormatter.iso(null)).toBe("");
-    });
-
-    test("undefined -> empty string", () => {
-      expect(dateFormatter.iso(undefined)).toBe("");
-    });
+  it('iso: Date → YYYY-MM-DD (UTC)', () => {
+    expect(dateFormatter.iso(testDate)).toBe('2025-01-15');
   });
 
-  // TC-UNIT-CSV-005: dateFormatter.korean
-  describe("TC-UNIT-CSV-005: dateFormatter.korean", () => {
-    test("Date -> Korean format", () => {
-      const result = dateFormatter.korean(testDate);
-      expect(typeof result).toBe("string");
-      expect(result.length).toBeGreaterThan(0);
-    });
-
-    test("null -> empty string", () => {
-      expect(dateFormatter.korean(null)).toBe("");
-    });
+  it('iso: null → 빈 문자열', () => {
+    expect(dateFormatter.iso(null)).toBe('');
   });
 
-  // TC-UNIT-CSV-006: dateFormatter.english
-  describe("TC-UNIT-CSV-006: dateFormatter.english", () => {
-    test("Date -> English format", () => {
-      const result = dateFormatter.english(testDate);
-      expect(typeof result).toBe("string");
-      expect(result.length).toBeGreaterThan(0);
-    });
-
-    test("null -> empty string", () => {
-      expect(dateFormatter.english(null)).toBe("");
-    });
+  it('iso: undefined → 빈 문자열', () => {
+    expect(dateFormatter.iso(undefined)).toBe('');
   });
 
-  // TC-UNIT-CSV-007: dateFormatter.custom
-  describe("TC-UNIT-CSV-007: dateFormatter.custom", () => {
-    test("null -> empty string", () => {
-      expect(dateFormatter.custom(null, "yyyy-MM-dd")).toBe("");
-    });
+  it('korean: ko-KR 로케일 문자열', () => {
+    expect(dateFormatter.korean(testDate)).toBe(testDate.toLocaleString('ko-KR'));
+  });
 
-    test("undefined -> empty string", () => {
-      expect(dateFormatter.custom(undefined, "yyyy-MM-dd")).toBe("");
-    });
+  it('korean: null → 빈 문자열', () => {
+    expect(dateFormatter.korean(null)).toBe('');
+  });
 
-    test("valid Date -> formatted string", () => {
-      const result = dateFormatter.custom(testDate, "yyyy-MM-dd");
-      expect(typeof result).toBe("string");
-    });
+  it('english: en-US 로케일 문자열', () => {
+    expect(dateFormatter.english(testDate)).toBe(testDate.toLocaleString('en-US'));
+  });
+
+  it('english: null → 빈 문자열', () => {
+    expect(dateFormatter.english(null)).toBe('');
+  });
+
+  it('customDateFormatter: null·undefined → 빈 문자열', () => {
+    expect(customDateFormatter(null, 'yyyy-MM-dd')).toBe('');
+    expect(customDateFormatter(undefined, 'yyyy-MM-dd')).toBe('');
+  });
+
+  it('customDateFormatter: date-fns 형식 문자열을 적용한다', () => {
+    expect(customDateFormatter(testDate, 'yyyy')).toBe('2025');
+  });
+
+  it('customDateFormatter: date-fns 가 거부하는 형식이면 ISO 문자열로 폴백한다', () => {
+    expect(customDateFormatter(testDate, 'j')).toBe(testDate.toISOString());
   });
 });
 
 // ============================================================================
-// SC-UNIT-CSV-004: Boolean Formatter
+// SC-UNIT-CSV-004: 불리언 포맷터
 // ============================================================================
-describe("SC-UNIT-CSV-004: Boolean Formatter (boolFormatter)", () => {
-  // TC-UNIT-CSV-008: boolFormatter.activeInactive
-  describe("TC-UNIT-CSV-008: boolFormatter.activeInactive", () => {
-    test("true -> Active", () => {
-      expect(boolFormatter.activeInactive(true)).toBe("Active");
-    });
+describe('SC-UNIT-CSV-004: boolFormatter', () => {
+  it.each([
+    ['activeInactive', true, 'Active'],
+    ['activeInactive', false, 'Inactive'],
+    ['yesNo', true, 'Yes'],
+    ['yesNo', false, 'No'],
+    ['numeric', true, '1'],
+    ['numeric', false, '0'],
+    ['verified', true, 'Verified'],
+    ['verified', false, 'Not Verified'],
+    ['korean', true, '예'],
+    ['korean', false, '아니오'],
+  ] as const)('%s(%s) → %s', (name, value, expected) => {
+    expect(boolFormatter[name](value)).toBe(expected);
+  });
+});
 
-    test("false -> Inactive", () => {
-      expect(boolFormatter.activeInactive(false)).toBe("Inactive");
-    });
+// ============================================================================
+// createSimpleCsvResponse
+// ============================================================================
+describe('createSimpleCsvResponse', () => {
+  const columns: CsvColumn<{ name: string }>[] = [{ header: '이름', accessor: 'name' }];
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(FIXED_NOW);
   });
 
-  // TC-UNIT-CSV-009: boolFormatter.yesNo
-  describe("TC-UNIT-CSV-009: boolFormatter.yesNo", () => {
-    test("true -> Yes", () => {
-      expect(boolFormatter.yesNo(true)).toBe("Yes");
-    });
-
-    test("false -> No", () => {
-      expect(boolFormatter.yesNo(false)).toBe("No");
-    });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  // TC-UNIT-CSV-010: boolFormatter.numeric
-  describe("TC-UNIT-CSV-010: boolFormatter.numeric", () => {
-    test("true -> '1'", () => {
-      expect(boolFormatter.numeric(true)).toBe("1");
-    });
+  it('BOM + 헤더 + 행을 CRLF 로 잇고 CSV 다운로드 헤더를 붙인다', async () => {
+    const response = createSimpleCsvResponse([{ name: '홍길동' }], { filename: 'users', columns });
+    const bytes = await readBytes(response);
 
-    test("false -> '0'", () => {
-      expect(boolFormatter.numeric(false)).toBe("0");
-    });
+    expect(response.status).toBe(200);
+    expect(startsWithBom(bytes)).toBe(true);
+    expect(decodeWithoutBom(bytes)).toBe('﻿"이름"\r\n"홍길동"');
+    expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="users_2026-09-15.csv"');
   });
 
-  // TC-UNIT-CSV-011: boolFormatter.verified
-  describe("TC-UNIT-CSV-011: boolFormatter.verified", () => {
-    test("true -> Verified", () => {
-      expect(boolFormatter.verified(true)).toBe("Verified");
-    });
+  it('includeBom: false 이면 BOM 없이 시작한다', async () => {
+    const response = createSimpleCsvResponse([{ name: '홍길동' }], { filename: 'users', columns, includeBom: false });
+    const bytes = await readBytes(response);
 
-    test("false -> Not Verified", () => {
-      expect(boolFormatter.verified(false)).toBe("Not Verified");
-    });
+    expect(startsWithBom(bytes)).toBe(false);
+    expect(decodeWithoutBom(bytes)).toBe('"이름"\r\n"홍길동"');
   });
 
-  // TC-UNIT-CSV-012: boolFormatter.korean
-  describe("TC-UNIT-CSV-012: boolFormatter.korean", () => {
-    test("true -> Yes", () => {
-      expect(boolFormatter.korean(true)).toBe("Yes");
+  it('데이터가 없으면 헤더만 담고 완료 로그에 행 수 0 과 logContext 를 남긴다', async () => {
+    const response = createSimpleCsvResponse([], { filename: 'users', columns, logContext: { adminId: 'a1' } });
+
+    expect(decodeWithoutBom(await readBytes(response))).toBe('﻿"이름"');
+    expect(logger.info).toHaveBeenCalledWith('CSV export completed', { filename: 'users', rowCount: 0, adminId: 'a1' });
+  });
+
+  it('accessor 가 throw 하면 오류를 기록하고 다시 던진다', () => {
+    const failing: CsvColumn<{ name: string }>[] = [
+      { header: 'x', accessor: () => { throw new Error('bad row'); } },
+    ];
+
+    expect(() => createSimpleCsvResponse([{ name: 'a' }], { filename: 'users', columns: failing })).toThrow('bad row');
+    expect(logger.error).toHaveBeenCalledWith('CSV export error', expect.objectContaining({ filename: 'users' }));
+  });
+});
+
+// ============================================================================
+// createStreamingCsvResponse
+// ============================================================================
+describe('createStreamingCsvResponse', () => {
+  const columns: CsvColumn<{ name: string }>[] = [{ header: '이름', accessor: 'name' }];
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(FIXED_NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('배치를 이어 읽어 헤더 + 전체 행을 스트리밍한다', async () => {
+    const fetcher = vi.fn(async (cursor?: string) =>
+      cursor === undefined
+        ? { data: [{ name: 'a' }, { name: 'b' }], nextCursor: 'c1' }
+        : { data: [{ name: 'c' }] },
+    );
+
+    const response = createStreamingCsvResponse({ filename: 'stream', columns, batchSize: 2, fetcher });
+    const bytes = await readBytes(response);
+
+    expect(startsWithBom(bytes)).toBe(true);
+    expect(decodeWithoutBom(bytes)).toBe('﻿"이름"\r\n"a"\r\n"b"\r\n"c"\r\n');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenNthCalledWith(1, undefined);
+    expect(fetcher).toHaveBeenNthCalledWith(2, 'c1');
+    expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
+    expect(response.headers.get('Transfer-Encoding')).toBe('chunked');
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="stream_2026-09-15.csv"');
+    expect(logger.info).toHaveBeenCalledWith(
+      'Streaming CSV export completed',
+      expect.objectContaining({ filename: 'stream', totalCount: 3, batchCount: 2 }),
+    );
+  });
+
+  it('첫 배치가 비어 있으면 헤더만 보내고 fetcher 를 1회만 호출한다', async () => {
+    const fetcher = vi.fn(async () => ({ data: [] as { name: string }[], nextCursor: 'ignored' }));
+
+    const response = createStreamingCsvResponse({ filename: 'empty', columns, includeBom: false, fetcher });
+
+    expect(decodeWithoutBom(await readBytes(response))).toBe('"이름"\r\n');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('nextCursor 가 없으면 배치가 가득 차도 종료한다', async () => {
+    const fetcher = vi.fn(async () => ({ data: [{ name: 'a' }, { name: 'b' }] }));
+
+    const response = createStreamingCsvResponse({ filename: 'full', columns, batchSize: 2, includeBom: false, fetcher });
+
+    expect(decodeWithoutBom(await readBytes(response))).toBe('"이름"\r\n"a"\r\n"b"\r\n');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetcher 가 throw 하면 스트림이 중단되어 본문 읽기가 reject 되고 오류를 기록한다', async () => {
+    const fetcher = vi.fn(async () => {
+      throw new Error('db down');
     });
 
-    test("false -> No", () => {
-      expect(boolFormatter.korean(false)).toBe("No");
-    });
+    const response = createStreamingCsvResponse({ filename: 'broken', columns, fetcher });
+
+    await expect(response.arrayBuffer()).rejects.toThrow('db down');
+    expect(logger.error).toHaveBeenCalledWith(
+      'Streaming CSV export error',
+      expect.objectContaining({ filename: 'broken' }),
+    );
   });
 });
