@@ -24,3 +24,8 @@ logs/
 # superpowers (auto-installed; do not track)
 .superpowers/
 docs/superpowers/
+
+# npm is the package manager for this repo (package-lock.json); do not track other lockfiles
+pnpm-lock.yaml
+pnpm-workspace.yaml
+yarn.lock
