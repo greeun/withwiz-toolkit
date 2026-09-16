@@ -27,7 +27,7 @@ type CacheManager =
  *
  * @example
  * ```typescript
- * import { invalidateCache } from '@withwiz/cache';
+ * import { invalidateCache } from '@withwiz/toolkit/core/cache';
  *
  * // 기본 캐시에서 단일 키 삭제
  * await invalidateCache.byKey('my-key');
@@ -96,7 +96,7 @@ export const invalidateCache = {
  *
  * @example
  * ```typescript
- * import { getCacheManager } from '@withwiz/cache';
+ * import { getCacheManager } from '@withwiz/toolkit/core/cache';
  * import { deleteFromCache } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const myCache = getCacheManager('my-prefix');
@@ -115,7 +115,7 @@ export async function deleteFromCache(
  *
  * @example
  * ```typescript
- * import { getCacheManager } from '@withwiz/cache';
+ * import { getCacheManager } from '@withwiz/toolkit/core/cache';
  * import { deletePatternFromCache } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const myCache = getCacheManager('my-prefix');
@@ -134,7 +134,7 @@ export async function deletePatternFromCache(
  *
  * @example
  * ```typescript
- * import { getCacheManager } from '@withwiz/cache';
+ * import { getCacheManager } from '@withwiz/toolkit/core/cache';
  * import { deletePatternFromMultipleCaches } from '@withwiz/toolkit/core/cache/cache-invalidation';
  *
  * const cache1 = getCacheManager('prefix1');
