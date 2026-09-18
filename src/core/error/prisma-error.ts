@@ -72,8 +72,9 @@ export interface IPrismaErrorMapping {
 /**
  * Prisma 오류 코드 → 표준 에러 코드 매핑 (단일 기준표)
  *
- * next/utils/error-processor, next/error/error-handler,
- * core/constants/error-codes(classifyError) 가 모두 이 표를 공유한다.
+ * next/utils/error-processor(ErrorProcessor.process·handlePrismaError),
+ * next/error/error-handler(processError), core/constants/error-codes(classifyError)
+ * 가 모두 이 표를 공유한다.
  */
 export const PRISMA_ERROR_MAP: Record<string, IPrismaErrorMapping> = {
   P2000: { code: 40001, message: '입력값이 너무 깁니다.', status: 400 },

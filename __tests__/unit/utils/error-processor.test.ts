@@ -265,12 +265,13 @@ describe('handlePrismaError', () => {
     expect(body.error.code).toBe(ERROR_CODES.NOT_FOUND.code);
   });
 
-  it('maps P2003 to 400 bad request (business rule)', async () => {
+  it('maps P2003 to 400 per the shared Prisma error map (not 422)', async () => {
     const response = handlePrismaError({ code: 'P2003' });
     const body = await response.json();
 
-    expect(response.status).toBe(422);
-    expect(body.error.code).toBe(ERROR_CODES.BUSINESS_RULE_VIOLATION.code);
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe(ERROR_CODES.VALIDATION_ERROR.code);
+    expect(body.error.code).not.toBe(ERROR_CODES.BUSINESS_RULE_VIOLATION.code);
   });
 
   it('maps unknown prisma code to 500 database error', async () => {

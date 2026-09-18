@@ -144,6 +144,77 @@ describe('TokenRefreshService', () => {
     });
   });
 
+  describe('with an atomic store (markUsedIfUnused)', () => {
+    function makeAtomicStore(claimResult: () => Promise<boolean>) {
+      const base = makeInMemoryStore();
+      const store: IRefreshTokenStore = {
+        ...base.store,
+        markUsed: vi.fn(async () => {}),
+        revokeFamily: vi.fn(async (fid: string) => { base.revoked.add(fid); }),
+        markUsedIfUnused: vi.fn(claimResult),
+      };
+      return { store, revoked: base.revoked };
+    }
+
+    it('rotates through markUsedIfUnused instead of markUsed', async () => {
+      const { store } = makeAtomicStore(async () => true);
+      service = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const t1 = await jwtService.createRefreshToken('user-1', { jti: 'J1', familyId: 'F1' });
+
+      const result = await service.refresh(t1);
+
+      expect(result.refreshToken).toBeDefined();
+      expect(store.markUsedIfUnused).toHaveBeenCalledWith('J1', { familyId: 'F1', userId: 'user-1' });
+      expect(store.markUsed).not.toHaveBeenCalled();
+    });
+
+    it('treats a lost claim as reuse: revokes the family and issues no new token', async () => {
+      const { store, revoked } = makeAtomicStore(async () => false);
+      service = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const t1 = await jwtService.createRefreshToken('user-1', { jti: 'J1', familyId: 'F1' });
+
+      await expect(service.refresh(t1)).rejects.toMatchObject({ code: 'TOKEN_REUSE_DETECTED', statusCode: 401 });
+      expect(store.revokeFamily).toHaveBeenCalledWith('F1');
+      expect(revoked.has('F1')).toBe(true);
+      expect(store.register).not.toHaveBeenCalled();
+    });
+
+    it('propagates a claim failure without revoking the family or registering a token', async () => {
+      const { store } = makeAtomicStore(async () => { throw new Error('store down'); });
+      service = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const t1 = await jwtService.createRefreshToken('user-1', { jti: 'J1', familyId: 'F1' });
+
+      await expect(service.refresh(t1)).rejects.toThrow('store down');
+      expect(store.revokeFamily).not.toHaveBeenCalled();
+      expect(store.register).not.toHaveBeenCalled();
+    });
+
+    it('does not call markUsedIfUnused for a legacy token without jti', async () => {
+      const { store } = makeAtomicStore(async () => true);
+      service = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const legacy = await jwtService.createRefreshToken('user-1');
+
+      const result = await service.refresh(legacy);
+
+      expect(result.refreshToken).toBeDefined();
+      expect(store.markUsedIfUnused).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('with a store lacking markUsedIfUnused (backward compatibility)', () => {
+    it('keeps rotating through markUsed', async () => {
+      const { store, used } = makeInMemoryStore();
+      expect(store.markUsedIfUnused).toBeUndefined();
+      service = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const t1 = await jwtService.createRefreshToken('user-1', { jti: 'J1', familyId: 'F1' });
+
+      const result = await service.refresh(t1);
+
+      expect(result.refreshToken).toBeDefined();
+      expect(used.has('J1')).toBe(true);
+    });
+  });
+
   describe('without store, revoke methods throw', () => {
     it('revokeFamily throws STORE_NOT_CONFIGURED', async () => {
       await expect(service.revokeFamily('F1')).rejects.toThrow('store is not configured');

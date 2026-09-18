@@ -5,16 +5,19 @@
 | 항목 | 내용 |
 |------|------|
 | 대상 | `@withwiz/toolkit` 0.15.0 공유 유틸 라이브러리 (`core/`, `next/`, `prisma/` 계층) |
-| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 121개 |
-| 기준 커밋 | `63c492c` chore(release): 0.15.0 (develop) |
+| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 124개 |
+| 기준 커밋 | `610750c` (브랜치 `fix/residual-defects`, develop `dd4f7d8` = 0.15.0 에서 분기) |
 | 환경 | Vitest 4.0.18, Node.js 22.22.0, `environment: 'node'` (파일 단위 jsdom 지정 없음), 설정 `__tests__/vitest.config.ts`, 셋업 `__tests__/setup.ts` |
 | 의존성 설치 | `npm ci` (`package-lock.json` 기준). `pnpm install --frozen-lockfile` 은 `pnpm-lock.yaml` 이 없어 `ERR_PNPM_NO_LOCKFILE` 로 중단됨 |
 | 실행 전제 | `npm run build` 선행. `__tests__/build/` 의 2개 파일은 `dist/` 가 없으면 실패함 |
 | 목표 커버리지 | 미설정 (`__tests__/vitest.config.ts` 에 `coverage.thresholds` 없음) |
-| 실측 커버리지 (참고) | Stmts 72.86% (3,988/5,473), Branches 69.54% (2,535/3,645), Funcs 79.19% (849/1,072), Lines 73.29% (3,754/5,122). `--coverage.include=src/**` 로 측정 |
-| 실측 결과 (2026-09-13) | 파일 121개 전부 통과, 케이스 2,723건 중 통과 2,723 · 실패 0 · 스킵 0 · todo 0 |
+| 실측 커버리지 (참고) | Stmts 75.98% (4,183/5,505), Branches 72.36% (2,652/3,665), Funcs 82.71% (895/1,082), Lines 76.41% (3,936/5,151). 2026-09-16 `--coverage.include=src/**` 로 측정 (2026-09-13 판: Stmts 72.86%, Branches 69.54%, Funcs 79.19%, Lines 73.29%) |
+| 실측 결과 (2026-09-16) | 파일 124개 전부 통과, 케이스 2,824건 중 통과 2,824 · 실패 0 · 스킵 0 · todo 0 |
+| 문서 이력 | 2026-09-13 0.15.0 (`63c492c`) 기준 최초 작성: 테스트 파일 121개, 2,723건, SC 58개 (✅ 47 / 🔲 11), TC 62개 (✅ 51 / 🔲 11). 2026-09-16 `fix/residual-defects` (`610750c`) 기준 갱신: 결함 4건 수정(`c07a669` `handlePrismaError()` 매핑표 불일치, `5ba8eff` `withCache()` 원본 함수 이중 실행, `977efc2` refresh 토큰 동시 회전, `535faec` CSV 파일명 비 ASCII 문자)과 허위 양성 테스트 2개 교체(`e37468c`, `610750c`)를 반영하고 TC-U-027·028·029, TC-I-002·003, TC-E-002 를 🔲 계획에서 ✅ 완료로 전환 (124개 파일, 2,824건, SC ✅ 53 / 🔲 5, TC ✅ 57 / 🔲 5) |
 
 실측은 `npx vitest run -c __tests__/vitest.config.ts --reporter=json` 결과를 기준으로 삼았고, 이 문서에 기재한 파일별 테스트 수는 모두 이 결과에서 옮겼다.
+
+결함이 수정되어 회귀 테스트가 추가된 🔲 계획 TC 는 ✅ 완료로 전환하고, 단계와 예상 결과를 실제 테스트 기준으로 다시 쓴다. 결함 당시의 동작은 해당 TC 의 "결함 이력"에 남긴다. 허위 양성 파일을 교체한 TC 도 같은 방식으로 교체 전 상태를 남긴다. 2026-09-16 기준 전환 대상은 TC-U-027·028·029, TC-I-002·003, TC-E-002 이다.
 
 ### 라이브러리 맥락의 도메인 재해석
 
@@ -61,14 +64,14 @@
 | SC-U-020 | URL 정규화와 IP 유틸 | Unit | High | ✅ 완료 |
 | SC-U-021 | 형식 변환·타입 가드·코드 생성기·낙관적 잠금·기동 배너 | Unit | Medium | ✅ 완료 |
 | SC-U-022 | utils 다중 모듈 회귀 스위트 (`utils.test.ts`) | Unit | Low | ✅ 완료 |
-| SC-U-023 | Prisma 매핑표 전 코드 계약과 `handlePrismaError` 경로 일치 | Unit | High | 🔲 계획 |
-| SC-U-024 | CSV 내보내기 실제 소스 검증 (구현 복제 테스트 교체) | Unit | High | 🔲 계획 |
-| SC-U-025 | `withCache` 래퍼와 캐시 무효화 헬퍼 | Unit | Medium | 🔲 계획 |
+| SC-U-023 | Prisma 매핑표 전 코드 계약과 `handlePrismaError` 경로 일치 | Unit | High | ✅ 완료 |
+| SC-U-024 | CSV 내보내기 실제 소스 검증 (구현 복제 테스트 교체) | Unit | High | ✅ 완료 |
+| SC-U-025 | `withCache` 래퍼와 캐시 무효화 헬퍼 | Unit | Medium | ✅ 완료 |
 | SC-U-026 | GeoIP 공급자 구현 4종과 공급자 팩토리 | Unit | Low | 🔲 계획 |
 | SC-U-027 | 브라우저용 JWT 클라이언트 유틸 | Unit | Low | 🔲 계획 |
 | SC-I-001 | api-key 모듈 간 해시 계약과 수명주기 | Integration | Critical | ✅ 완료 |
-| SC-I-002 | 캐시 계층 실제 조합 (목 객체만 검증하는 기존 테스트 교체) | Integration | High | 🔲 계획 |
-| SC-I-003 | 인증 서비스와 캐시 기반 토큰 저장소 실제 조합 | Integration | High | 🔲 계획 |
+| SC-I-002 | 캐시 계층 실제 조합 (목 객체만 검증하는 기존 테스트 교체) | Integration | High | ✅ 완료 |
+| SC-I-003 | 인증 서비스와 캐시 기반 토큰 저장소 실제 조합 | Integration | High | ✅ 완료 |
 | SC-A-001 | oapi API 키 인증 wire 계약 | API | Critical | ✅ 완료 |
 | SC-A-002 | oapi 헬퍼와 OpenAPI 스펙 생성 | API | Medium | ✅ 완료 |
 | SC-A-003 | 인증 라우트 핸들러 응답 계약 | API | Critical | ✅ 완료 |
@@ -81,7 +84,7 @@
 | SC-A-010 | Edge 인증 프록시 | API | High | ✅ 완료 |
 | SC-A-011 | 요청 초기화·오류 응답·응답 기록 미들웨어 실제 동작 | API | High | 🔲 계획 |
 | SC-E-001 | dist api-key 소비자 여정 | E2E | Critical | ✅ 완료 |
-| SC-E-002 | dist Prisma 오류 분류 소비자 여정 | E2E | High | 🔲 계획 |
+| SC-E-002 | dist Prisma 오류 분류 소비자 여정 | E2E | High | ✅ 완료 |
 | SC-S-001 | api-key 비밀 재료 취급 | Security | Critical | ✅ 완료 |
 | SC-S-002 | JWT 서명·알고리즘 혼동·토큰 종류 혼동 방어 | Security | Critical | ✅ 완료 |
 | SC-S-003 | OAuth CSRF state 검증과 인가 URL 파라미터 | Security | Critical | ✅ 완료 |
@@ -108,7 +111,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 **실행 명령:** `npm run test:unit`
 
-`test:unit` 스크립트는 `__tests__/unit` 디렉토리 전체(96개 파일)를 실행하므로 3절 API 도메인의 20개 파일도 함께 실행된다. 단위 도메인만 분리해 실행하는 스크립트는 없다.
+`test:unit` 스크립트는 `__tests__/unit` 디렉토리 전체(98개 파일)를 실행하므로 3절 API 도메인의 20개 파일도 함께 실행된다. 단위 도메인만 분리해 실행하는 스크립트는 없다.
 
 ---
 
@@ -273,8 +276,12 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 4 | 공급자 이메일 미검증 상태로 기존 계정과 같은 이메일의 OAuth 콜백 | `not verified` reject, 계정 연결 생성 없음 |
 | 5 | `requestReset()` 호출 | 저장 토큰이 `sha256(메일 발송 토큰)` 과 같고 평문과 다름 |
 | 6 | `createCacheBlacklistChecker().revokeAccessToken('super-secret-token', 60)` | 캐시 키가 `/^revoked:at:[0-9a-f]{64}$/` 형식, 원문 미포함 |
+| 7 | `markUsedIfUnused` 를 구현한 저장소 페이크가 `false` 를 반환할 때 `refresh(t1)` | `TOKEN_REUSE_DETECTED` (401), `revokeFamily('F1')` 호출, `register` 미호출. `true` 면 `markUsed` 대신 `markUsedIfUnused('J1', { familyId: 'F1', userId })` 로 회전 |
+| 8 | 같은 조건에서 `markUsedIfUnused` 가 throw | 원본 오류로 reject, `revokeFamily`·`register` 미호출. 이 메서드가 없는 저장소는 기존과 같이 `markUsed` 로 회전 |
+| 9 | `createCacheRefreshTokenStore(InMemoryCacheManager)` 의 `markUsedIfUnused` 를 같은 jti 로 동시 10건 | `true` 1건. 캐시가 `setIfNotExists` 를 제공하면 그 결과를 쓰고 `exists`·`set` 미호출, 기록 중 캐시 오류 뒤 다음 호출은 다시 시도 |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 58개 (login 9, register 5, token-refresh 12, password-reset 7, email-verification 8, oauth-callback 6, cache-token-stores 11)
+- **자동화:** 가능 ✅ | **테스트 수:** 70개 (login 9, register 5, token-refresh 17, password-reset 7, email-verification 8, oauth-callback 6, cache-token-stores 18)
+- **변경 이력:** 2026-09-16 커밋 `977efc2` 에서 refresh 토큰 동시 회전 결함(TC-I-003)을 수정하면서 단계 7~9 의 12건(token-refresh 5, cache-token-stores 7)을 추가했다.
 
 ---
 
@@ -497,13 +504,13 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |---|------|---------|
 | 1 | `ErrorProcessor.process(null)` | `status: 500` |
 | 2 | 메시지 `'P2003: Foreign key constraint failed'` 로 `process()` | `status: 400`, `details: { prismaCode: 'P2003' }` |
-| 3 | `handlePrismaError({ code: 'P2003' })` | `status: 422`, `BUSINESS_RULE_VIOLATION` 코드 |
+| 3 | `handlePrismaError({ code: 'P2003' })` | `status: 400`, `VALIDATION_ERROR` 코드 (40001, 매핑표 기준이며 `BUSINESS_RULE_VIOLATION` 아님) |
 | 4 | `withErrorHandling(handler, { maskSensitiveInfo: true })` 에서 details 가 있는 AppError throw | 응답 `error` 에 `details` 없음 |
 | 5 | `customErrorHandler` 자체가 throw | 기본 처리로 폴백해 `status: 500` |
 | 6 | `formatRedisError('max requests limit exceeded Limit: 10000 Usage: 10001')`, `formatGenericError('x'×200)` | `Redis request limit exceeded`·`10K` 포함, 길이 153 + `...` 로 끝남 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 72개 (error-processor 49, error-message-formatter 23)
-- **비고:** 단계 2 와 3 은 같은 Prisma 코드 P2003 에 대해 경로별로 다른 상태 코드(400, 422)를 단언한다. 테스트 이름 `maps P2003 to 400 bad request (business rule)` 과 달리 실제 단언은 422 이다. TC-U-027 에서 다룬다.
+- **결함 이력:** 2026-09-13 판에서 단계 3 은 `status: 422`, `BUSINESS_RULE_VIOLATION` 을 단언해 같은 P2003 에 대해 단계 2 (400)와 결과가 달랐고, 테스트 이름 `maps P2003 to 400 bad request (business rule)` 과도 어긋났다. 2026-09-16 커밋 `c07a669` 에서 `handlePrismaError()` 가 공통 매핑표를 따르도록 수정하면서 테스트 이름을 `maps P2003 to 400 per the shared Prisma error map (not 422)` 로, 단언을 400 으로 바꿨다. 매핑표 14개 코드 전수 계약은 TC-U-027 이 소유한다.
 
 ---
 
@@ -723,80 +730,90 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 ---
 
-### TC-U-027: Prisma 매핑표 전 코드 계약과 handlePrismaError 경로 일치 🔲 계획
+### TC-U-027: Prisma 매핑표 전 코드 계약과 handlePrismaError 경로 일치
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-U-023 |
-| **파일** | `__tests__/unit/error/prisma-error-map-contract.test.ts` (신규) |
-| **대상** | `src/core/error/prisma-error.ts`: `PRISMA_ERROR_MAP` (14개 코드), `getPrismaErrorMapping()` / `src/next/error/error-handler.ts`: `processError()` / `src/next/utils/error-processor.ts`: `ErrorProcessor.process()`, `handlePrismaError()` |
+| **파일** | `__tests__/unit/error/prisma-error-map-contract.test.ts` |
+| **대상** | `src/core/error/prisma-error.ts`: `PRISMA_ERROR_MAP` (14개 코드), `PRISMA_VALIDATION_MESSAGE` / `src/core/constants/error-codes.ts`: `getHttpStatus()` / `src/next/error/error-handler.ts`: `processError()` / `src/next/utils/error-processor.ts`: `ErrorProcessor.process()`, `handlePrismaError()` |
 | **우선순위** | High |
-| **전제조건** | `prisma-error-classification.test.ts` 와 같은 logger·`next/server` mock, `name: 'PrismaClientKnownRequestError'` 와 `code` 속성을 가진 오류 더블 |
-| **테스트 데이터** | `P2011`, `P2025`, `P2003`, `PRISMA_ERROR_MAP` 전체 키 |
+| **전제조건** | logger·`next/server` mock (`NextResponse.json` 이 status 와 body 를 돌려주는 더블), `name: 'PrismaClientKnownRequestError'` 와 `code` 속성을 가진 오류 더블, `name: 'PrismaClientValidationError'` 오류 더블 |
+| **테스트 데이터** | `P2011`, `P2025`, `P2003`, `P2002`, `P9999`, `PRISMA_ERROR_MAP` 전체 키 |
 
-| # | 단계 | 예상 결과 (현재 소스 기준) |
+| # | 단계 | 예상 결과 |
 |---|------|---------|
-| 1 | `code: 'P2011'` 오류를 `processError()` | `code: 40004`, `status: 400` (`getHttpStatus(40004)`) |
-| 2 | 같은 오류를 `ErrorProcessor.process()` | `code: 40004`, `status: 400`, `details: { prismaCode: 'P2011' }` |
-| 3 | `code: 'P2025'` 오류를 `processError()` | `code: 40401`, `status: 404` (기존 테스트는 메시지 폴백 경로로만 404 를 단언함) |
-| 4 | `PRISMA_ERROR_MAP` 의 14개 코드를 순회하며 `processError()`·`process()` 상태 비교 | 두 경로 모두 매핑표 `status` 와 같음 |
-| 5 | `handlePrismaError({ code: 'P2011' })` | P2002·P2025·P2003 만 분기하므로 `DATABASE_ERROR` (50003), `status: 500` 반환 |
-| 6 | `handlePrismaError({ code: 'P2003' })` 와 `process()` 의 P2003 비교 | 전자 422 (`BUSINESS_RULE_VIOLATION`), 후자 400 으로 서로 다름 |
+| 1 | `PRISMA_ERROR_MAP` 의 14개 코드마다 `getHttpStatus(mapping.code)` | 매핑표의 `status` 와 같음 |
+| 2 | `code: 'P2011'` 오류를 `processError()`·`ErrorProcessor.process()` | 둘 다 `code: 40004`, `status: 400`, 후자는 `details: { prismaCode: 'P2011' }` |
+| 3 | 메시지에 `not found` 가 없는 `code: 'P2025'` 오류를 `processError()` | `code: 40401`, `status: 404` (메시지 폴백이 아닌 code 속성 경로) |
+| 4 | 14개 코드를 순회하며 `processError()`·`process()`·`handlePrismaError()` 결과 비교 | 세 경로 모두 매핑표의 `code`·`status`·`message` 와 같음, `handlePrismaError()` 본문은 `{ success: false, error: { code, message } }` |
+| 5 | `handlePrismaError({ code: 'P2011' })`, `handlePrismaError({ code: 'P2003' })` | 둘 다 `status: 400`, P2003 결과가 `process()` 와 같고 `BUSINESS_RULE_VIOLATION` 이 아님 |
+| 6 | `PrismaClientValidationError` 를 `handlePrismaError()` | `status: 400`, `VALIDATION_ERROR` (40001), 메시지 `PRISMA_VALIDATION_MESSAGE`. `processError()`·`process()` 도 400 |
+| 7 | `handlePrismaError({ code: 'P9999' })`, `handlePrismaError({ code: 'P2002' })` 본문 | 전자는 `status: 500`, `DATABASE_ERROR`. 후자 본문에는 `details` 와 `P2002` 문자열이 없음 |
 
-- **자동화:** 가능 ✅
-- **선행 조건:** 단계 5·6 은 `handlePrismaError()` 가 공통 매핑표(`PRISMA_ERROR_MAP`)를 쓰지 않아 생기는 불일치이다. `prisma-error.ts` 주석은 세 경로가 같은 기준표를 공유한다고 명시하지만 `handlePrismaError()` 는 그 대상에서 빠져 있다. 어느 결과를 계약으로 고정할지 먼저 결정해야 단계 5·6 의 예상 결과를 확정할 수 있다.
+- **자동화:** 가능 ✅ | **테스트 수:** 37개 (매핑표 자체 일관성 15, processError·process 3, 세 경로 비교 14, handlePrismaError 5)
+- **결함 이력:** 2026-09-13 판에서는 계획 TC 였고, `handlePrismaError()` 결과를 계약으로 둘지 결정이 필요하다고 기록했다. 당시 `handlePrismaError()` 는 `PRISMA_ERROR_MAP` 을 쓰지 않고 P2002·P2025·P2003 만 개별 분기했다. 그래서 P2011 은 `DATABASE_ERROR` (50003, 500), P2003 은 `BUSINESS_RULE_VIOLATION` (42201, 422), `PrismaClientValidationError` 는 500 으로 응답했고, P2002·P2025 도 매핑표 문구 대신 `ERROR_CODES` 기본 영문 메시지를 반환했다. 2026-09-16 에 이 파일을 먼저 작성해 17건 실패(세 경로 비교 14건, handlePrismaError 3건)를 확인했다. 이어서 커밋 `c07a669` 에서 `ErrorProcessor` 의 Prisma 변환을 모듈 함수 `resolvePrismaError()` 로 추출해 `handlePrismaError()` 와 공유하도록 수정했다.
+- **결정:** 매핑표를 단일 기준으로 삼아 상태 코드·에러 코드·메시지를 세 경로에서 모두 같게 한다. `handlePrismaError()` 의 응답 본문 형태는 유지하고, 응답에 Prisma 내부 코드(`details.prismaCode`)는 싣지 않는다.
 
 ---
 
-### TC-U-028: CSV 내보내기 실제 소스 검증 🔲 계획
+### TC-U-028: CSV 내보내기 실제 소스 검증
 
-현재 `__tests__/unit/utils/csv-export.test.ts` (29건)는 소스를 import 하지 않고 같은 함수를 테스트 파일 안에 다시 구현해 검증한다. 파일 머리 주석이 `NextResponse` 의존을 피하려고 복제했다고 밝히고 있으며, 커버리지 실측에서 `src/next/utils/csv-export.ts` 는 0% 이다. 복제본은 이미 소스와 달라져 있다: 복제본 `boolFormatter.korean(true)` 는 `'Yes'` 를 반환하지만 소스는 `'예'` 를 반환하고, 복제본에 있는 `dateFormatter.custom` 은 소스에서 `csv-export-format.ts` 의 `customDateFormatter()` 로 분리되었다.
+2026-09-16 에 `__tests__/unit/utils/csv-export.test.ts` 를 소스를 직접 import 해 실행하는 테스트로 교체했다. 교체 과정에서 드러난 파일명 인코딩 결함도 함께 수정했다.
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-U-024 |
-| **파일** | `__tests__/unit/utils/csv-export.test.ts` (기존 29건, 구현 복제로 소스를 실행하지 않음: 교체 대상) |
-| **대상** | `src/next/utils/csv-export.ts`: `escapeCsvField()`, `rowToCsv()`, `createCsvHeader()`, `createSimpleCsvResponse()`, `createStreamingCsvResponse()`, `dateFormatter`, `boolFormatter` / `src/next/utils/csv-export-format.ts`: `customDateFormatter()` |
+| **파일** | `__tests__/unit/utils/csv-export.test.ts` |
+| **대상** | `src/next/utils/csv-export.ts`: `escapeCsvField()`, `rowToCsv()`, `createCsvHeader()`, `createSimpleCsvResponse()`, `createStreamingCsvResponse()`, `dateFormatter`, `boolFormatter`, 내부 `buildContentDisposition()` / `src/next/utils/csv-export-format.ts`: `customDateFormatter()` |
 | **우선순위** | High |
-| **전제조건** | logger mock, `next/server` 는 devDependency 의 실모듈 사용 |
-| **테스트 데이터** | `columns: [{ header: '이름', accessor: 'name' }]`, 행 `{ name: '홍길동' }`, 스트리밍 fetcher 2배치 (2행 + `nextCursor: 'c1'`, 1행) |
+| **전제조건** | logger mock, `next/server` 는 devDependency 실모듈 사용, 응답 테스트는 `Date` 만 가짜 타이머로 `2026-09-15T08:00:00Z` 에 고정, 본문은 `arrayBuffer()` 바이트로 읽음 (`Response.text()` 는 BOM 을 제거함) |
+| **테스트 데이터** | `columns: [{ header: '이름', accessor: 'name' }]`, 행 `{ name: '홍길동' }`, 스트리밍 fetcher 2배치 (2행 + `nextCursor: 'c1'`, 1행), 파일명 `users`·`회원목록`·`주문내역`·`report "Q3"`·`a\r\nX-Injected: 1` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
-| 1 | 소스에서 import 한 `escapeCsvField('a"b')`, `escapeCsvField(null)` | `'"a""b"'`, `'""'` |
-| 2 | `createSimpleCsvResponse([{ name: '홍길동' }], { filename: 'users', columns })` | 본문이 `﻿"이름"\r\n"홍길동"`, `Content-Type: text/csv; charset=utf-8`, `Content-Disposition` 이 `attachment; filename="users_YYYY-MM-DD.csv"` |
+| 1 | `escapeCsvField('a"b')`, `escapeCsvField(null)`, `escapeCsvField('a,b\nc')` | `'"a""b"'`, `'""'`, `'"a,b\nc"'` |
+| 2 | `createSimpleCsvResponse([{ name: '홍길동' }], { filename: 'users', columns })` | 본문 바이트가 BOM(`EF BB BF`)으로 시작하고 이어서 `"이름"\r\n"홍길동"`, `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="users_2026-09-15.csv"` |
 | 3 | 같은 호출에 `includeBom: false` | 본문이 BOM 없이 시작 |
-| 4 | `createStreamingCsvResponse({ batchSize: 2, fetcher })` 본문 끝까지 읽기 | 헤더 + 3행, fetcher 2회 호출 (두 번째 배치가 `batchSize` 미만이므로 종료), `Transfer-Encoding: chunked` |
-| 5 | fetcher 가 throw 하는 스트리밍 응답 본문 읽기 | 스트림 abort 로 읽기 reject, `logger.error('Streaming CSV export error', ...)` |
-| 6 | `boolFormatter.korean(true)`, `customDateFormatter(null, 'yyyy-MM-dd')` | `'예'`, `''` |
+| 4 | `createStreamingCsvResponse({ batchSize: 2, fetcher })` 본문 끝까지 읽기 | 헤더 + 3행, fetcher 2회 (`undefined`, `'c1'`), `Transfer-Encoding: chunked`, 완료 로그 `totalCount: 3`·`batchCount: 2` |
+| 5 | fetcher 가 throw 하는 스트리밍 응답 본문 읽기 | 읽기가 `db down` 으로 reject, `logger.error('Streaming CSV export error', ...)` |
+| 6 | `boolFormatter.korean(true)`, `customDateFormatter(null, 'yyyy-MM-dd')`, `customDateFormatter(date, 'j')` | `'예'`, `''`, `date.toISOString()` (date-fns 가 거부한 형식의 폴백) |
+| 7 | 파일명 `회원목록` 으로 `createSimpleCsvResponse()`, `주문내역` 으로 `createStreamingCsvResponse()` | 응답 생성 성공, `Content-Disposition: attachment; filename="_____2026-09-15.csv"; filename*=UTF-8''%ED%9A%8C%EC%9B%90%EB%AA%A9%EB%A1%9D_2026-09-15.csv`, 스트리밍 본문도 끝까지 읽힘 |
+| 8 | 파일명 `report "Q3"`, `a\r\nX-Injected: 1` | 대체 이름의 따옴표는 `_` 로 치환하고 `filename*` 에 원래 이름을 실음, 줄바꿈 파일명으로 `X-Injected` 헤더가 생기지 않음 |
 
-- **자동화:** 가능 ✅
+- **자동화:** 가능 ✅ | **테스트 수:** 43개 (이스케이프 7, 행·헤더 4, 날짜 포맷터 10, 불리언 포맷터 10, 단순 응답 4, 스트리밍 응답 4, 파일명 인코딩 4)
+- **결함 이력 (허위 양성):** 2026-09-13 판의 이 파일(29건)은 `NextResponse` 의존을 피하려고 같은 함수를 테스트 파일 안에 다시 구현해 검증했으므로 소스를 실행하지 않았고, 커버리지 실측에서 `csv-export.ts` 가 0% 였다. 복제본 `boolFormatter.korean(true)` 는 `'Yes'` 를 반환해 소스의 `'예'` 와 달랐고, 복제본에 있던 `dateFormatter.custom` 은 이미 소스에서 `customDateFormatter()` 로 분리된 뒤였다. 2026-09-16 커밋 `e37468c` 에서 소스 import 방식으로 교체했다 (39건). 이 파일만 실행해도 `csv-export.ts`·`csv-export-format.ts` 커버리지가 100% 였다.
+- **결함 이력 (파일명 인코딩):** 교체 테스트로 실제 소스를 실행하자, 파일명에 한글 같은 비 ASCII 문자가 있으면 두 응답 함수가 `TypeError: Cannot convert argument to a ByteString` 으로 실패하는 결함이 드러났다. HTTP 헤더 값은 ByteString 이어야 하는데 파일명을 `Content-Disposition` 에 그대로 넣었기 때문이다. 줄바꿈이 있는 파일명도 `Headers.append` 의 `TypeError` 로 실패했다. 단계 7·8 의 4건을 먼저 추가해 4건 실패를 확인한 뒤, 커밋 `535faec` 에서 수정했다. 따옴표·역슬래시가 없는 출력 가능 ASCII 이름은 기존 형식을 그대로 유지하고, 그 밖의 이름은 ASCII 대체 이름과 RFC 5987 `filename*` 을 함께 싣는다.
+- **비고:** 파일명 날짜는 `new Date().toISOString()` 의 UTC 날짜이므로 한국 시간 00:00~09:00 에 내려받으면 전날 날짜가 붙는다. 동작 변경 여부가 결정되지 않아 수정하지 않았다.
 
 ---
 
-### TC-U-029: withCache 래퍼와 캐시 무효화 헬퍼 🔲 계획
+### TC-U-029: withCache 래퍼와 캐시 무효화 헬퍼
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-U-025 |
-| **파일** | `__tests__/unit/cache/cache-wrapper.test.ts` (신규) |
-| **대상** | `src/core/cache/cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` / `src/core/cache/cache-invalidation.ts`: `invalidateCache`, `deletePatternFromMultipleCaches()` (두 파일 모두 커버리지 0%) |
+| **파일** | `__tests__/unit/cache/cache-wrapper.test.ts` |
+| **대상** | `src/core/cache/cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` / `src/core/cache/cache-invalidation.ts`: `invalidateCache`, `deleteFromCache()`, `deletePatternFromCache()`, `deletePatternFromMultipleCaches()` |
 | **우선순위** | Medium |
-| **전제조건** | logger, `cache-factory` (`getCacheManager`, `getEffectiveCacheBackend`, `cache`), `cache-env` (`isCacheEnabled`), `cache-config` (`getCacheConfig`, `getCacheTTL`) 를 `vi.mock` 으로 대체 |
-| **테스트 데이터** | 키 `'community:recent'`, `'plain'`, `options.ttl = 5`, 매니저 페이크 `{ get, set }` |
+| **전제조건** | logger, `cache-factory` (`getCacheManager`, `getEffectiveCacheBackend`, `cache`, `geoCache`), `cache-env` (`isCacheEnabled`), `cache-config` (`getCacheConfig: {}`, `getCacheTTL.default()` 가 600) 를 `vi.mock` 으로 대체 |
+| **테스트 데이터** | 키 `'community:recent'`, `'plain'`, `'k'`, `options.ttl = 5`, `options.prefix = 'community'`, 매니저 페이크 `{ get, set }` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
-| 1 | 캐시 미스 상태에서 `withCache('community:recent', fetch)` | `getCacheManager('community')`, `get('recent')`, fetch 1회, `set('recent', 값, TTL)` |
-| 2 | `get` 이 값을 반환하는 상태에서 호출 | fetch 미호출, 캐시 값 반환 |
-| 3 | fetch 가 `null` 을 반환할 때 `withCache('k', fetch, { ttl: 5 })` | `set('k', { __nullValue__: true }, 5)`, 이후 적중 시 fetch 없이 `null` 반환 |
-| 4 | 접두사 없는 키 `'plain'` 으로 호출 | `getCacheManager('default')`, `get('plain')` |
-| 5 | 미스 경로에서 fetch 가 throw | catch 블록이 fetch 를 한 번 더 호출해 fetch 총 2회, 두 번째 오류로 reject |
-| 6 | fetch 성공 후 `set` 이 throw | fetch 총 2회 호출 후 값 반환 |
-| 7 | `deletePatternFromMultipleCaches([m1, m2], 'user:*')`, `invalidateCache.all()` | 각 매니저 `deletePattern('user:*')` 1회, `cache.deletePattern('*')` |
+| 1 | 캐시 미스 상태에서 `withCache('community:recent', fetch)` | `getCacheManager('community')`, `get('recent')`, fetch 1회, `set('recent', 값, 600)` |
+| 2 | `get` 이 값을 반환하는 상태에서 호출 | fetch·`set` 미호출, 캐시 값 반환 |
+| 3 | fetch 가 `null` 을 반환할 때 `withCache('k', fetch, { ttl: 5 })` 후 적중 | `set('k', { __nullValue__: true }, 5)`, 적중 시 fetch 없이 `null` 반환 |
+| 4 | 접두사 없는 키 `'plain'`, `prefix: 'community'` 옵션, 전역 캐시 비활성 | 각각 `getCacheManager('default')`, `getCacheManager('community')` 와 원래 키 사용, 매니저 없이 fetch 1회 |
+| 5 | 미스 경로에서 fetch 가 throw (첫 호출만 실패하는 fetch 포함) | fetch 1회, 같은 오류로 reject, `set` 미호출 |
+| 6 | fetch 성공 후 `set` 이 throw, 또는 저장 로그의 직렬화(`BigInt` 값)가 throw | fetch 1회, 첫 fetch 결과 반환, `set` 실패는 `logger.error` 로 기록 |
+| 7 | `get` 이 throw, 또는 `get` 과 fetch 가 모두 throw | 전자는 fetch 1회 결과 반환과 `logger.warn` (degrade), 후자는 fetch 1회 후 fetch 오류로 reject |
+| 8 | `getCacheBackendLabel()` 을 백엔드 4종으로 호출 | `redis → R`, `memory → M`, `hybrid → H`, `none → N` |
+| 9 | `deletePatternFromMultipleCaches([m1, m2], 'user:*')`, `deleteFromCache()`, `deletePatternFromCache()`, `invalidateCache.byKey/byPattern/all/geoByKey/allGeo` | 각 매니저에 1회씩 위임, `cache.deletePattern('*')`, `geoCache.deletePattern('*')` |
 
-- **자동화:** 가능 ✅
-- **선행 조건:** 단계 5·6 의 이중 호출은 소스 확인 후 스크래치 실행으로 재현한 현재 동작이다. 부수 효과가 있는 fetch 가 두 번 실행되므로, 이 동작을 계약으로 고정할지 수정 대상으로 볼지 결정이 필요하다.
+- **자동화:** 가능 ✅ | **테스트 수:** 19개 (정상 경로 6, 실패 경로 6, 백엔드 라벨 4, 무효화 헬퍼 3)
+- **결함 이력:** 2026-09-13 판에서는 계획 TC 였고, 단계 5·6 의 현재 동작을 "fetch 총 2회" 로 기록했다. 당시 `withCache()` 는 캐시 조회·fetch·저장을 하나의 try 로 감싸고 catch 블록에서 원본 함수를 다시 호출했다. 그래서 fetch 가 throw 하거나 fetch 성공 뒤 `set`·저장 로그 직렬화가 실패하면 부수 효과가 있는 fetch 가 두 번 실행되었다. 2026-09-16 에 이 파일을 먼저 작성해 4건 실패(단계 5 의 2건, 단계 6 의 2건)를 확인했다. 이어서 커밋 `5ba8eff` 에서 캐시 조회 실패만 원본 함수 1회 실행으로 degrade 하고, 미스 경로의 fetch 오류는 그대로 전파하며, 저장 실패는 기록만 하도록 수정했다.
+- **결정:** 원본 함수는 `withCache()` 호출당 최대 한 번만 실행한다.
 
 ---
 
@@ -858,7 +875,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 **실행 명령:** `npm run test:integration`
 
-현재 이 도메인은 파일 2개·케이스 8건으로 얇다. 그중 `cache.integration.test.ts` 6건은 소스를 전혀 실행하지 않으므로 실질적인 통합 검증은 api-key 2건뿐이다.
+2026-09-16 기준 이 도메인은 파일 3개·케이스 22건이다 (api-key 2, 캐시 계층 12, 인증 서비스와 토큰 저장소 8). 2026-09-13 판에서 소스를 전혀 실행하지 않던 `cache.integration.test.ts` 6건은 실제 모듈 조합 12건으로 교체했다.
 
 ---
 
@@ -883,55 +900,69 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 ---
 
-### TC-I-002: 캐시 계층 실제 조합 🔲 계획
+### TC-I-002: 캐시 계층 실제 조합
 
-현재 `__tests__/integration/cache.integration.test.ts` (6건)는 toolkit 소스를 하나도 import 하지 않는다. 테스트 파일 안에서 만든 `mockRedis` 객체와 `Map` 에 값을 넣고 그 값을 다시 단언하므로, 소스가 바뀌어도 결과가 달라지지 않는 허위 양성이다. 파일 주석이 근거로 든 `docs/testing/02-integration/02-cache.md` 도 저장소에 없고, `TC-INT-CACHE-020` 이라는 ID 가 두 테스트에 중복으로 쓰였다.
+2026-09-16 에 `__tests__/integration/cache.integration.test.ts` 를 실제 캐시 모듈을 조합하는 테스트로 교체했다.
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-I-002 |
-| **파일** | `__tests__/integration/cache.integration.test.ts` (기존 6건, 목 객체만 검증: 교체 대상) |
-| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, `cache` + `inmemory-cache-manager.ts` + `cache-wrapper.ts`: `withCache()` + `cache-invalidation.ts`: `deleteFromCache()` |
+| **파일** | `__tests__/integration/cache.integration.test.ts` |
+| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-env.ts`·`cache-config.ts` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, `cache` + `inmemory-cache-manager.ts` + `hybrid-cache-manager.ts` + `noop-cache-manager.ts` + `cache-redis.ts`: `isRedisGloballyDisabled()`, `resetRedisGlobalState()` + `cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` + `cache-invalidation.ts`: `deleteFromCache()`, `deletePatternFromMultipleCaches()`, `invalidateCache` |
 | **우선순위** | High |
-| **전제조건** | 케이스마다 `vi.resetModules()` 후 동적 import, logger mock, TTL 케이스는 `vi.useFakeTimers()` |
-| **테스트 데이터** | `initializeCache({ enabled: true })` (redis 미지정 → Redis 비활성, inmemory 기본 활성), 키 `'link:abc'` |
+| **전제조건** | 케이스마다 `globalThis` 의 캐시 설정(`__withwiz_config`)·매니저 싱글턴·Redis 전역 상태를 지우고 `vi.resetModules()` 뒤 `initializeCache()` 를 호출한 다음 동적 import, logger mock, TTL 케이스는 `vi.useFakeTimers()`, 종료 시 `resetRedisGlobalState()`·`InMemoryCacheManager.destroyAll()` |
+| **테스트 데이터** | `initializeCache({ enabled: true })` (redis 미지정이므로 Redis 비활성, inmemory 기본 활성), `{ enabled: false }`, `{ categories: { USER: { enabled: false } } }`, `{ fallback: { redisErrorThresholdGlobal: 100 } }`, 키 `'link:abc'`, 모든 메서드가 `Redis connection failed` 로 reject 하는 Redis 매니저 페이크 |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
-| 1 | `initializeCache({ enabled: true })` 후 `getEffectiveCacheBackend()` | `'memory'` |
-| 2 | `getCacheManager('link')` 를 두 번 호출 | 같은 `InMemoryCacheManager` 인스턴스 (`getInstance` 싱글턴) |
-| 3 | `withCache('link:abc', fetch)` 를 두 번 호출 | fetch 1회, 두 번째는 캐시 적중 값 반환 |
-| 4 | `deleteFromCache(getCacheManager('link'), 'abc')` 후 `withCache('link:abc', fetch)` | fetch 가 다시 호출됨 |
-| 5 | `withCache('link:t', fetch, { ttl: 1 })` 후 1초 넘게 타이머 진행, 재호출 | 만료로 fetch 재실행 |
-| 6 | `initializeCache()` 보다 먼저 `cache-factory` 를 import 한 뒤 초기화하고 `cache.set('k', 'v')` → `cache.get('k')` | `null` (import 시점에 평가된 `cache` 상수가 `NoopCacheManager` 로 고정됨) |
+| 1 | `initializeCache({ enabled: true })` 후 `getEffectiveCacheBackend()`, `getCacheManager('link')` 두 번 | `'memory'`, 같은 `InMemoryCacheManager` 인스턴스, `getCacheBackendLabel()` 이 `'M'` |
+| 2 | `withCache('link:abc', fetch)` 를 두 번 호출 | fetch 1회, 값이 `getCacheManager('link').get('abc')` 로 조회됨 |
+| 3 | `deleteFromCache(getCacheManager('link'), 'abc')` 후 `withCache('link:abc', fetch)` | fetch 가 다시 호출됨 (총 2회) |
+| 4 | `withCache('link:t', fetch, { ttl: 1 })` 후 900ms, 이어서 200ms 진행하며 재호출 | 900ms 시점은 적중 (fetch 1회), 1,100ms 시점은 만료로 fetch 재실행 |
+| 5 | fetch 가 `null` 을 반환하는 키를 두 번 호출 | fetch 1회, 두 번 모두 `null` |
+| 6 | 초기화 뒤 import 한 모듈로 `withCache('greeting')` 후 `invalidateCache.byKey('greeting')`, `deletePatternFromMultipleCaches([link, geo], 'user:*')` | `cache` 상수가 `getCacheManager('default')` 와 같고 무효화 뒤 fetch 재실행, 두 매니저의 `user:1` 삭제와 `keep` 유지 |
+| 7 | `{ enabled: false }` 로 두 번 호출, `USER` 카테고리만 비활성으로 `user:u1`·`link:l1` 을 두 번씩 호출 | 전자는 `NoopCacheManager` 이고 fetch 2회, 후자는 user fetch 2회·link fetch 1회 |
+| 8 | 전역 임계값 100 에서 Redis 가 모두 실패하는 `HybridCacheManager` 로 `set('abc')` 후 `get('abc')` | Redis `set`·`get` 호출 후 인메모리 값 반환, `isRedisGloballyDisabled()` 가 `false` |
+| 9 | 기본 전역 임계값(1)에서 같은 조건 | 첫 `set` 오류로 `isRedisGloballyDisabled()` 가 `true`, `get` 은 Redis 를 호출하지 않고 인메모리 값 반환 |
+| 10 | Redis 가 미스(`null`)를 반환하는 hybrid 매니저 | 인메모리 값 반환 |
 
-- **자동화:** 가능 ✅
-- **선행 조건:** 단계 6 은 `export const cache = getCacheManager('default')` 가 import 시점에 한 번만 평가되는 현재 구조에서 나온다. `cache-invalidation.ts` 의 `invalidateCache` 도 이 상수를 쓰므로, 호스트 초기화 순서에 따라 무효화가 no-op 이 될 수 있다. 계약으로 고정할지 결정이 필요하다.
+- **자동화:** 가능 ✅ | **테스트 수:** 12개
+- **결함 이력 (허위 양성):** 2026-09-13 판의 이 파일(6건)은 toolkit 소스를 하나도 import 하지 않았다. 테스트 파일 안에서 만든 `mockRedis` 객체와 `Map` 에 값을 넣고 그 값을 다시 단언했으므로, 소스가 바뀌어도 결과가 달라지지 않았다. 파일 주석이 근거로 든 `docs/testing/02-integration/02-cache.md` 는 저장소에 없었고, `TC-INT-CACHE-020` 이라는 ID 가 두 테스트에 중복으로 쓰였다. 2026-09-16 커밋 `610750c` 에서 원래 의도(저장·TTL·무효화·Redis 장애 시 인메모리 폴백)를 실제 모듈 기준으로 옮겼다. 이 파일만 실행해도 `cache-factory.ts` 커버리지가 58.53% 였다.
+- **테스트로 고정하지 않은 동작 (결정 필요):**
+  - 2026-09-13 판 단계 6 의 import 순서 문제는 그대로 남아 있다. `initializeCache()` 보다 먼저 `cache-factory` 를 import 하면 `export const cache = getCacheManager('default')` 가 `NoopCacheManager` 로 고정된다. 그러면 초기화 뒤에도 `cache.get('k')` 가 `null` 이고, 이 상수를 쓰는 `invalidateCache` 는 no-op 이 된다. 같은 시점에 `getCacheManager('default')` 를 호출하면 `InMemoryCacheManager` 를 반환한다. 2026-09-16 임시 테스트로 다시 확인했으며, 공개 상수의 평가 시점을 바꾸는 설계 결정이 필요하므로 수정하지 않았고 테스트로도 고정하지 않았다.
+  - `initializeCache()` 없이 `withCache()` 를 호출하면 fetch 를 실행하지 않고 `ConfigurationError: [cache] Cache config not initialized. Call initializeCache() first.` 로 reject 한다. 같은 상황에서 `getCacheManager()` 는 경고 후 Noop 으로 degrade 하므로 두 정책이 다르다. 2026-09-16 임시 테스트로 확인했으며, 초기화 누락을 명시적 오류로 알릴지 degrade 할지 결정이 필요해 수정하지 않았다.
 
 ---
 
-### TC-I-003: 인증 서비스와 캐시 기반 토큰 저장소 실제 조합 🔲 계획
+### TC-I-003: 인증 서비스와 캐시 기반 토큰 저장소 실제 조합
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-I-003 |
-| **파일** | `__tests__/integration/auth/token-rotation-flow.integration.test.ts` (신규) |
-| **대상** | `src/core/auth/services/login.service.ts`: `LoginService` + `token-refresh.service.ts`: `TokenRefreshService` + `cache-token-stores.ts`: `createCacheRefreshTokenStore()`, `createCacheBlacklistChecker()` + `src/core/cache/inmemory-cache-manager.ts` + `src/core/auth/jwt/index.ts`: `JWTService` |
+| **파일** | `__tests__/integration/auth/token-rotation-flow.integration.test.ts` |
+| **대상** | `src/core/auth/services/login.service.ts`: `LoginService` + `token-refresh.service.ts`: `TokenRefreshService` + `cache-token-stores.ts`: `createCacheRefreshTokenStore()` (`markUsedIfUnused` 포함), `createCacheBlacklistChecker()` + `refresh-token-store.ts`: `IRefreshTokenStore` + `src/core/cache/inmemory-cache-manager.ts` + `src/core/auth/jwt/index.ts`: `JWTService` |
 | **우선순위** | High |
-| **전제조건** | Map 기반 UserRepository 페이크, bcryptjs 로 만든 실제 해시, `InMemoryCacheManager` 실인스턴스, 기존 단위 테스트와 달리 store 를 Set 페이크로 대체하지 않음 |
+| **전제조건** | Map 기반 UserRepository 페이크, `bcryptjs.hashSync(평문, 4)` 로 만든 실제 해시, `InMemoryCacheManager` 실인스턴스 (케이스 종료 시 `destroy()`), 기존 단위 테스트와 달리 store 를 Set 페이크로 대체하지 않음 |
 | **테스트 데이터** | 시크릿 `'a'.repeat(32)`, 사용자 `{ id: 'user-1', isActive: true }` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
 | 1 | `login(email, pw, storedHash)` | `tokens.refreshToken` payload 에 `jti`·`familyId` 존재 (`createTokenPair()` 가 기본 부여) |
-| 2 | 발급된 refresh 토큰 t1 으로 `refresh(t1)` | 새 refresh 토큰 t2 발급, 같은 `familyId`, `store.isUsed(jti1)` 가 `true` |
-| 3 | t1 재제출 | `AuthError` code `TOKEN_REUSE_DETECTED` (401), `store.isFamilyRevoked(familyId)` 가 `true` |
-| 4 | t2 로 `refresh()` | code `TOKEN_REVOKED` (401) |
-| 5 | 새 로그인 토큰으로 `revokeByToken()` 후 그 토큰으로 `refresh()` | code `TOKEN_REVOKED` |
-| 6 | `createCacheBlacklistChecker(cache).revokeAccessToken(accessToken, 60)` 후 조회 | `isAccessTokenRevoked(accessToken)` 가 `true`, 캐시 키에 원문 토큰 미포함 |
+| 2 | 발급된 refresh 토큰 t1 으로 `refresh(t1)` | 새 refresh 토큰 t2 발급, 같은 `familyId`, 다른 `jti`, `store.isUsed(jti1)` 가 `true` |
+| 3 | t1 재제출, 이어서 t2 로 `refresh()` | 전자는 `AuthError` code `TOKEN_REUSE_DETECTED` (401)이고 `store.isFamilyRevoked(familyId)` 가 `true`, 후자는 code `TOKEN_REVOKED` |
+| 4 | 새 로그인 토큰으로 `revokeByToken()` 후 그 토큰으로 `refresh()` | code `TOKEN_REVOKED` |
+| 5 | `createCacheBlacklistChecker(기록용 캐시).revokeAccessToken(accessToken, 60)` 후 조회 | `isAccessTokenRevoked(accessToken)` 가 `true`, 저장 키는 `revoked:at:<sha256(accessToken)>` 하나이고 원문 토큰 미포함 |
+| 6 | 같은 refresh 토큰으로 `refresh()` 를 `Promise.allSettled` 로 동시에 2회 | 1건 성공, 1건 `TOKEN_REUSE_DETECTED`, family 무효화로 성공한 쪽의 새 토큰도 `TOKEN_REVOKED` |
+| 7 | 같은 저장소를 공유하는 `TokenRefreshService` 인스턴스 2개가 동시에 갱신 | 1건만 성공 |
+| 8 | 같은 토큰으로 동시에 5회 갱신 | 1건만 성공, 나머지 4건은 모두 `TOKEN_REUSE_DETECTED` |
 
-- **자동화:** 가능 ✅
-- **알려진 한계:** 같은 refresh 토큰으로 `refresh()` 를 동시에 두 번 호출하면 두 호출이 모두 성공하고 각각 새 토큰을 받는다. `isUsed` 확인과 `markUsed` 기록 사이에 사용자 조회와 토큰 서명 await 가 끼어 있고, 캐시 기반 store 는 두 동작을 원자적으로 묶지 않기 때문이다. 소스 주석도 "동시 요청 경쟁을 막으려면 store 의 isUsed→markUsed 는 원자적이어야 한다" 고 명시한다. 스크래치 실행으로 재현했으며, 이 동작을 정상으로 고정하면 향후 개선을 막으므로 테스트 케이스로 두지 않고 기록만 한다.
+- **자동화:** 가능 ✅ | **테스트 수:** 8개
+- **결함 이력:** 2026-09-13 판에서는 계획 TC 였고, 같은 refresh 토큰으로 `refresh()` 를 동시에 두 번 호출하면 두 호출이 모두 성공하고 각각 새 토큰을 받는 동작을 "알려진 한계"로 기록만 했다. `isUsed` 확인과 `markUsed` 기록 사이에 사용자 조회와 토큰 서명 await 가 끼어 있고, 캐시 기반 store 는 두 동작을 원자적으로 묶지 않았기 때문이다. 2026-09-16 에 이 파일을 먼저 작성해 단계 6~8 이 실패하는 것(2건 중 2건, 5건 중 5건 성공)을 확인한 뒤, 커밋 `977efc2` 에서 다음과 같이 수정했다.
+  - `IRefreshTokenStore` 에 선택 메서드 `markUsedIfUnused(jti, meta)` 를 추가했다. 이번 호출이 기록했으면 `true`, 이미 사용된 jti 면 `false` 를 반환하는 compare-and-set 이다.
+  - `TokenRefreshService.refresh()` 는 사용자 조회 전의 `isUsed` 사전 확인을 유지하고, 회전 시점에 `markUsedIfUnused` 로 소비를 확정한다. 결과가 `false` 면 재사용으로 판정해 family 를 무효화하고 `TOKEN_REUSE_DETECTED` 로 거부한다.
+  - `createCacheRefreshTokenStore()` 는 `TokenStoreCache` 의 선택 메서드 `setIfNotExists` 가 있으면 그 원자 연산을 쓰고, 없으면 store 인스턴스 안에서 jti 별 `exists` → `set` 을 직렬화한다.
+- **결정:** 동시 갱신의 패자는 순차 재사용과 같게 취급해 family 를 무효화한다. 따라서 같은 refresh 토큰을 여러 탭에서 동시에 갱신하면 사용자가 로그아웃된다. `markUsedIfUnused` 가 없는 저장소는 기존 `isUsed` → `markUsed` 흐름을 그대로 유지한다 (하위 호환).
+- **남은 한계:** `setIfNotExists` 가 없는 캐시를 여러 서버 인스턴스가 공유하면 인스턴스 사이의 동시 회전은 막지 못한다. 직렬화가 프로세스 안에서만 동작하기 때문이다. toolkit 의 `RedisCacheManager`·`HybridCacheManager` 에는 아직 `setIfNotExists` 가 없으므로, 여러 인스턴스 배포에서는 auth README 3절의 예시처럼 원자 연산을 제공하는 cache 를 주입해야 한다. `markUsedIfUnused` 를 구현하지 않은 사용자 정의 저장소도 동시 회전을 막지 못한다.
 
 ---
 
@@ -1238,16 +1269,16 @@ npm run build && npx vitest run -c __tests__/vitest.config.ts __tests__/build/co
 
 ---
 
-### TC-E-002: dist Prisma 오류 분류 소비자 여정 🔲 계획
+### TC-E-002: dist Prisma 오류 분류 소비자 여정
 
 | 항목 | 내용 |
 |------|------|
 | **시나리오** | SC-E-002 |
-| **파일** | `__tests__/build/consumer-runtime.test.ts` (기존 파일 확장) |
-| **대상** | `dist/core/error/prisma-error.js`, `dist/core/constants/error-codes.js`, `dist/next/utils/error-processor.js`, `dist/next/error/error-handler.js` (각 파일의 export 목록은 빌드 산출물에서 확인함) |
+| **파일** | `__tests__/build/consumer-runtime.test.ts` (`TC-E-002: dist Prisma 오류 분류 소비자 여정` describe 블록) |
+| **대상** | `dist/core/error/prisma-error.js`, `dist/core/constants/error-codes.js`, `dist/next/utils/error-processor.js`, `dist/next/error/error-handler.js` |
 | **우선순위** | High |
-| **전제조건** | `npm run build` 선행, `next` 는 devDependency 로 설치되어 있어 `next/server` import 가 해석됨 |
-| **테스트 데이터** | `{ name: 'PrismaClientKnownRequestError', code: 'P2002', message: 'x'.repeat(4000) }`, `name: 'PrismaClientValidationError'` 인 Error, `code: 'P2025'` 오류 |
+| **전제조건** | `npm run build` 선행, `next` 는 devDependency 로 설치되어 있어 dist 의 `next/server` import 가 Vitest 에서 해석됨 |
+| **테스트 데이터** | `name: 'PrismaClientKnownRequestError'` 와 `code` 를 부여한 `Error` (P2002 는 메시지 `'x'.repeat(4000)`, P2025 는 메시지 `'Operation failed'`, P2011, P2003), `name: 'PrismaClientValidationError'` 인 `Error` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
@@ -1256,9 +1287,10 @@ npm run build && npx vitest run -c __tests__/vitest.config.ts __tests__/build/co
 | 3 | dist `error-codes.js` 의 `classifyError()` 에 검증 오류 전달 | `status: 400` (401 아님) |
 | 4 | dist `error-processor.js` 의 `ErrorProcessor.process()` 에 P2025 오류 전달 | `status: 404`, `details: { prismaCode: 'P2025' }` |
 | 5 | dist `error-handler.js` 의 `processError()` 에 P2002 오류 전달 | `status: 409`, `code: 40905` |
+| 6 | dist `error-processor.js` 의 `handlePrismaError()` 에 P2011·P2003 오류 전달 | 둘 다 `status: 400`, 본문 `{ success: false, error: { code, message } }` 가 dist `PRISMA_ERROR_MAP` 과 같음 |
 
-- **자동화:** 가능 ✅
-- **선행 조건:** 0.15.0 게시 전후로 호스트가 받는 응답 코드가 달라지므로 (P2011 500 → 400), dist 수준 회귀를 먼저 고정해 두는 것이 호스트 재검증의 기준이 된다.
+- **자동화:** 가능 ✅ | **테스트 수:** 5개 (파일 전체 7개 중 TC-E-001 의 2개 제외)
+- **결함 이력:** 계획 당시에는 0.15.0 게시 전후로 호스트가 받는 응답 코드(P2011 500 → 400)가 달라지므로 dist 수준 회귀를 먼저 고정해 둔다는 선행 조건을 적었다. 2026-09-16 에 계획 단계 1~5 에 `handlePrismaError()` 단계 6 을 더해 작성했고, 수정 전 소스로 빌드한 dist 에서 단계 6 이 `P2011 상태 코드: expected 500 to be 400` 으로 실패하는 것을 확인했다. 커밋 `c07a669` (TC-U-027) 수정 뒤 다시 빌드해 통과를 확인했다.
 
 ---
 
@@ -1569,7 +1601,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/performance/api-key/api-k
 
 - **자동화:** 가능 ✅
 - **근거:** `increment()` 는 조회·계산 후 `await this.set()` 을 호출하고, `set()` 내부에는 await 가 없어 Map 기록이 첫 중단 지점 이전에 끝난다. 따라서 동시 호출이어도 갱신이 유실되지 않는다. 단계 1·2 는 스크래치 실행으로 같은 결과(1000, 고유값 1000개)를 확인했다.
-- **제외한 항목:** refresh 토큰 동시 회전 경쟁은 현재 두 요청이 모두 성공하는 결함성 동작이므로 케이스로 고정하지 않고 TC-I-003 의 알려진 한계로 기록했다.
+- **제외한 항목:** refresh 토큰 동시 회전 경쟁은 2026-09-13 판에서 두 요청이 모두 성공하는 결함성 동작이라 케이스로 두지 않았다. 2026-09-16 수정(`977efc2`) 뒤 동시 갱신 결과의 일관성은 TC-I-003 단계 6~8 이 검증한다.
 
 ---
 
@@ -1650,7 +1682,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 |------|------|
 | **시나리오** | SC-C-002 |
 | **파일** | `__tests__/chaos/refresh-token-store-faults.test.ts` (신규) |
-| **대상** | `src/core/auth/services/token-refresh.service.ts`: `refresh()`, `revokeByToken()` / `src/next/auth-handlers/refresh.handler.ts`: `createRefreshHandler()` / `logout.handler.ts`: `createLogoutHandler()` |
+| **대상** | `src/core/auth/services/token-refresh.service.ts`: `refresh()`, `revokeByToken()` / `src/core/auth/services/refresh-token-store.ts`: `IRefreshTokenStore` (선택 메서드 `markUsedIfUnused` 포함) / `src/next/auth-handlers/refresh.handler.ts`: `createRefreshHandler()` / `logout.handler.ts`: `createLogoutHandler()` |
 | **우선순위** | High |
 | **전제조건** | `IRefreshTokenStore` 의 메서드 하나씩을 `new Error('store down')` 등으로 throw 하도록 교체한 페이크, UserRepository 페이크 |
 | **테스트 데이터** | refresh 토큰 `{ jti: 'J1', familyId: 'F1' }`, `{ jti: 'J2', familyId: 'F2' }` |
@@ -1667,6 +1699,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 - **자동화:** 가능 ✅
 - **근거:** 단계 1 과 4·5 는 소스 확인 후 스크래치 실행으로 같은 결과를 재현했다.
 - **선행 조건:** 단계 4·5 는 `markUsed` 기록 뒤 선택 훅 `register` 가 실패하면 클라이언트가 새 토큰을 받지 못한 채 구 토큰으로 재시도하게 되어 family 전체가 폐기되는 흐름이다. 감사용 선택 훅 장애가 로그아웃으로 이어지는 동작을 계약으로 둘지 결정이 필요하다.
+- **2026-09-16 변경 반영:** `markUsedIfUnused` 를 구현한 저장소(캐시 기반 store 포함)에서는 회전 시점의 소비 기록이 `markUsed` 대신 `markUsedIfUnused` 로 바뀌었다(`977efc2`). 소비를 기록한 뒤 `register` 가 실패하면 재시도가 재사용으로 판정되는 단계 4·5 의 흐름은 그대로이다. `markUsedIfUnused` 자체가 throw 하면 새 토큰 발급·`register`·family 무효화 없이 원본 오류로 reject 하며, 이 동작은 TC-U-007 단계 8 이 단위 수준에서 검증한다. 이 TC 는 결함 수정 대상이 아니었으므로 🔲 계획으로 유지한다.
 
 ---
 
@@ -1674,33 +1707,33 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 유형 | 현재 파일 수 | 현재 테스트 수 | SC 수 (완료/계획) | TC 수 (완료/계획) | 실행 스크립트 |
 |------|------------|-------------|-----------------|-----------------|--------------|
-| **Unit** | 76개 | 1,732개 | 27 (22/5) | 31 (26/5) | `test:unit` (API 20개 파일 포함 실행) |
-| **Integration** | 2개 | 8개 | 3 (1/2) | 3 (1/2) | `test:integration` |
+| **Unit** | 78개 | 1,814개 | 27 (25/2) | 31 (29/2) | `test:unit` (API 20개 파일 포함 실행) |
+| **Integration** | 3개 | 22개 | 3 (3/0) | 3 (3/0) | `test:integration` |
 | **API** | 20개 | 264개 | 11 (10/1) | 11 (10/1) | 없음 |
-| **E2E** | 1개 | 2개 | 2 (1/1) | 2 (1/1) | 없음 |
+| **E2E** | 1개 | 7개 | 2 (2/0) | 2 (2/0) | 없음 |
 | **Security** | 14개 | 283개 | 8 (8/0) | 8 (8/0) | `test:security` |
 | **Performance** | 5개 | 98개 | 2 (2/0) | 2 (2/0) | `test:performance` (Load/Stress 1개 파일 포함 실행) |
 | **Accessibility** | 0개 | 0개 | 0 | 0 | `test:accessibility` (디렉토리 없음, 종료 코드 1) |
 | **Load/Stress** | 1개 | 2개 | 2 (1/1) | 2 (1/1) | 없음 |
 | **Smoke** | 1개 | 330개 | 1 (1/0) | 1 (1/0) | 없음 |
 | **Chaos** | 1개 | 4개 | 2 (1/1) | 2 (1/1) | 없음 |
-| **합계** | **121개** | **2,723개** | **58 (47/11)** | **62 (51/11)** | |
+| **합계** | **124개** | **2,824개** | **58 (53/5)** | **62 (57/5)** | |
 
-파일 수와 테스트 수는 2026-09-13 실측값이다. 허위 양성으로 판정한 2개 파일(`unit/utils/csv-export.test.ts` 29건, `integration/cache.integration.test.ts` 6건)은 실측 수에 포함했지만, 이 파일들이 속한 TC-U-028·TC-I-002 는 교체가 필요하므로 🔲 계획으로 분류했다.
+파일 수와 테스트 수는 2026-09-16 실측값이다. 2026-09-13 판(121개 파일, 2,723건)과 비교하면 신규 파일 3개(`unit/error/prisma-error-map-contract.test.ts` 37건, `unit/cache/cache-wrapper.test.ts` 19건, `integration/auth/token-rotation-flow.integration.test.ts` 8건)가 추가되었다. 기존 파일 5개도 늘었다: `unit/utils/csv-export.test.ts` 29 → 43, `integration/cache.integration.test.ts` 6 → 12, `unit/auth/services/token-refresh.service.test.ts` 12 → 17, `unit/auth/services/cache-token-stores.test.ts` 11 → 18, `build/consumer-runtime.test.ts` 2 → 7. 합계 101건이 늘었다. 2026-09-13 판에서 허위 양성으로 판정한 2개 파일은 교체했으므로 해당 TC-U-028·TC-I-002 를 ✅ 완료로 분류했다.
 
 **물리 디렉토리와 문서 도메인 대응**
 
 | 물리 디렉토리 | 파일 | 테스트 | 문서 도메인 배분 |
 |--------------|------|--------|-----------------|
-| `__tests__/unit/` | 96 | 1,996 | Unit 76/1,732 + API 20/264 |
-| `__tests__/integration/` | 2 | 8 | Integration 2/8 |
+| `__tests__/unit/` | 98 | 2,078 | Unit 78/1,814 + API 20/264 |
+| `__tests__/integration/` | 3 | 22 | Integration 3/22 |
 | `__tests__/security/` | 14 | 283 | Security 14/283 |
 | `__tests__/performance/` | 6 | 100 | Performance 5/98 + Load/Stress 1/2 |
-| `__tests__/build/` | 2 | 332 | E2E 1/2 + Smoke 1/330 |
+| `__tests__/build/` | 2 | 337 | E2E 1/7 + Smoke 1/330 |
 | `__tests__/chaos/` | 1 | 4 | Chaos 1/4 |
-| **합계** | **121** | **2,723** | |
+| **합계** | **124** | **2,824** | |
 
-문서 작성 후 스크립트로 대조한 결과, 121개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다.
+2026-09-16 갱신 후 스크립트로 다시 대조한 결과, 124개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다.
 
 ---
 
@@ -1710,14 +1743,14 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 도메인 | 판정 | 근거 |
 |--------|------|------|
-| Unit | 적용 | 76개 파일·1,732건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
+| Unit | 적용 | 78개 파일·1,814건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
 | API | 적용(재해석) | HTTP 서버가 없어 `src/next/` 핸들러·미들웨어·프록시·oapi 의 요청/응답 계약으로 재정의했고 20개 파일·264건이 해당한다 |
-| Integration | 적용(얇음) | 8건 중 6건(`cache.integration.test.ts`)이 소스를 실행하지 않아 실질적인 통합 검증은 api-key 2건뿐이다 |
-| E2E | 재해석 적용 | dist 를 import 해 실행하는 소비자 여정 1개 파일·2건이 있으며 범위가 api-key 로 한정된다 |
+| Integration | 적용 | 3개 파일·22건이 api-key 수명주기, 캐시 계층 조합(초기화·팩토리·래퍼·무효화·Redis 폴백), 인증 서비스와 캐시 기반 토큰 저장소 조합을 실제 모듈로 검증한다. 2026-09-13 판에서 소스를 실행하지 않던 6건은 교체했다 |
+| E2E | 재해석 적용 | dist 를 import 해 실행하는 소비자 여정 1개 파일·7건이 api-key 여정과 Prisma 오류 분류 여정을 다룬다 |
 | Security | 적용(강함) | 14개 파일·283건이 JWT 알고리즘 혼동, OAuth CSRF, 비밀번호 해싱, CORS 반사, 오류 정보 노출, XSS 를 다룬다 |
 | Accessibility | 미적용 | 렌더링 UI 가 없고 React 계층은 0.8.0 에서 `@withwiz/ui` 로 분리되었다 |
 | Performance | 적용 | 처리 시간 상한을 단언하는 테스트는 3건(api-key hot path 2, noop 오버헤드 1)이고 나머지 95건은 대용량 캐시 기능 검증이다 |
-| Load/Stress | 재해석 적용 | 동시 호출 일관성 2건이 있고, 이번 조사에서 refresh 토큰 동시 회전 경쟁이 재현되어 이 도메인이 필요함이 확인되었다 |
+| Load/Stress | 재해석 적용 | 동시 호출 일관성 2건이 있다. 2026-09-13 조사에서 재현된 refresh 토큰 동시 회전 경쟁은 2026-09-16 에 수정되었고 TC-I-003 이 검증한다 |
 | Smoke | 적용 | exports 데이터로 생성한 330건이 dist 파일 존재·타입 선언·번들 오염·메타데이터를 검증한다 |
 | Chaos | 적용 | api-key 포트 장애 degrade 계약 4건이 있으나 refresh 토큰 저장소 장애는 비어 있다 |
 
@@ -1729,21 +1762,31 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 순위 | TC | 내용 | 우선순위 | 선행 조건 |
 |------|----|------|---------|----------|
-| 1 | TC-I-002 | `cache.integration.test.ts` 허위 양성을 실제 캐시 조합 테스트로 교체 | High | import 시점에 `cache` 상수가 Noop 으로 고정되는 동작을 계약으로 둘지 결정 |
-| 2 | TC-U-028 | `csv-export.test.ts` 구현 복제를 소스 import 방식으로 교체 | High | 없음 (`next/server` 실모듈 사용 가능) |
-| 3 | TC-U-027 | Prisma 매핑표 14개 코드 전수와 `handlePrismaError()` 경로 일치 | High | `handlePrismaError()` 의 P2011 → 500, P2003 → 422 결과를 유지할지 결정 |
-| 4 | TC-E-002 | dist 수준 Prisma 오류 분류 여정 | High | `npm run build` 선행, 0.15.0 게시 후 호스트 재검증 기준으로 사용 |
-| 5 | TC-A-011 | `init-request`·`error-handler`·`response-logger` 미들웨어 실제 실행 | High | 없음 |
-| 6 | TC-C-002 | refresh 토큰 저장소 장애 시 갱신·로그아웃 동작 | High | `register` 훅 실패가 family 폐기로 이어지는 동작의 계약 여부 결정 |
-| 7 | TC-I-003 | 인증 서비스와 캐시 기반 토큰 저장소 실조합 | High | 동시 회전 경쟁(알려진 한계)을 저장소 원자성으로 해결할지 방침 결정 |
-| 8 | TC-U-029 | `withCache()` 와 캐시 무효화 헬퍼 | Medium | 오류 시 fetch 이중 호출 동작의 계약 여부 결정 |
-| 9 | TC-L-002 | 인메모리 캐시 카운터·용량 동시 호출 일관성 | Medium | 없음 |
-| 10 | TC-U-030 | GeoIP 공급자 구현 4종과 팩토리 | Low | 정적 공급자 목록의 테스트 간 정리 절차 |
-| 11 | TC-U-031 | 브라우저용 JWT 클라이언트 유틸 | Low | 파일 단위 jsdom 지정, `atob()` 의 base64url 처리 결함 여부 결정 |
+| 1 | TC-A-011 | `init-request`·`error-handler`·`response-logger` 미들웨어 실제 실행 | High | 없음 |
+| 2 | TC-C-002 | refresh 토큰 저장소 장애 시 갱신·로그아웃 동작 | High | `register` 훅 실패가 family 폐기로 이어지는 동작의 계약 여부 결정 |
+| 3 | TC-L-002 | 인메모리 캐시 카운터·용량 동시 호출 일관성 | Medium | 없음 |
+| 4 | TC-U-030 | GeoIP 공급자 구현 4종과 팩토리 | Low | 정적 공급자 목록의 테스트 간 정리 절차 |
+| 5 | TC-U-031 | 브라우저용 JWT 클라이언트 유틸 | Low | 파일 단위 jsdom 지정, `atob()` 의 base64url 처리 결함 여부 결정 |
+
+2026-09-16 에 2026-09-13 판의 순위 1~4, 7, 8 (TC-I-002, TC-U-028, TC-U-027, TC-E-002, TC-I-003, TC-U-029)을 완료했다. 선행 결정은 다음과 같이 확정했다.
+
+- **TC-U-027:** `handlePrismaError()` 도 공통 매핑표를 단일 기준으로 삼는다 (P2011 → 400, P2003 → 400).
+- **TC-U-029:** `withCache()` 는 원본 함수를 호출당 최대 한 번만 실행한다.
+- **TC-I-003:** 동시 회전 경쟁은 저장소의 선택적 원자 연산(`markUsedIfUnused`)으로 해결하고, 동시 갱신의 패자는 재사용으로 판정한다.
+- **TC-I-002:** import 순서에 따른 `cache` 상수의 Noop 고정은 결정하지 않았으므로 테스트로 고정하지 않았다.
+
+### 결정 대기 사항 (테스트로 고정하지 않음)
+
+| 항목 | 현재 동작 | 관련 TC |
+|------|----------|--------|
+| `cache`·`geoCache` 상수의 평가 시점 | `initializeCache()` 전에 import 하면 Noop 으로 고정되어 `invalidateCache` 가 no-op | TC-I-002 |
+| `withCache()` 미초기화 호출 | fetch 를 실행하지 않고 `ConfigurationError` 로 reject (`getCacheManager()` 는 Noop degrade) | TC-I-002 |
+| Redis 계열 캐시 매니저의 원자 연산 | `RedisCacheManager`·`HybridCacheManager` 에 `setIfNotExists` 가 없어, 캐시 기반 refresh 토큰 저장소를 그대로 주입하면 여러 인스턴스 사이의 동시 회전을 막지 못함 | TC-I-003 |
+| CSV 파일명 날짜 | UTC 날짜를 사용해 한국 시간 00:00~09:00 에는 전날 날짜가 붙음 | TC-U-028 |
 
 ### 사전 조사 우선순위 갭 8번 반영
 
-사전 조사 문서가 "Prisma 오류 분류 영역 문서 커버리지 0" 으로 기록한 항목은 TC-U-018 (✅ 완료, 25건)로 문서화했다. 조사 당시 `fix/prisma-error-classification` 브랜치에만 있던 수정은 현재 develop 의 `fb07def` 로 병합되어 0.15.0 에 포함되어 있다. 분류 기준표 중 P2011 → 400 은 매핑표에만 정의되어 있고 이를 단언하는 테스트가 없으므로 TC-U-027 로 계획했다.
+사전 조사 문서가 "Prisma 오류 분류 영역 문서 커버리지 0" 으로 기록한 항목은 TC-U-018 (✅ 완료, 25건)로 문서화했다. 조사 당시 `fix/prisma-error-classification` 브랜치에만 있던 수정은 현재 develop 의 `fb07def` 로 병합되어 0.15.0 에 포함되어 있다. 2026-09-13 판에서는 분류 기준표 중 P2011 → 400 이 매핑표에만 정의되어 있고 이를 단언하는 테스트가 없어 TC-U-027 로 계획했다. 2026-09-16 에 TC-U-027 (37건)과 TC-E-002 (dist 5건)로 완료했다.
 
 ### 실행 스크립트 갭 (package.json 은 수정하지 않음)
 
@@ -1759,32 +1802,32 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 구분 | 위치 | 내용 |
 |------|------|------|
-| 허위 양성 (목 객체만 검증) | `__tests__/integration/cache.integration.test.ts` (6건) | 소스를 import 하지 않고 테스트 안의 `mockRedis`·`Map` 에 넣은 값을 다시 단언한다 |
-| 허위 양성 (구현 복제) | `__tests__/unit/utils/csv-export.test.ts` (29건) | 소스 대신 복제본을 검증하며 복제본이 이미 소스와 다르다 (`boolFormatter.korean`, `dateFormatter.custom`) |
+| 허위 양성 (목 객체만 검증) | `__tests__/integration/cache.integration.test.ts` (2026-09-13 판 6건) | 소스를 import 하지 않고 테스트 안의 `mockRedis`·`Map` 에 넣은 값을 다시 단언했다. 2026-09-16 `610750c` 에서 실제 모듈 조합 12건으로 교체해 해소 |
+| 허위 양성 (구현 복제) | `__tests__/unit/utils/csv-export.test.ts` (2026-09-13 판 29건) | 소스 대신 복제본을 검증했고 복제본이 이미 소스와 달랐다 (`boolFormatter.korean`, `dateFormatter.custom`). 2026-09-16 `e37468c` 에서 소스 import 방식으로 교체해 해소 |
 | 항상 참인 비교 | `__tests__/security/error/error-info-exposure.test.ts` `should return the same error code for "user not found" and "wrong password"` | 똑같이 생성한 `AuthError` 두 개를 비교한다 |
-| 이름과 다른 단언 | `__tests__/unit/utils/error-processor.test.ts` `maps P2003 to 400 bad request (business rule)` | 이름은 400 이지만 실제로 422 를 단언한다 |
+| 이름과 다른 단언 | `__tests__/unit/utils/error-processor.test.ts` `maps P2003 to 400 bad request (business rule)` | 이름은 400 이지만 실제로 422 를 단언했다. 2026-09-16 `c07a669` 에서 이름을 `maps P2003 to 400 per the shared Prisma error map (not 422)` 로 바꾸고 400 을 단언해 해소 |
 | 존재 확인만 하는 단언 | `unit/utils/short-code-generator.test.ts:68`, `unit/utils/sanitizer.test.ts:317`, `security/utils/sanitizer.test.ts:325`, `unit/oapi/openapi-spec.test.ts:10`, `unit/cache/cache-fallback.test.ts:141` | 이름이 뜻하는 동작(모호 문자 배제, CSV 수식 방어, paths 보존, 폴백 값 반환) 대신 `toBeDefined()` 또는 호출 여부만 확인한다 |
 | 중복 스위트 | `unit/utils/sanitizer.test.ts` ↔ `security/utils/sanitizer.test.ts`, `unit/utils/utils.test.ts` ↔ 모듈별 utils 파일, `unit/system/system.test.ts` ↔ `system-utils.test.ts`·`health-check.test.ts` | 같은 함수를 여러 파일에서 반복 검증한다. sanitizer 두 파일은 40건의 이름과 단언이 거의 같다 |
 | 기존 감사 누락 | `__tests__/docs/FALSE_POSITIVE_AUDIT.md` (2026-07-12) | CRITICAL·HIGH 0건, placeholder 0건으로 판정했으나 위 허위 양성 2개 파일을 포함하지 않았다 |
 
 "존재 확인만 하는 단언" 은 `toBeDefined`·`toBeTruthy`·`not.toThrow` 만 쓰는 테스트를 스크립트로 추출한 43건 가운데, 이름과 단언이 어긋나는 사례만 골랐다. 나머지는 예외가 없음을 확인하는 것이 목적인 정상 사례이다.
 
-### 커버리지 0% 소스 파일 (2026-09-13 실측)
+### 커버리지 0% 소스 파일 (2026-09-16 재측정)
 
 | 파일 | 측정 줄 수 | 계획 TC |
 |------|----------|--------|
 | `src/core/auth/jwt/client.ts` | 111 | TC-U-031 |
-| `src/core/cache/cache-wrapper.ts`, `cache-invalidation.ts` | 68, 10 | TC-U-029 |
 | `src/core/geolocation/providers/index.ts`, `ip-api-provider.ts`, `ipapi-co-provider.ts`, `ipgeolocation-provider.ts`, `maxmind-provider.ts` | 20, 8, 8, 15, 9 | TC-U-030 |
 | `src/next/middleware/error-handler.ts`, `init-request.ts`, `response-logger.ts` | 22, 10, 22 | TC-A-011 |
-| `src/next/utils/csv-export.ts`, `csv-export-format.ts` | 57, 4 | TC-U-028 |
 | `src/core/system/cpu.ts`, `disk.ts`, `memory.ts`, `network.ts`, `index.ts` | 137, 120, 185, 161, 44 | 미정의 (OS 명령 의존 수집기) |
 | `src/next/error/ErrorBoundary.tsx` | 26 | 미정의 (유일한 React 표면) |
 | `src/core/error/friendly-messages.ts` | 10 | 미정의 (`friendly-messages-v2.ts` 가 별도로 존재) |
 | `src/core/auth/password/client-helper.ts` | 14 | 미정의 |
 | `src/core/constants/messages.ts`, `pagination.ts`, `src/core/types/qr-code.ts` | 4, 5, 2 | 해당 없음 (상수·타입) |
 
-낮은 커버리지 파일: `src/next/utils/api-helpers.ts` 6.66% (`requireAdmin()` 만 테스트됨), `src/core/cache/cache-factory.ts` 21.95% (TC-I-002 로 보강), `src/next/utils/cors.ts` 43.67%, `src/core/error/extract-error-info.ts` 57.89%.
+2026-09-13 판의 0% 목록에 있던 `src/core/cache/cache-wrapper.ts`·`cache-invalidation.ts` (TC-U-029)는 각각 89.7%·90%, `src/next/utils/csv-export.ts`·`csv-export-format.ts` (TC-U-028)는 각각 98.5%·100% (줄 기준)로 목록에서 빠졌다. 나머지 0% 파일 20개는 2026-09-13 판과 같다.
+
+낮은 커버리지 파일: `src/next/utils/api-helpers.ts` 6.66% (`requireAdmin()` 만 테스트됨), `src/next/utils/cors.ts` 43.67%, `src/core/error/extract-error-info.ts` 57.89%. `src/core/cache/cache-factory.ts` 는 2026-09-13 판 21.95% 에서 TC-I-002 교체 뒤 68.29% 가 되었다.
 
 ---
 
@@ -1796,7 +1839,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 |----------|------|---------------------|
 | `__tests__/docs/TEST_PLAN.md` | 1세대 | `cd packages/@withwiz/toolkit && npx jest`, `jest.config.js` 임계값 등 Jest·모노레포 하위 패키지 기준으로 작성되었고, 10절에서 `src/` 에 없는 Hooks 모듈(useDebounce, useTimezone, useExitIntent, useDataTable)을 다룬다 |
 | `__tests__/docs/TEST_SCENARIOS.md` | 1세대 | `jest.config.js` 와 `unit/password.test.ts` 같은 현재 없는 평면 경로 구조를 기준으로 시나리오를 정의한다 |
-| `__tests__/docs/PROGRESS.md` | 1세대 | 총 테스트 케이스 592개·통과 589개로 기록되어 실측 2,723건과 다르고, 향후 작업에 Hooks 모듈을 포함한다 |
+| `__tests__/docs/PROGRESS.md` | 1세대 | 총 테스트 케이스 592개·통과 589개로 기록되어 2026-09-13 실측 2,723건과 다르고, 향후 작업에 Hooks 모듈을 포함한다 |
 | `__tests__/docs/TESTING_ANALYSIS.md` | 2세대 | JWT Token Creation 6건을 실패(Failing) 상태로 기록했으나 실측 실패 0건이고, 없는 `__tests__/accessibility/hooks/hooks.test.tsx`·`unit/error/error-recovery.test.ts` 와 죽은 링크 `./CLAUDE.md`·`./docs/FOLDER_STRUCTURE.md` 를 참조한다 |
 | `__tests__/docs/UNIMPLEMENTED_TESTS_REPORT.md` | 2세대 | 실패 6건·스킵 8건으로 기록했으나 실측 실패 0·스킵 0 이고, 없는 `__tests__/accessibility/` 디렉토리를 근거로 삼는다 |
 
@@ -1833,7 +1876,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | SC-ERR-001~010, TC-ERR-001~012 | 1세대 `TEST_SCENARIOS.md` (삭제) | `unit/error/app-error.test.ts` | TC-U-014 |
 | SC-CONST-ERR-001~004, TC-CONST-ERR-001~009 | 1세대 `TEST_SCENARIOS.md` (삭제) | `unit/error/error-codes.test.ts` | TC-U-014 |
 | SC-CONST-VAL-001~003, TC-CONST-VAL-001~002 | 1세대 `TEST_SCENARIOS.md` (삭제) | `security/validators/validation-constants.test.ts` | TC-S-005 |
-| SC-INT-CACHE-001~005, TC-INT-CACHE-001~023 | 파일 주석의 `docs/testing/02-integration/02-cache.md` (저장소에 없음) | `integration/cache.integration.test.ts` | TC-I-002 |
+| SC-INT-CACHE-001~005, TC-INT-CACHE-001~023 (2026-09-16 교체로 테스트 이름에서 제거) | 파일 주석의 `docs/testing/02-integration/02-cache.md` (저장소에 없음) | `integration/cache.integration.test.ts` | TC-I-002 |
 | SC-UNIT-OPTAUTH-001, TC-UNIT-OPTAUTH-001~005 | 파일 주석의 `docs/testing/03-api/25-url-entry-optional-auth.md` (저장소에 없음) | `unit/middleware/optional-auth-middleware.test.ts` | TC-A-005 |
 | SC-UNIT-COOKIE-001~002, TC-UNIT-COOKIE-001~014 | 출처 문서 없음 | `unit/auth/cookie.test.ts` | TC-U-005 |
 | SC-UNIT-AUTHCOOKIE-001~002, TC-UNIT-AUTHCOOKIE-001~007 | 출처 문서 없음 | `unit/middleware/auth-cookie-extraction.test.ts` | TC-A-005 |
@@ -1843,7 +1886,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | SC-E2E-OAUTH-SEL-003, TC-E2E-OAUTH-SEL-020~025 | 출처 문서 없음 | `security/auth/oauth-prompt-parameter.test.ts` | TC-S-003 |
 | SC-UNIT-MEMLRU-001~007, TC-UNIT-MEMLRU-001~010 | 출처 문서 없음 | `performance/cache/cache-limit-lru.test.ts` | TC-P-002 |
 | SC-UNIT-REDIS-OPT-003, TC-INT-REDIS-OPT-020~024 | 출처 문서 없음 | `performance/cache/redis-delete-pattern-scan.test.ts` | TC-P-002 |
-| SC-UNIT-CSV-001~004, TC-UNIT-CSV-001~012 | 출처 문서 없음 | `unit/utils/csv-export.test.ts` | TC-U-028 |
+| SC-UNIT-CSV-001~004 (describe 이름에 유지), TC-UNIT-CSV-001~012 (2026-09-16 교체로 테스트 이름에서 제거) | 출처 문서 없음 | `unit/utils/csv-export.test.ts` | TC-U-028 |
 | SC-UNIT-TG-001~007, TC-UNIT-TG-001~026 | 출처 문서 없음 | `unit/utils/type-guards.test.ts` | TC-U-025 |
 | SC-UNIT-UTIL-001~006, TC-UNIT-URL/SC/IP/SAN/FMT/TZ-* | 출처 문서 없음 | `unit/utils/utils.test.ts` | TC-U-026 |
 
@@ -1854,14 +1897,15 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 ## 리뷰 체크리스트
 
 - [x] 10개 도메인 모두 판정 (Accessibility 미적용 근거 포함)
-- [x] 121개 테스트 파일이 모두 TC "파일" 칸에 등장 (스크립트 대조, 누락 0)
-- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,723건 일치 확인
+- [x] 124개 테스트 파일이 모두 TC "파일" 칸에 등장 (2026-09-16 스크립트 재대조, 누락 0)
+- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,824건 일치 확인 (2026-09-16)
 - [x] 완료 TC 의 단계·예상 결과를 실제 테스트 이름과 단언에서 발췌
 - [x] 계획 TC 는 대상 소스를 읽고 작성, 동작이 불분명한 4개 흐름은 워크트리 밖 스크래치 실행으로 재현
 - [x] Prisma 오류 분류 기준표 (P2002 → 409, P2025 → 404, P2011 → 400, `PrismaClientValidationError` → 400) 기재
 - [x] 3세대 문서 링크와 ID 대응표 기재
 - [x] 1세대·2세대 문서 5개를 내용 대조 후 삭제
-- [ ] 허위 양성 2개 파일 교체 필요 (TC-I-002, TC-U-028)
-- [ ] 계획 TC 의 선행 결정 사항 6건 확정 필요 (TC-U-027·029·031, TC-I-002·003, TC-C-002)
+- [x] 허위 양성 2개 파일 교체 (TC-I-002, TC-U-028, 2026-09-16)
+- [x] 계획 TC 의 선행 결정 사항 중 3건 확정 (TC-U-027·029, TC-I-003, 2026-09-16)
+- [ ] 남은 결정 사항 확정 필요 (TC-U-031 `atob()` 처리, TC-C-002 `register` 훅 장애, TC-I-002 `cache` 상수 평가 시점과 `withCache()` 미초기화 정책)
 - [ ] 도메인별 실행 스크립트 정비 필요 (이번 작업에서 package.json 미수정)
 - [ ] 커버리지 임계값 설정 필요 (현재 미설정)

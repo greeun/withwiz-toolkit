@@ -17,7 +17,10 @@ export interface TokenRefreshServiceConfig {
    * - 재사용 탐지: 이미 used 인 jti 재제출 → family 전체 무효화(탈취 대응).
    * 미주입 시 0.8 이전과 동일하게 access 토큰만 재발급한다(하위 호환).
    *
-   * 주의: 동시 요청 경쟁을 막으려면 store 의 isUsed→markUsed 는 원자적이어야 한다.
+   * 동시 요청 경쟁: store 가 선택 메서드 markUsedIfUnused(원자적 compare-and-set)를
+   * 구현하면 회전 시점에 그 결과로 소비를 확정한다. 같은 토큰의 동시 갱신 중 한
+   * 요청만 성공하고, 나머지는 재사용으로 판정되어 family 가 무효화된다.
+   * 미구현 store 는 기존과 같이 markUsed 로 기록하며 동시 경쟁을 막지 못한다.
    */
   refreshTokenStore?: IRefreshTokenStore;
   logger?: Logger;
@@ -70,9 +73,7 @@ export class TokenRefreshService {
       }
       if (jti && (await this.store.isUsed(jti))) {
         // 이미 회전된 토큰의 재제출 = 탈취 정황 → family 전체 무효화.
-        if (familyId) await this.store.revokeFamily(familyId);
-        this.logger.warn('Refresh token reuse detected', { userId, jti, familyId });
-        throw new AuthError('Refresh token reuse detected', 'TOKEN_REUSE_DETECTED', 401);
+        return this.rejectReuse(this.store, { userId, jti, familyId });
       }
     }
 
@@ -104,7 +105,16 @@ export class TokenRefreshService {
     // 레거시(식별자 없는) 토큰은 첫 회전에서 새 family 를 부여한다.
     const family = familyId ?? randomUUID();
     if (jti) {
-      await this.store.markUsed(jti, { familyId: family, userId });
+      const meta = { familyId: family, userId };
+      if (this.store.markUsedIfUnused) {
+        // 원자적 소비 확정. 위 isUsed 확인 이후 다른 요청이 먼저 소비했으면 재사용이다.
+        const claimed = await this.store.markUsedIfUnused(jti, meta);
+        if (!claimed) {
+          return this.rejectReuse(this.store, { userId, jti, familyId, concurrent: true });
+        }
+      } else {
+        await this.store.markUsed(jti, meta);
+      }
     }
     const newJti = randomUUID();
     const newRefreshToken = await this.jwtService.createRefreshToken(userId, {
@@ -114,6 +124,16 @@ export class TokenRefreshService {
     await this.store.register?.({ jti: newJti, familyId: family, userId });
 
     return { accessToken, refreshToken: newRefreshToken, user: { id: user.id, email: user.email, role } };
+  }
+
+  /** 재사용 탐지: family 가 있으면 무효화하고 TOKEN_REUSE_DETECTED 로 거부한다. */
+  private async rejectReuse(
+    store: IRefreshTokenStore,
+    context: { userId: string; jti: string; familyId?: string; concurrent?: boolean },
+  ): Promise<never> {
+    if (context.familyId) await store.revokeFamily(context.familyId);
+    this.logger.warn('Refresh token reuse detected', context);
+    throw new AuthError('Refresh token reuse detected', 'TOKEN_REUSE_DETECTED', 401);
   }
 
   /**
