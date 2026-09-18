@@ -94,6 +94,29 @@ const refreshService = new TokenRefreshService({
 });
 ```
 
+Concurrent refresh with the same token: the store's `markUsedIfUnused`
+(compare-and-set) settles consumption at rotation time, so only one request
+succeeds and the others are rejected as reuse (`TOKEN_REUSE_DETECTED`, family
+revoked). The cache-backed store serializes the check and write per `jti` inside
+one process. When several server instances share the cache, pass a cache that
+also implements `setIfNotExists` so the claim is atomic across instances:
+
+```typescript
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
+const refreshStore = createCacheRefreshTokenStore({
+  set: async (key, value, ttl) => { await redis.set(key, value, ttl ? { ex: ttl } : undefined); },
+  delete: async (key) => { await redis.del(key); },
+  exists: async (key) => (await redis.exists(key)) === 1,
+  setIfNotExists: async (key, value, ttl) =>
+    (await redis.set(key, value, ttl ? { nx: true, ex: ttl } : { nx: true })) === 'OK',
+});
+```
+
+A custom `IRefreshTokenStore` without `markUsedIfUnused` keeps the previous
+`isUsed` → `markUsed` flow and does not prevent concurrent rotation.
+
 ### 4. Edge route guard — `createAuthProxy`
 
 Validate the access-token cookie at the edge (`middleware.ts` / `proxy.ts`) and

@@ -9,7 +9,7 @@
  * import { cache, withCache } from '@withwiz/toolkit/core/cache/cache';
  *
  * // 신규 권장 방식
- * import { cache, withCache } from '@withwiz/cache';
+ * import { cache, withCache } from '@withwiz/toolkit/core/cache';
  */
 
 export * from '@withwiz/toolkit/core/cache';

@@ -26,6 +26,13 @@ export interface TokenStoreCache {
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
+  /**
+   * (선택) 키가 없을 때만 저장하는 원자 연산. 저장했으면 true, 이미 있으면 false.
+   * 제공하면 refresh store 의 markUsedIfUnused 가 이 연산을 사용하므로 여러 서버
+   * 인스턴스 사이에서도 동시 회전을 막는다 (예: Redis `SET key value NX EX ttl`).
+   * 없으면 store 인스턴스 안에서 같은 키의 확인·기록을 직렬화한다(단일 프로세스 한정).
+   */
+  setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
 }
 
 /**
@@ -88,10 +95,18 @@ export interface CacheRefreshStoreOptions {
 
 const THIRTY_DAYS_SEC = 30 * 86400;
 
+const noop = (): void => {};
+
 /**
  * refresh 토큰 store(회전/재사용탐지/family revoke)를 cache 로 구현.
  * 키: used=`${usedPrefix}${jti}`, family=`${familyPrefix}${familyId}`.
  * TTL 은 meta.expiresAt 잔여시간에 정렬(없으면 defaultTtlSec).
+ *
+ * markUsedIfUnused(동시 회전 차단):
+ * - cache.setIfNotExists 가 있으면 그 원자 연산을 사용한다 (프로세스 간 보장).
+ * - 없으면 이 store 인스턴스 안에서 같은 jti 의 exists→set 을 직렬화한다.
+ *   단일 프로세스 안의 동시 요청은 막지만, 여러 서버 인스턴스가 캐시를 공유하는
+ *   배포에서는 setIfNotExists 를 제공하는 cache 를 주입해야 한다.
  */
 export function createCacheRefreshTokenStore(
   cache: TokenStoreCache,
@@ -106,12 +121,37 @@ export function createCacheRefreshTokenStore(
     return normalizeTtl((expiresAt.getTime() - Date.now()) / 1000, defaultTtl);
   };
 
+  // 원자 연산이 없는 cache 용: 키별로 직전 확인·기록이 끝난 뒤 다음 확인을 시작한다.
+  const pendingClaims = new Map<string, Promise<void>>();
+  const claimSerially = (key: string, ttl: number): Promise<boolean> => {
+    const previous = pendingClaims.get(key) ?? Promise.resolve();
+    const claim = previous.then(async () => {
+      if (await cache.exists(key)) return false;
+      await cache.set(key, 1, ttl);
+      return true;
+    });
+    const settled = claim.then(noop, noop);
+    pendingClaims.set(key, settled);
+    void settled.then(() => {
+      if (pendingClaims.get(key) === settled) pendingClaims.delete(key);
+    });
+    return claim;
+  };
+
   return {
     async isUsed(jti) {
       return cache.exists(`${usedPrefix}${jti}`);
     },
     async markUsed(jti, meta) {
       await cache.set(`${usedPrefix}${jti}`, 1, ttlFrom(meta?.expiresAt));
+    },
+    async markUsedIfUnused(jti, meta) {
+      const key = `${usedPrefix}${jti}`;
+      const ttl = ttlFrom(meta?.expiresAt);
+      if (typeof cache.setIfNotExists === 'function') {
+        return cache.setIfNotExists(key, 1, ttl);
+      }
+      return claimSerially(key, ttl);
     },
     async isFamilyRevoked(familyId) {
       return cache.exists(`${familyPrefix}${familyId}`);

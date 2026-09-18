@@ -91,6 +91,28 @@ const refreshService = new TokenRefreshService({
 });
 ```
 
+같은 토큰으로 동시에 갱신하는 경우: 저장소의 `markUsedIfUnused`(compare-and-set)가
+회전 시점에 소비를 확정하므로 한 요청만 성공하고, 나머지는 재사용으로 거부됩니다
+(`TOKEN_REUSE_DETECTED`, family 무효화). 캐시 기반 저장소는 한 프로세스 안에서
+`jti` 별로 확인과 기록을 직렬화합니다. 여러 서버 인스턴스가 캐시를 공유한다면
+`setIfNotExists` 까지 구현한 cache 를 주입해야 인스턴스 사이에서도 원자적으로 동작합니다.
+
+```typescript
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
+const refreshStore = createCacheRefreshTokenStore({
+  set: async (key, value, ttl) => { await redis.set(key, value, ttl ? { ex: ttl } : undefined); },
+  delete: async (key) => { await redis.del(key); },
+  exists: async (key) => (await redis.exists(key)) === 1,
+  setIfNotExists: async (key, value, ttl) =>
+    (await redis.set(key, value, ttl ? { nx: true, ex: ttl } : { nx: true })) === 'OK',
+});
+```
+
+`markUsedIfUnused` 를 구현하지 않은 사용자 정의 `IRefreshTokenStore` 는 기존과 같이
+`isUsed` → `markUsed` 순서로 동작하며 동시 회전을 막지 못합니다.
+
 ### 4. 엣지 라우트 가드 — `createAuthProxy`
 
 엣지(`middleware.ts` / `proxy.ts`)에서 access 토큰 쿠키를 검증해 미인증 요청을

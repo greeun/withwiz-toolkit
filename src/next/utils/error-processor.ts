@@ -38,6 +38,71 @@ export interface IErrorHandlerOptions {
   maskSensitiveInfo?: boolean;
 }
 
+/** 오류 값에서 로그용 메시지를 읽는다 (Error 가 아닌 객체도 허용). */
+function readErrorMessage(error: unknown): unknown {
+  if (!error || typeof error !== 'object') return undefined;
+  return (error as { message?: unknown }).message;
+}
+
+/**
+ * Prisma 오류를 공통 매핑표(PRISMA_ERROR_MAP) 기준의 ProcessedError 로 변환한다.
+ * Prisma 오류가 아니면 null.
+ *
+ * ErrorProcessor.process() 와 handlePrismaError() 가 이 함수를 공유하므로
+ * 두 경로의 상태 코드·에러 코드·메시지가 항상 같다.
+ */
+function resolvePrismaError(error: unknown): ProcessedError | null {
+  // code 속성/클래스 이름 우선 판정. 메시지 스캔은 앞부분 제한 폴백.
+  const info = inspectPrismaError(error);
+  if (!info) return null;
+
+  // PrismaClientValidationError 등 code 가 없는 입력 검증 오류 → 400
+  if (info.kind === 'validation') {
+    logger.warn('Prisma validation error', {
+      prismaErrorName: info.name,
+      message: truncateErrorMessage(readErrorMessage(error)),
+    });
+    return {
+      code: ERROR_CODES.VALIDATION_ERROR.code,
+      message: formatErrorMessage(ERROR_CODES.VALIDATION_ERROR.code, PRISMA_VALIDATION_MESSAGE),
+      status: 400,
+      key: 'VALIDATION_ERROR',
+      category: 'validation',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const prismaCode = info.code;
+  const mapping = getPrismaErrorMapping(prismaCode);
+
+  if (mapping) {
+    return {
+      code: mapping.code,
+      message: formatErrorMessage(mapping.code, mapping.message),
+      status: mapping.status,
+      key: 'DATABASE_ERROR',
+      category: 'server',
+      details: { prismaCode },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // 매핑되지 않은 Prisma 에러 - 내부 코드는 로그에만 기록 (메시지는 길이 제한)
+  logger.error('Unmapped Prisma error', {
+    prismaCode,
+    prismaErrorName: info.name,
+    message: truncateErrorMessage(readErrorMessage(error)),
+  });
+  return {
+    code: ERROR_CODES.DATABASE_ERROR.code,
+    message: formatErrorMessage(ERROR_CODES.DATABASE_ERROR.code),
+    status: 500,
+    key: 'DATABASE_ERROR',
+    category: 'server',
+    timestamp: new Date().toISOString(),
+  };
+}
+
 /**
  * 중앙 에러 처리기
  */
@@ -144,58 +209,10 @@ export class ErrorProcessor {
   }
 
   /**
-   * Prisma 에러 추출 및 처리
+   * Prisma 에러 추출 및 처리 (공통 매핑표 기준, resolvePrismaError 참조)
    */
   private static extractPrismaError(error: Error): ProcessedError | null {
-    // code 속성/클래스 이름 우선 판정. 메시지 스캔은 앞부분 제한 폴백.
-    const info = inspectPrismaError(error);
-    if (!info) return null;
-
-    // PrismaClientValidationError 등 code 가 없는 입력 검증 오류 → 400
-    if (info.kind === 'validation') {
-      logger.warn('Prisma validation error', {
-        prismaErrorName: info.name,
-        message: truncateErrorMessage(error.message),
-      });
-      return {
-        code: ERROR_CODES.VALIDATION_ERROR.code,
-        message: formatErrorMessage(ERROR_CODES.VALIDATION_ERROR.code, PRISMA_VALIDATION_MESSAGE),
-        status: 400,
-        key: 'VALIDATION_ERROR',
-        category: 'validation',
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    const prismaCode = info.code;
-    const mapping = getPrismaErrorMapping(prismaCode);
-
-    if (mapping) {
-      return {
-        code: mapping.code,
-        message: formatErrorMessage(mapping.code, mapping.message),
-        status: mapping.status,
-        key: 'DATABASE_ERROR',
-        category: 'server',
-        details: { prismaCode },
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    // 매핑되지 않은 Prisma 에러 - 내부 코드는 로그에만 기록 (메시지는 길이 제한)
-    logger.error('Unmapped Prisma error', {
-      prismaCode,
-      prismaErrorName: info.name,
-      message: truncateErrorMessage(error.message),
-    });
-    return {
-      code: ERROR_CODES.DATABASE_ERROR.code,
-      message: formatErrorMessage(ERROR_CODES.DATABASE_ERROR.code),
-      status: 500,
-      key: 'DATABASE_ERROR',
-      category: 'server',
-      timestamp: new Date().toISOString(),
-    };
+    return resolvePrismaError(error);
   }
 
   /**
@@ -413,62 +430,24 @@ async function maskSensitiveInfo(response: NextResponse): Promise<NextResponse> 
 
 /**
  * Prisma 에러 처리 헬퍼
+ *
+ * 공통 매핑표(PRISMA_ERROR_MAP) 기준으로 ErrorProcessor.process() 와 같은
+ * 상태 코드·에러 코드·메시지를 응답한다. 응답 본문에는 Prisma 내부 코드
+ * (details.prismaCode)를 싣지 않는다. Prisma 오류가 아니면 500 DATABASE_ERROR.
  */
 export function handlePrismaError(error: unknown): NextResponse {
-  const prismaCode = inspectPrismaError(error)?.code;
-  if (prismaCode) {
-    const prismaError = { code: prismaCode };
-    if (prismaError.code === 'P2002') {
-      const errorInfo = ERROR_CODES.DUPLICATE_RESOURCE;
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: errorInfo.code,
-            message: formatErrorMessage(errorInfo.code),
-          },
-        },
-        { status: errorInfo.status }
-      );
-    }
-    if (prismaError.code === 'P2025') {
-      const errorInfo = ERROR_CODES.NOT_FOUND;
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: errorInfo.code,
-            message: formatErrorMessage(errorInfo.code),
-          },
-        },
-        { status: errorInfo.status }
-      );
-    }
-    if (prismaError.code === 'P2003') {
-      const errorInfo = ERROR_CODES.BUSINESS_RULE_VIOLATION;
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: errorInfo.code,
-            message: formatErrorMessage(errorInfo.code),
-          },
-        },
-        { status: errorInfo.status }
-      );
-    }
-  }
-
+  const processed = resolvePrismaError(error);
   const errorInfo = ERROR_CODES.DATABASE_ERROR;
+  const code = processed?.code ?? errorInfo.code;
+  const message = processed?.message ?? formatErrorMessage(errorInfo.code);
+  const status = processed?.status ?? errorInfo.status;
+
   return NextResponse.json(
     {
       success: false,
-      error: {
-        code: errorInfo.code,
-        message: formatErrorMessage(errorInfo.code),
-      },
+      error: { code, message },
     },
-    { status: errorInfo.status }
+    { status }
   );
 }
 

@@ -85,6 +85,34 @@ export function createCsvHeader<T>(columns: CsvColumn<T>[]): string {
   return columns.map(col => escapeCsvField(col.header)).join(',');
 }
 
+/** 헤더에 그대로 넣어도 되는 파일명 문자 (따옴표·역슬래시를 제외한 출력 가능 ASCII) */
+const SAFE_QUOTED_FILENAME = /^[\x20-\x21\x23-\x5B\x5D-\x7E]*$/;
+
+/** ASCII 대체 파일명에서 치환할 문자 (출력 불가·비 ASCII·따옴표·역슬래시) */
+const UNSAFE_FILENAME_CHAR = /[^\x20-\x21\x23-\x5B\x5D-\x7E]/g;
+
+/**
+ * Content-Disposition 헤더 값 생성 (`{filename}_{YYYY-MM-DD}.csv`)
+ *
+ * HTTP 헤더 값은 ByteString 이어야 하므로 한글 등 비 ASCII 문자를 그대로 넣으면
+ * Headers 생성에서 TypeError 가 발생한다. 안전한 ASCII 이름은 기존 형식을 유지하고,
+ * 그 밖의 이름은 ASCII 대체 이름과 RFC 5987 `filename*` (UTF-8 퍼센트 인코딩)을 함께 싣는다.
+ */
+function buildContentDisposition(filename: string): string {
+  const fullName = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+
+  if (SAFE_QUOTED_FILENAME.test(fullName)) {
+    return `attachment; filename="${fullName}"`;
+  }
+
+  const asciiFallback = fullName.replace(UNSAFE_FILENAME_CHAR, '_');
+  const encoded = encodeURIComponent(fullName).replace(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}
+
 // ==================== Simple Export ====================
 
 /**
@@ -118,7 +146,7 @@ export function createSimpleCsvResponse<T>(
     return new NextResponse(content, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${filename}_${new Date().toISOString().split('T')[0]}.csv"`
+        'Content-Disposition': buildContentDisposition(filename)
       }
     });
   } catch (error) {
@@ -145,6 +173,12 @@ export function createStreamingCsvResponse<T>(
     includeBom = true,
     logContext
   } = options;
+
+  const headers = {
+    'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': buildContentDisposition(filename),
+    'Transfer-Encoding': 'chunked'
+  };
 
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
@@ -203,13 +237,7 @@ export function createStreamingCsvResponse<T>(
     }
   })();
 
-  return new NextResponse(stream.readable, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}_${new Date().toISOString().split('T')[0]}.csv"`,
-      'Transfer-Encoding': 'chunked'
-    }
-  });
+  return new NextResponse(stream.readable, { headers });
 }
 
 // ==================== Utility Helpers ====================
