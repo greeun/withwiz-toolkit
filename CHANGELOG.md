@@ -63,6 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listed only `['node_modules', 'dist']`, so tests under `.claude/worktrees/`
   were collected as a second copy of the whole suite. It now spreads
   `configDefaults.exclude` and adds `**/.claude/**`.
+- `__tests__/unit/utils/timezone`: `getUserTimezone` was asserted to contain a
+  slash, which assumed every IANA identifier has the `Area/Location` shape.
+  `UTC` is a valid identifier and has no slash, so the test passed on a machine
+  set to `Asia/Seoul` and failed on a CI runner set to UTC — the first release
+  workflow run hit exactly this. It now asserts the returned name is usable as a
+  time zone instead of matching a shape.
 
 ### CI
 - `.github/workflows/release.yml`: publishing moved to npm Trusted Publishing

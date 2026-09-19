@@ -170,7 +170,9 @@ describe('getUserTimezone', () => {
 
   it('returns a valid IANA timezone name', () => {
     const result = getUserTimezone();
-    expect(result).toContain('/');
+    // 'UTC' 처럼 Area/Location 형태가 아닌 식별자도 유효하다. CI 러너는 TZ 가
+    // UTC 라서 슬래시 유무로 판정하면 실패하므로, 시간대로 쓸 수 있는지 본다.
+    expect(() => new Intl.DateTimeFormat(undefined, { timeZone: result })).not.toThrow();
   });
 });
 
