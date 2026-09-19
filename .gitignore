@@ -13,6 +13,7 @@ __tests__/coverage/
 docs/.pdca-status.json
 .claude/settings.local.json
 .claude/skills/
+.claude/worktrees/
 .axt-profile.json
 docs/01-plan/
 docs/modules/
