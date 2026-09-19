@@ -5,6 +5,78 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0]
+
+### Changed
+- `next/error/error-processor`: `handlePrismaError` now follows the shared Prisma
+  mapping table instead of its own branch list. **`P2003` returns 400 (was 422)**
+  and `P2011` returns 400 (was 500); `PrismaClientValidationError` returns 400
+  (was 500). Status codes, error codes and messages all come from the table now,
+  via the extracted `resolvePrismaError()` that `ErrorProcessor.process()` shares.
+  The response shape `{ success, error: { code, message } }` is unchanged, and
+  `details.prismaCode` is no longer attached. Anything branching on 422 for a
+  foreign-key violation has to branch on 400.
+
+### Added
+- `core/auth`: `IRefreshTokenStore` gained the optional `markUsedIfUnused(jti, meta)`
+  method — a compare-and-set that returns true when it recorded the use and false
+  when the token was already consumed. Stores that do not implement it keep the
+  previous `isUsed` → `markUsed` flow unchanged.
+
+### Fixed
+- `core/auth/token-refresh.service`: concurrent `refresh()` calls with the same
+  refresh token all succeeded and each received a new token, because the user
+  lookup and token signing awaited between the `isUsed` check and `markUsed`.
+  Rotation now confirms consumption through `markUsedIfUnused`; a false result is
+  treated as reuse, invalidating the family and rejecting with
+  `TOKEN_REUSE_DETECTED`. `createCacheRefreshTokenStore` implements it with the
+  cache's atomic `setIfNotExists` when available, and otherwise serializes
+  exists → set per jti inside the store instance. Deployments running several
+  instances should inject `setIfNotExists`; see the auth README.
+- `core/cache/cache-wrapper`: `withCache` re-ran the original function when the
+  fetch threw, or when `set` or the store log failed after a successful fetch,
+  because one try block covered lookup, fetch and store. Only a failed cache
+  lookup now degrades to a single execution; a fetch error propagates without a
+  retry, and store failures are logged while the result already obtained is
+  returned.
+- `next/utils/csv-export`: `createSimpleCsvResponse` and
+  `createStreamingCsvResponse` put the filename straight into
+  `Content-Disposition`, so a non-ASCII name (`filename: '회원목록'`) or one
+  containing a line break raised a TypeError while `NextResponse` was being
+  constructed — HTTP header values must be a ByteString. Printable-ASCII names
+  without quotes or backslashes keep the previous format; every other name now
+  carries an ASCII fallback plus RFC 5987 `filename*=UTF-8''<percent-encoded>`.
+  The streaming response computes its headers before the stream starts.
+
+### Tests
+- `__tests__/unit/utils/csv-export`: the suite duplicated the implementation
+  inside the test file and never executed the source, and the copy had already
+  drifted from it (`boolFormatter.korean` 'Yes' against the source's '예'). It
+  now imports `csv-export.ts` and `csv-export-format.ts` and uses the real
+  `next/server` module, covering response bytes (BOM), download headers, batch
+  streaming, early termination and fetcher failure.
+- `__tests__/integration/cache`: the previous suite asserted values it had put
+  into its own mock Redis and Map without importing the toolkit at all. It now
+  composes `initializeCache` → `cache-factory` → in-memory/hybrid managers →
+  `withCache` → `cache-invalidation` as real modules, mocking only the logger.
+- `__tests__/vitest.config.ts`: `exclude` overrides vitest's defaults, and it
+  listed only `['node_modules', 'dist']`, so tests under `.claude/worktrees/`
+  were collected as a second copy of the whole suite. It now spreads
+  `configDefaults.exclude` and adds `**/.claude/**`.
+
+### CI
+- `.github/workflows/release.yml`: publishing moved to npm Trusted Publishing
+  (OIDC). npm classic tokens were revoked, so the `NPM_TOKEN` path no longer
+  works; pushing a `v*` tag now publishes with no stored secret and no token to
+  rotate. The job refuses to publish when the tag and `package.json` version
+  disagree, and does not use a dependency cache.
+
+### Chore
+- `package.json`: `packageManager` is pinned to npm, and other package managers'
+  lockfiles are gitignored. `pnpm install` kept recreating `pnpm-lock.yaml` and
+  installing the optional peer `argon2`, which broke the password-hasher test's
+  premise. This does not affect projects installing this package as a dependency.
+
 ## [0.14.0]
 
 ### Security
