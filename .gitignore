@@ -11,9 +11,6 @@ __tests__/coverage/
 .bkit*
 .serena/
 docs/.pdca-status.json
-.claude/settings.local.json
-.claude/skills/
-.claude/worktrees/
 .axt-profile.json
 docs/01-plan/
 docs/modules/
@@ -30,3 +27,18 @@ docs/superpowers/
 pnpm-lock.yaml
 pnpm-workspace.yaml
 yarn.lock
+
+# claude code (지침 문서 · 로컬 설정 · 세션 워크트리 · 자동 설치 스킬 · MCP 설정)
+CLAUDE.md
+.claude/
+.claude.json
+.claude.json.*
+.claude-*.json
+
+# axt 로컬 프로파일 (백업본 포함)
+.axt/
+.axt*
+
+# ast (agent session tracker) 로컬 산출물
+.ast/
+.ast*
