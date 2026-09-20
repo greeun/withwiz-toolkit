@@ -273,3 +273,82 @@ describe("IP Utils", () => {
     });
   });
 });
+
+/**
+ * Regression coverage for the abbreviated-IPv6 gap and the proxy-hop policy.
+ *
+ * The original suite only exercised three IPv6 literals — `::1`, the hardcoded
+ * Google DNS address and a fully expanded one — each of which matched a
+ * special-case branch, so the ordinary abbreviated form was never tested.
+ */
+describe("IP Utils — abbreviated IPv6 and trusted proxy hops", () => {
+  describe("isValidIP", () => {
+    it("should accept abbreviated IPv6 addresses", () => {
+      expect(isValidIP("2001:db8::1")).toBe(true);
+      expect(isValidIP("2001:2d8:e1c1:1234::5")).toBe(true);
+      expect(isValidIP("fe80::1")).toBe(true);
+      expect(isValidIP("::")).toBe(true);
+      expect(isValidIP("::ffff:192.0.2.1")).toBe(true);
+    });
+
+    it("should reject IPv6 addresses with more than one '::'", () => {
+      expect(isValidIP("::1::2")).toBe(false);
+      expect(isValidIP("2001::db8::1")).toBe(false);
+    });
+
+    it("should reject IPv6 addresses with malformed groups", () => {
+      expect(isValidIP("12345::1")).toBe(false);
+      expect(isValidIP("1:2:3:4:5:6:7:8:9")).toBe(false);
+      expect(isValidIP("1:2:3:4:5:6:7")).toBe(false);
+    });
+
+    it("should reject IPv4 octets that are not plain decimal numbers", () => {
+      expect(isValidIP("1abc.2.3.4")).toBe(false);
+      expect(isValidIP("01.2.3.4")).toBe(false);
+      expect(isValidIP(" 1.2.3.4")).toBe(false);
+      expect(isValidIP("1.2.3.4 ")).toBe(false);
+      expect(isValidIP("+1.2.3.4")).toBe(false);
+    });
+  });
+
+  describe("extractClientIp", () => {
+    it("should accept an abbreviated IPv6 address from CF-Connecting-IP", () => {
+      const headers = new Headers({
+        "cf-connecting-ip": "2001:db8::1",
+        "x-forwarded-for": "2001:db8::1, 172.16.0.1",
+      });
+      expect(extractClientIp(headers)).toBe("2001:db8::1");
+    });
+
+    it("should skip the configured number of trailing proxy hops", () => {
+      const headers = new Headers({
+        "x-forwarded-for": "1.2.3.4, 5.6.7.8, 9.10.11.12",
+      });
+      expect(extractClientIp(headers, { trustedProxyHops: 1 })).toBe("5.6.7.8");
+      expect(extractClientIp(headers, { trustedProxyHops: 2 })).toBe("1.2.3.4");
+    });
+
+    it("should return null when the hop count exceeds the chain length", () => {
+      const headers = new Headers({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" });
+      expect(extractClientIp(headers, { trustedProxyHops: 2 })).toBeNull();
+      expect(extractClientIp(headers, { trustedProxyHops: 5 })).toBeNull();
+    });
+
+    it("should not apply the hop count to Cloudflare headers", () => {
+      const headers = new Headers({
+        "cf-connecting-ip": "1.2.3.4",
+        "x-forwarded-for": "5.6.7.8, 9.10.11.12",
+      });
+      expect(extractClientIp(headers, { trustedProxyHops: 1 })).toBe("1.2.3.4");
+    });
+
+    it("should keep the last hop as the default", () => {
+      const headers = new Headers({
+        "x-forwarded-for": "1.2.3.4, 5.6.7.8, 9.10.11.12",
+      });
+      expect(extractClientIp(headers)).toBe("9.10.11.12");
+      expect(extractClientIp(headers, {})).toBe("9.10.11.12");
+      expect(extractClientIp(headers, { trustedProxyHops: 0 })).toBe("9.10.11.12");
+    });
+  });
+});
