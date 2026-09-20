@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0]
+
+### Fixed
+- `core/utils/ip-utils`: `isValidIP` rejected ordinary abbreviated IPv6 addresses.
+  The IPv6 branch was a list of special cases — a fully expanded eight-group
+  pattern, `::1`, anything starting with `::`, and a hardcoded Google DNS
+  literal — so `2001:db8::1` and every other real-world abbreviated address
+  returned false. Through `extractClientIp` that turned into a wrong answer
+  rather than no answer: a Cloudflare `CF-Connecting-IP` carrying an IPv6
+  address failed validation, execution fell through to `X-Forwarded-For`, and
+  the proxy's own address was returned as the client. Every IPv6 visitor
+  therefore collapsed onto one shared identifier, and a rate limiter keyed on
+  it throttled them as a single client. IPv6 is now parsed instead of pattern
+  matched: at most one `::`, 1-4 hex digits per group, exactly eight groups
+  when unabbreviated and fewer when abbreviated, with IPv4-mapped tails
+  (`::ffff:192.0.2.1`) counted as two groups. `isValidIP` also tests for `:`
+  before `.` so those mapped forms no longer enter the IPv4 branch.
+- `core/utils/ip-utils`: `isValidIP` accepted IPv4 octets that were not plain
+  decimal numbers, because it validated them with `parseInt`, which stops at
+  the first non-digit. `1abc.2.3.4` passed as valid, and `01.2.3.4` passed as a
+  second spelling of `1.2.3.4` — two keys for one address wherever the result
+  is used as a cache or counter key. Octets must now match
+  `0|[1-9][0-9]{0,2}`, which also excludes leading `+`/`-` and surrounding
+  whitespace.
+
+### Added
+- `core/utils/ip-utils`: `extractClientIp` takes an optional second argument,
+  `{ trustedProxyHops }`, naming how many entries at the **end** of
+  `X-Forwarded-For` were appended by trusted proxies. The header accumulates as
+  `client, proxy1, proxy2`, so the last entry is the client only when exactly
+  one proxy is in front of the app; behind two (a CDN and a platform edge, say)
+  the last entry is the CDN. The hop count is subtracted from the end, and a
+  chain shorter than the count yields `null` rather than reaching back into the
+  part of the header the client controls. The default is 0, which is the
+  previous behaviour, so existing single-argument calls are unaffected.
+
+### Tests
+- `__tests__/unit/utils/ip-utils`: the IPv6 cases covered `::1`, the hardcoded
+  Google DNS address and one fully expanded address — each matching its own
+  special case — so no test ever exercised the abbreviated form the
+  implementation could not parse. The suite now covers abbreviated addresses,
+  duplicate `::`, oversized and miscounted groups, non-decimal IPv4 octets, an
+  IPv6 `CF-Connecting-IP`, and the hop-count argument including its
+  out-of-range and default behaviour.
+
 ## [0.16.0]
 
 ### Changed
