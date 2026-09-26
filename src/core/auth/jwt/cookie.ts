@@ -10,6 +10,7 @@
  */
 import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
 import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
+import { configWarn } from '@withwiz/toolkit/core/config/warn';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 import { durationToSeconds } from '@withwiz/toolkit/core/auth/duration';
 import {
@@ -35,12 +36,30 @@ export interface CookieOptions {
   refreshTokenMaxAge?: number;
 }
 
+let uninitializedWarned = false;
+
+/**
+ * 미초기화 폴백은 쿠키 수명·secure 를 앱 설정과 다르게 만들면서도 신호가 없었다.
+ * 동작은 그대로 두고 프로세스당 1회 경고만 남긴다(로그인마다 반복하지 않는다).
+ */
+function warnUninitializedOnce(): void {
+  if (uninitializedWarned) return;
+  uninitializedWarned = true;
+  configWarn(
+    'Auth',
+    'auth cookies written before initializeAuth(); they fall back to ' +
+      `secure=false and maxAge from JWT_DEFAULTS (access ${JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES}, ` +
+      `refresh ${JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES}), not the app's configured expiry.`,
+  );
+}
+
 function getDefaultOptions(): CookieOptions {
   let secure = false;
   try {
     secure = getAuthConfig().cookieSecure;
   } catch {
     // auth config 미초기화 시 secure=false
+    warnUninitializedOnce();
   }
   return {
     secure,
@@ -62,6 +81,7 @@ function resolveMaxAge(): { access: number; refresh: number } {
     refresh = cfg.refreshTokenExpiry;
   } catch {
     // 미초기화 → JWT_DEFAULTS
+    warnUninitializedOnce();
   }
   return { access: durationToSeconds(access), refresh: durationToSeconds(refresh) };
 }
