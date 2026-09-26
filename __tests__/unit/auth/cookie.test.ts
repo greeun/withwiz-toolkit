@@ -223,3 +223,43 @@ describe("SC-UNIT-COOKIE-002: clearTokenCookies", () => {
     expect(refreshCookie).toContain("Domain=.example.com");
   });
 });
+
+describe("SC-UNIT-COOKIE-003: 미초기화 폴백 경고", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetAuth();
+  });
+
+  // 경고 플래그는 모듈 상태라 모듈을 새로 불러 격리한다.
+  async function freshCookieModule() {
+    vi.resetModules();
+    return import("@withwiz/toolkit/core/auth/jwt/cookie");
+  }
+
+  test("TC-UNIT-COOKIE-030: 미초기화면 폴백을 프로세스당 1회만 경고한다(동작은 그대로)", async () => {
+    resetAuth();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { setTokenCookies: set, clearTokenCookies: clear } = await freshCookieModule();
+
+    const res = set(NextResponse.json({}), mockTokenPair);
+    set(NextResponse.json({}), mockTokenPair);
+    clear(NextResponse.json({}));
+
+    const fallbackWarns = warn.mock.calls.filter(([m]) => String(m).includes("before initializeAuth()"));
+    expect(fallbackWarns).toHaveLength(1);
+    expect(String(fallbackWarns[0][0])).toContain("[Auth]");
+    // 폴백 값 자체는 바뀌지 않는다 — JWT_DEFAULTS access 7d.
+    expect(res.cookies.get("access_token")!.maxAge).toBe(7 * 24 * 3600);
+  });
+
+  test("TC-UNIT-COOKIE-031: 초기화돼 있으면 경고하지 않는다", async () => {
+    initializeAuth({ jwtSecret: "x".repeat(32), accessTokenExpiry: "1h", refreshTokenExpiry: "30d" });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { setTokenCookies: set } = await freshCookieModule();
+
+    const res = set(NextResponse.json({}), mockTokenPair);
+
+    expect(warn.mock.calls.filter(([m]) => String(m).includes("before initializeAuth()"))).toHaveLength(0);
+    expect(res.cookies.get("access_token")!.maxAge).toBe(3600);
+  });
+});

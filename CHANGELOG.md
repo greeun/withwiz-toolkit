@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.1]
+
+### Fixed
+- `core/auth/jwt/cookie`: `setTokenCookies`/`clearTokenCookies` silently fell
+  back to `secure=false` and a `JWT_DEFAULTS`-derived `maxAge` (access 7d,
+  refresh 30d) when called before `initializeAuth()`. An app configured with a
+  1h access expiry could therefore issue week-long cookies with no signal
+  anywhere. The fallback values are unchanged, but the first fallback in a
+  process now logs a single `[Auth]` warning so the misordered initialization
+  is visible.
+
 ## [0.17.0]
 
 ### Fixed
