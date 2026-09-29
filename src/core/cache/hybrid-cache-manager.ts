@@ -30,6 +30,12 @@ import type {
 interface IRedisCacheManager {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
+  /**
+   * (선택) 원자적 "없을 때만 저장". RedisCacheManager 는 구현한다.
+   * 없으면 HybridCacheManager 는 이 매니저로 원자성을 보장할 수 없다고 보고
+   * hybrid 모드에서는 인메모리로, redis 모드에서는 예외로 처리한다.
+   */
+  setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   deletePattern(pattern: string): Promise<void>;
   exists(key: string): Promise<boolean>;
@@ -191,6 +197,60 @@ export class HybridCacheManager implements IUnifiedCacheManager {
     }
 
     await Promise.allSettled(promises);
+  }
+
+  /**
+   * 키가 없을 때만 저장. 이번 호출이 저장했으면 true, 이미 있으면 false.
+   *
+   * - memory 모드: 인메모리 원자 연산 (한 프로세스 안에서만 원자적)
+   * - redis·hybrid 모드에서 Redis 를 쓸 수 있으면 Redis 의 `SET NX` 결과를 그대로 쓴다
+   *   (서버 인스턴스 사이에서 원자적). 저장했고 writeToMemory 이면 set 과 같이 인메모리에도 기록한다.
+   * - hybrid 모드에서 Redis 를 쓸 수 없거나(없음·일시/전역 비활성·setIfNotExists 미구현)
+   *   Redis 오류가 나고 fallbackOnRedisError 이면 인메모리로 폴백한다. 이때의 원자성은
+   *   이 프로세스 안에서만 보장되며, 캐시를 공유하는 다른 인스턴스와의 동시 호출은 막지 못한다.
+   * - 폴백이 허용되지 않으면(redis 모드, fallbackOnRedisError false) 예외를 던진다.
+   *   true/false 로 꾸미면 토큰 재사용 허용이나 오판 무효화로 이어지기 때문이다.
+   */
+  async setIfNotExists<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    const effectiveBackend = this.getEffectiveBackend();
+
+    if (effectiveBackend === 'memory') {
+      return this.memoryCache.setIfNotExists(key, value, ttl);
+    }
+
+    const redisManager = this.redisManager;
+    const redisUsable =
+      !!redisManager &&
+      !this.isRedisTemporarilyDisabled &&
+      typeof redisManager.setIfNotExists === 'function';
+
+    if (redisUsable) {
+      try {
+        const stored = await redisManager.setIfNotExists!(key, value, ttl);
+        this.resetRedisErrorState();
+        if (stored && effectiveBackend === 'hybrid' && this.config.writeToMemory) {
+          await this.memoryCache.set(key, value, ttl);
+        }
+        return stored;
+      } catch (error) {
+        this.handleRedisError(error as Error, 'setIfNotExists');
+        if (effectiveBackend === 'hybrid' && this.config.fallbackOnRedisError) {
+          this.redisFallbackCount++;
+          return this.memoryCache.setIfNotExists(key, value, ttl);
+        }
+        throw error;
+      }
+    }
+
+    // Redis 를 쓸 수 없는 상태 (여기까지 오면 effectiveBackend 는 redis 또는 hybrid)
+    if (effectiveBackend === 'hybrid') {
+      logger.warn('[HybridCacheManager] setIfNotExists: Redis atomic op unavailable, using in-memory (process-local)', {
+        prefix: this.prefix,
+      });
+      return this.memoryCache.setIfNotExists(key, value, ttl);
+    }
+
+    throw new Error(`[HybridCacheManager] setIfNotExists: Redis is unavailable in redis mode (prefix=${this.prefix})`);
   }
 
   /**

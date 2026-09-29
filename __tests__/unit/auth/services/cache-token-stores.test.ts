@@ -174,6 +174,37 @@ describe('createCacheRefreshTokenStore (rotation/reuse/family)', () => {
       expect(atomicCache.set).not.toHaveBeenCalled();
     });
 
+    it('InMemoryCacheManager 를 그대로 주입하면 setIfNotExists 경로를 타고 exists·set 을 호출하지 않는다', async () => {
+      const cache = makeCache('rt-claim-atomic');
+      const setIfNotExists = vi.spyOn(cache, 'setIfNotExists');
+      const exists = vi.spyOn(cache, 'exists');
+      const set = vi.spyOn(cache, 'set');
+      const store = createCacheRefreshTokenStore(cache, { defaultTtlSec: 120 });
+
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () => store.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' })),
+      );
+
+      expect(results.filter(Boolean)).toHaveLength(1);
+      expect(setIfNotExists).toHaveBeenCalledTimes(10);
+      expect(setIfNotExists).toHaveBeenCalledWith('rt:used:jti-1', 1, 120);
+      expect(exists).not.toHaveBeenCalled();
+      expect(set).not.toHaveBeenCalled();
+    });
+
+    it('같은 InMemoryCacheManager 를 공유하는 store 인스턴스 둘 사이에서도 1건만 true 이다', async () => {
+      const cache = makeCache('rt-claim-shared');
+      const storeA = createCacheRefreshTokenStore(cache);
+      const storeB = createCacheRefreshTokenStore(cache);
+
+      const results = await Promise.all([
+        storeA.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' }),
+        storeB.markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' }),
+      ]);
+
+      expect(results.filter(Boolean)).toHaveLength(1);
+    });
+
     it('TTL 은 meta.expiresAt 잔여시간에 정렬된다', async () => {
       vi.useFakeTimers();
       try {

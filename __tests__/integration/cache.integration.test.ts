@@ -171,6 +171,71 @@ describe('TC-I-002: 캐시 계층 실제 조합', () => {
     });
   });
 
+  describe('setIfNotExists — 팩토리 매니저를 refresh 토큰 저장소에 그대로 주입', () => {
+    it('memory 백엔드 매니저는 setIfNotExists 를 제공하고 저장소가 그 원자 경로를 탄다', async () => {
+      m = await loadCacheModules({ enabled: true });
+      const { createCacheRefreshTokenStore } = await import('@withwiz/toolkit/core/auth/services/cache-token-stores');
+      const manager = m.getCacheManager('auth');
+      const setIfNotExists = vi.spyOn(manager, 'setIfNotExists');
+      const exists = vi.spyOn(manager, 'exists');
+      const storeA = createCacheRefreshTokenStore(manager);
+      const storeB = createCacheRefreshTokenStore(manager);
+
+      const results = await Promise.all(
+        Array.from({ length: 10 }, (_, i) =>
+          (i % 2 ? storeA : storeB).markUsedIfUnused!('jti-1', { familyId: 'f', userId: 'u' }),
+        ),
+      );
+
+      expect(results.filter(Boolean)).toHaveLength(1);
+      expect(setIfNotExists).toHaveBeenCalledTimes(10);
+      expect(exists).not.toHaveBeenCalled();
+    });
+
+    it('Redis 장애로 인메모리 폴백한 hybrid 매니저도 한 프로세스 안에서는 1건만 true 이다', async () => {
+      m = await loadCacheModules({ enabled: true, fallback: { redisErrorThresholdGlobal: 100 } });
+      const failing = async () => {
+        throw new Error('Redis connection failed');
+      };
+      const redis = {
+        get: vi.fn(failing),
+        set: vi.fn(failing),
+        delete: vi.fn(failing),
+        deletePattern: vi.fn(failing),
+        exists: vi.fn(failing),
+        increment: vi.fn(failing),
+        expire: vi.fn(failing),
+        setIfNotExists: vi.fn(failing),
+        getMetrics: () => ({}),
+        getConnectionStatus: () => ({}),
+        checkConnection: async () => false,
+      };
+      const hybrid = new m.HybridCacheManager('auth-fallback', {
+        backend: 'hybrid',
+        redisManager: redis,
+        fallbackOnRedisError: true,
+        writeToMemory: true,
+        redisErrorThreshold: 100,
+      });
+
+      const results = await Promise.all(Array.from({ length: 10 }, () => hybrid.setIfNotExists('k', 1, 60)));
+
+      expect(results.filter(Boolean)).toHaveLength(1);
+      expect(redis.setIfNotExists).toHaveBeenCalled();
+      hybrid.destroy();
+    });
+
+    it('캐시 비활성(Noop) 매니저는 아무것도 저장하지 않고 항상 true 를 반환한다', async () => {
+      m = await loadCacheModules({ enabled: false });
+      const manager = m.getCacheManager('auth');
+
+      expect(manager).toBeInstanceOf(m.NoopCacheManager);
+      await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+      await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+      await expect(manager.exists('k')).resolves.toBe(false);
+    });
+  });
+
   describe('HybridCacheManager — Redis 장애 시 인메모리 폴백', () => {
     function makeFailingRedis() {
       const fail = async () => {

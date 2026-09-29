@@ -907,3 +907,124 @@ describe('HybridCacheManager', () => {
     });
   });
 });
+
+// ============================================================================
+// setIfNotExists — Redis 원자 연산 우선, Redis 를 쓸 수 없거나 장애 시 인메모리 폴백
+// ============================================================================
+describe('HybridCacheManager.setIfNotExists', () => {
+  const managers: HybridCacheManager[] = [];
+  const make = (prefix: string, config: Partial<ConstructorParameters<typeof HybridCacheManager>[1]>) => {
+    const manager = new HybridCacheManager(prefix, {
+      backend: 'hybrid',
+      redisManager: null,
+      fallbackOnRedisError: true,
+      writeToMemory: true,
+      redisErrorThreshold: 100,
+      redisReconnectInterval: 5000,
+      ...config,
+    });
+    managers.push(manager);
+    return manager;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (globalThis as any).__hybridCacheInstances;
+    delete (globalThis as any).__inMemoryCacheInstances;
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    managers.splice(0).forEach((m) => m.destroy());
+    HybridCacheManager.destroyAll();
+  });
+
+  it('Redis 를 쓸 수 있으면 Redis 의 setIfNotExists 결과(true/false)를 그대로 반환한다', async () => {
+    const redis = createMockRedisManager({
+      setIfNotExists: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+    });
+    const manager = make('sinx-h-redis', { redisManager: redis });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(false);
+
+    expect(redis.setIfNotExists).toHaveBeenNthCalledWith(1, 'k', 1, 60);
+    expect(redis.set).not.toHaveBeenCalled();
+    expect(redis.exists).not.toHaveBeenCalled();
+  });
+
+  it('Redis 가 저장했고 writeToMemory 이면 set 과 같이 인메모리에도 기록한다', async () => {
+    const redis = createMockRedisManager({ setIfNotExists: vi.fn().mockResolvedValue(true) });
+    const manager = make('sinx-h-write', { redisManager: redis, writeToMemory: true });
+
+    await manager.setIfNotExists('k', 'v', 60);
+
+    // Redis 를 끊으면 인메모리 값이 보여야 한다
+    const memoryOnly = make('sinx-h-write', { redisManager: null });
+    await expect(memoryOnly.get('k')).resolves.toBe('v');
+  });
+
+  it('Redis 매니저가 없으면(hybrid) 인메모리 원자 연산으로 폴백한다', async () => {
+    const manager = make('sinx-h-noredis', { redisManager: null });
+
+    const results = await Promise.all(Array.from({ length: 10 }, () => manager.setIfNotExists('k', 1, 60)));
+
+    expect(results.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('Redis 가 전역 비활성 상태이면 Redis 를 호출하지 않고 인메모리로 폴백한다', async () => {
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    const redis = createMockRedisManager({ setIfNotExists: vi.fn().mockResolvedValue(true) });
+    const manager = make('sinx-h-global', { redisManager: redis });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(false);
+    expect(redis.setIfNotExists).not.toHaveBeenCalled();
+  });
+
+  it('Redis 오류 시 fallbackOnRedisError 이면 오류를 기록하고 인메모리로 폴백하며 redisFallbacks 를 올린다', async () => {
+    const redis = createMockRedisManager({ setIfNotExists: vi.fn().mockRejectedValue(new Error('redis down')) });
+    const manager = make('sinx-h-fallback', { redisManager: redis, fallbackOnRedisError: true });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(false);
+
+    expect(notifyRedisError).toHaveBeenCalled();
+    expect(manager.getConnectionStatus().redisErrorCount).toBe(2);
+    expect(manager.getMetrics().combined.redisFallbacks).toBe(2);
+  });
+
+  it('Redis 오류 시 fallbackOnRedisError 가 꺼져 있으면 예외를 다시 던진다', async () => {
+    const redis = createMockRedisManager({ setIfNotExists: vi.fn().mockRejectedValue(new Error('redis down')) });
+    const manager = make('sinx-h-nofallback', { redisManager: redis, fallbackOnRedisError: false });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).rejects.toThrow('redis down');
+  });
+
+  it('redis 모드는 인메모리로 폴백하지 않는다: 오류와 Redis 부재 모두 예외', async () => {
+    const failing = createMockRedisManager({ setIfNotExists: vi.fn().mockRejectedValue(new Error('redis down')) });
+    const withError = make('sinx-h-redismode', { backend: 'redis', redisManager: failing });
+    const withoutRedis = make('sinx-h-redismode-null', { backend: 'redis', redisManager: null });
+
+    await expect(withError.setIfNotExists('k', 1, 60)).rejects.toThrow('redis down');
+    await expect(withoutRedis.setIfNotExists('k', 1, 60)).rejects.toThrow(/Redis/);
+  });
+
+  it('memory 모드는 Redis 를 호출하지 않고 인메모리만 사용한다', async () => {
+    const redis = createMockRedisManager({ setIfNotExists: vi.fn().mockResolvedValue(true) });
+    const manager = make('sinx-h-memory', { backend: 'memory', redisManager: redis });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(false);
+    expect(redis.setIfNotExists).not.toHaveBeenCalled();
+  });
+
+  it('setIfNotExists 가 없는 사용자 정의 Redis 매니저는 원자성을 보장할 수 없어 인메모리로 폴백한다 (hybrid)', async () => {
+    const redis = createMockRedisManager();
+    const manager = make('sinx-h-legacy', { redisManager: redis });
+
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(true);
+    await expect(manager.setIfNotExists('k', 1, 60)).resolves.toBe(false);
+    expect(redis.exists).not.toHaveBeenCalled();
+  });
+});

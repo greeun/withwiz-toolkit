@@ -93,9 +93,21 @@ const refreshService = new TokenRefreshService({
 
 같은 토큰으로 동시에 갱신하는 경우: 저장소의 `markUsedIfUnused`(compare-and-set)가
 회전 시점에 소비를 확정하므로 한 요청만 성공하고, 나머지는 재사용으로 거부됩니다
-(`TOKEN_REUSE_DETECTED`, family 무효화). 캐시 기반 저장소는 한 프로세스 안에서
-`jti` 별로 확인과 기록을 직렬화합니다. 여러 서버 인스턴스가 캐시를 공유한다면
-`setIfNotExists` 까지 구현한 cache 를 주입해야 인스턴스 사이에서도 원자적으로 동작합니다.
+(`TOKEN_REUSE_DETECTED`, family 무효화). 주입한 cache 가 `setIfNotExists` 를 제공하면
+캐시 기반 저장소는 그 원자 연산을 쓰고, 없으면 한 프로세스 안에서만 `jti` 별로 확인과
+기록을 직렬화합니다.
+
+toolkit 캐시 매니저는 모두 `setIfNotExists` 를 제공하므로 그대로 주입하면 원자 경로를 탑니다.
+
+| 매니저 | `setIfNotExists` 의 원자성 범위 |
+|--------|--------------------------------|
+| `RedisCacheManager` | 서버 인스턴스 사이 (Upstash `SET NX EX`). Redis 를 쓸 수 없거나 오류가 나면 `true`/`false` 대신 예외를 던짐 |
+| `HybridCacheManager` | Redis 를 쓸 수 있는 동안은 인스턴스 사이. 인메모리로 폴백하는 동안(Redis 없음·비활성, `fallbackOnRedisError` 에 따른 Redis 오류 폴백)은 한 프로세스 안에서만 원자적이며 인스턴스 사이 원자성은 없음 |
+| `InMemoryCacheManager` | 한 프로세스 안 |
+| `NoopCacheManager` | 아무것도 저장하지 않고 항상 `true` (캐시를 끄면 재사용 탐지도 꺼짐) |
+
+직접 만든 cache 를 쓴다면 `setIfNotExists` 를 구현해야 인스턴스 사이에서도 원자적으로
+동작합니다. 예:
 
 ```typescript
 import { Redis } from '@upstash/redis';
