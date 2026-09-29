@@ -34,6 +34,11 @@ export interface CsvExportOptions<T> {
   includeBom?: boolean;
   /** 로깅용 컨텍스트 */
   logContext?: Record<string, unknown>;
+  /**
+   * 파일명 날짜(`{filename}_{YYYY-MM-DD}.csv`)를 계산할 IANA 시간대 (예: `'Asia/Seoul'`).
+   * 지정하지 않으면 UTC 날짜를 쓴다. 알 수 없는 시간대면 UTC 로 대체하고 경고를 남긴다.
+   */
+  timeZone?: string;
 }
 
 /**
@@ -91,6 +96,28 @@ const SAFE_QUOTED_FILENAME = /^[\x20-\x21\x23-\x5B\x5D-\x7E]*$/;
 /** ASCII 대체 파일명에서 치환할 문자 (출력 불가·비 ASCII·따옴표·역슬래시) */
 const UNSAFE_FILENAME_CHAR = /[^\x20-\x21\x23-\x5B\x5D-\x7E]/g;
 
+/** 현재 날짜를 `timeZone` 기준 `YYYY-MM-DD` 로 만든다. 지정하지 않았거나 알 수 없으면 UTC 기준이다. */
+function formatFilenameDate(timeZone: string | undefined, logContext?: Record<string, unknown>): string {
+  const now = new Date();
+  if (timeZone) {
+    try {
+      // en-CA 로캘은 날짜를 YYYY-MM-DD 형식으로 낸다.
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(now);
+    } catch {
+      logger.warn('CSV export: unknown timeZone, falling back to UTC for the filename date', {
+        timeZone,
+        ...logContext,
+      });
+    }
+  }
+  return now.toISOString().split('T')[0];
+}
+
 /**
  * Content-Disposition 헤더 값 생성 (`{filename}_{YYYY-MM-DD}.csv`)
  *
@@ -98,8 +125,8 @@ const UNSAFE_FILENAME_CHAR = /[^\x20-\x21\x23-\x5B\x5D-\x7E]/g;
  * Headers 생성에서 TypeError 가 발생한다. 안전한 ASCII 이름은 기존 형식을 유지하고,
  * 그 밖의 이름은 ASCII 대체 이름과 RFC 5987 `filename*` (UTF-8 퍼센트 인코딩)을 함께 싣는다.
  */
-function buildContentDisposition(filename: string): string {
-  const fullName = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+function buildContentDisposition(filename: string, date: string): string {
+  const fullName = `${filename}_${date}.csv`;
 
   if (SAFE_QUOTED_FILENAME.test(fullName)) {
     return `attachment; filename="${fullName}"`;
@@ -124,7 +151,7 @@ export function createSimpleCsvResponse<T>(
   data: T[],
   options: CsvExportOptions<T>
 ): NextResponse {
-  const { filename, columns, includeBom = true, logContext } = options;
+  const { filename, columns, includeBom = true, logContext, timeZone } = options;
 
   try {
     // 헤더 생성
@@ -146,7 +173,7 @@ export function createSimpleCsvResponse<T>(
     return new NextResponse(content, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': buildContentDisposition(filename)
+        'Content-Disposition': buildContentDisposition(filename, formatFilenameDate(timeZone, logContext))
       }
     });
   } catch (error) {
@@ -171,12 +198,13 @@ export function createStreamingCsvResponse<T>(
     batchSize = 1000,
     fetcher,
     includeBom = true,
-    logContext
+    logContext,
+    timeZone
   } = options;
 
   const headers = {
     'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': buildContentDisposition(filename),
+    'Content-Disposition': buildContentDisposition(filename, formatFilenameDate(timeZone, logContext)),
     'Transfer-Encoding': 'chunked'
   };
 

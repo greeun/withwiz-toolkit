@@ -416,7 +416,7 @@ Composable API middleware: build a chain or use prebuilt wrappers.
 |---------|--------|---------|
 | `api-helpers` | `validateAndParse` · `parsePagination` · `parseSort` · `parseFilters` · `createPaginatedResponse` · `requireAdmin` · `parseRequestBody` · `getSearchParam` · `parseBooleanParam` · `parseNumberParam` · `getUserAgent` · `getReferer` | Request parsing + paginated responses |
 | `error-processor` | `ErrorProcessor` · `withErrorHandling` · `handlePrismaError` · `throwNotFoundError` / `throwConflictError` / `throwForbiddenError` / `throwUnauthorizedError` / `throwValidationError` / `throwBadRequestError` / `throwBusinessRuleError` · `processError` · `errorToResponse` | Central error processing (incl. Prisma codes) |
-| `csv-export` | `createSimpleCsvResponse` · `createStreamingCsvResponse` · `escapeCsvField` · `rowToCsv` · `createCsvHeader` · `dateFormatter` · `boolFormatter` · `CsvColumn` · `CsvExportOptions` · `BatchExportOptions` | CSV export (in-memory + streaming) |
+| `csv-export` | `createSimpleCsvResponse` · `createStreamingCsvResponse` · `escapeCsvField` · `rowToCsv` · `createCsvHeader` · `dateFormatter` · `boolFormatter` · `CsvColumn` · `CsvExportOptions` · `BatchExportOptions` | CSV export (in-memory + streaming). Filename date `{name}_{YYYY-MM-DD}.csv` uses the `timeZone` option (IANA name, default UTC) |
 | `csv-export-format` | `customDateFormatter` | date-fns formatter (optional peer) |
 | `cors` | `withCORS` · `withRestrictedCORS` · `withPublicCORS` · `setCorsHeaders` · `isOriginAllowed` · `getAllowedOrigins` · `initCorsConfig` · `getCorsConfig` | Route-level CORS wrappers/helpers |
 

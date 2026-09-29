@@ -140,6 +140,8 @@ and the 0.7.0 / 0.8.0 entries in [`CHANGELOG.md`](CHANGELOG.md).
 
 ### `core` — framework-independent (pure TS)
 
+Every subpath outside `next/*` can be imported from plain Node.js ESM without Next.js (checked by `__tests__/build/pure-node-esm.test.ts`).
+
 | Subpath | Description |
 |---|---|
 | `/core/api-key` | API key core barrel (service + generator + validate + ip-whitelist + errors) |
@@ -170,6 +172,8 @@ and the 0.7.0 / 0.8.0 entries in [`CHANGELOG.md`](CHANGELOG.md).
 | `/core/validators` | Password strength validator |
 
 ### `next` — depends on Next.js
+
+`next/*` subpaths import `next/server` without a file extension, as Next.js expects, and are meant to run inside a Next.js app (route handlers, middleware/proxy). The `next` package has no `exports` map, so plain Node.js ESM cannot resolve these subpaths; use `core/*` from standalone scripts.
 
 | Subpath | Description |
 |---|---|
