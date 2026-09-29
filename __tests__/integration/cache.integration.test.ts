@@ -124,8 +124,11 @@ describe('TC-I-002: 캐시 계층 실제 조합', () => {
       await m.invalidateCache.byKey('greeting');
       await m.withCache('greeting', fetch);
 
-      expect(m.cache).toBe(m.getCacheManager('default'));
       expect(fetch).toHaveBeenCalledTimes(2);
+
+      // cache 상수는 지연 객체라 매니저와 같은 객체는 아니지만 같은 저장소를 쓴다
+      await m.cache.set('shared', 'v');
+      await expect(m.getCacheManager('default').get('shared')).resolves.toBe('v');
     });
 
     it('deletePatternFromMultipleCaches 는 여러 접두사 매니저의 패턴 키를 모두 지운다', async () => {

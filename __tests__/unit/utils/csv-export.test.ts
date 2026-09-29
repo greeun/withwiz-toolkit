@@ -367,3 +367,50 @@ describe('Content-Disposition 파일명 인코딩', () => {
     expect(response.headers.get('Content-Disposition')).not.toMatch(/[\r\n]/);
   });
 });
+
+// ============================================================================
+// 파일명 날짜 시간대 (timeZone 옵션)
+// ============================================================================
+describe('파일명 날짜 시간대', () => {
+  const columns: CsvColumn<{ name: string }>[] = [{ header: '이름', accessor: 'name' }];
+  /** UTC 로는 9월 15일 20시, Asia/Seoul(UTC+9) 로는 9월 16일 05시 */
+  const LATE_UTC = new Date('2026-09-15T20:00:00Z');
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(LATE_UTC);
+    vi.mocked(logger.warn).mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('timeZone 을 지정하지 않으면 UTC 날짜를 쓴다 (기존 동작)', () => {
+    const response = createSimpleCsvResponse([{ name: 'a' }], { filename: 'users', columns });
+
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="users_2026-09-15.csv"');
+  });
+
+  it('timeZone 을 지정하면 그 시간대의 날짜를 쓴다 (단순·스트리밍 모두)', () => {
+    const simple = createSimpleCsvResponse([{ name: 'a' }], { filename: 'users', columns, timeZone: 'Asia/Seoul' });
+    const streaming = createStreamingCsvResponse({
+      filename: 'stream',
+      columns,
+      timeZone: 'Asia/Seoul',
+      fetcher: async () => ({ data: [] }),
+    });
+
+    expect(simple.headers.get('Content-Disposition')).toBe('attachment; filename="users_2026-09-16.csv"');
+    expect(streaming.headers.get('Content-Disposition')).toBe('attachment; filename="stream_2026-09-16.csv"');
+  });
+
+  it('알 수 없는 timeZone 이면 UTC 날짜로 대체하고 경고를 남긴다', () => {
+    const response = createSimpleCsvResponse([{ name: 'a' }], { filename: 'users', columns, timeZone: 'Not/AZone' });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="users_2026-09-15.csv"');
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(logger.warn).mock.calls[0][0]).toMatch(/timeZone/);
+  });
+});
