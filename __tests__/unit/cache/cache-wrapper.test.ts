@@ -30,6 +30,11 @@ vi.mock('@withwiz/toolkit/core/cache/cache-factory', () => ({
   geoCache: h.geoCache,
 }));
 
+// 이 파일은 초기화된 상태의 withCache 를 검증한다. 미초기화 경로는 cache-factory-uninitialized.test.ts 가 다룬다.
+vi.mock('@withwiz/toolkit/core/cache/config', () => ({
+  isCacheConfigInitialized: vi.fn(() => true),
+}));
+
 vi.mock('@withwiz/toolkit/core/cache/cache-env', () => ({
   isCacheEnabled: h.isCacheEnabled,
 }));

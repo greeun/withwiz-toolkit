@@ -139,6 +139,8 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 ### `core` — 프레임워크 독립 (pure TS)
 
+`next/*` 밖의 모든 서브패스는 Next.js 없이 순수 Node.js ESM 에서 import 할 수 있다(`__tests__/build/pure-node-esm.test.ts` 가 확인한다).
+
 | Subpath | Description |
 |---|---|
 | `/core/auth` | Full auth (JWT + password + OAuth + services + email + types) |
@@ -165,6 +167,8 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 | `/core/validators` | Password strength validator |
 
 ### `next` — Next.js 의존
+
+`next/*` 서브패스는 Next.js 관례대로 `next/server` 를 확장자 없이 import 하며, Next.js 앱(라우트 핸들러, middleware·proxy) 안에서 실행하는 용도다. `next` 패키지에는 `exports` 맵이 없어 순수 Node.js ESM 은 이 서브패스를 해석하지 못하므로, 독립 스크립트에서는 `core/*` 를 쓴다.
 
 | Subpath | Description |
 |---|---|
