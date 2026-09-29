@@ -97,9 +97,22 @@ const refreshService = new TokenRefreshService({
 Concurrent refresh with the same token: the store's `markUsedIfUnused`
 (compare-and-set) settles consumption at rotation time, so only one request
 succeeds and the others are rejected as reuse (`TOKEN_REUSE_DETECTED`, family
-revoked). The cache-backed store serializes the check and write per `jti` inside
-one process. When several server instances share the cache, pass a cache that
-also implements `setIfNotExists` so the claim is atomic across instances:
+revoked). When the injected cache implements `setIfNotExists`, the cache-backed
+store uses that atomic operation; otherwise it serializes the check and write per
+`jti` inside one process only.
+
+The toolkit cache managers all provide `setIfNotExists`, so passing one directly
+takes the atomic path:
+
+| Manager | Atomic scope of `setIfNotExists` |
+|---------|----------------------------------|
+| `RedisCacheManager` | Across server instances (Upstash `SET NX EX`). Throws when Redis is unavailable or errors, instead of reporting `true`/`false` |
+| `HybridCacheManager` | Across instances while Redis is usable. While it falls back to in-memory (no Redis, Redis disabled, or a Redis error with `fallbackOnRedisError`), only within one process — no atomicity between instances |
+| `InMemoryCacheManager` | Within one process |
+| `NoopCacheManager` | Stores nothing and always returns `true` (cache disabled means reuse detection is off) |
+
+A cache of your own must implement `setIfNotExists` to be atomic across
+instances, for example:
 
 ```typescript
 import { Redis } from '@upstash/redis';

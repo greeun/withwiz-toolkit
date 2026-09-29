@@ -4,20 +4,20 @@
 
 | 항목 | 내용 |
 |------|------|
-| 대상 | `@withwiz/toolkit` 0.17.1 + 브랜치 `fix/cache-init-order` 변경 4건 (미게시) 공유 유틸 라이브러리 (`core/`, `next/`, `prisma/` 계층) |
-| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 125개 |
-| 기준 커밋 | `c5f013f` (브랜치 `fix/cache-init-order`, develop `bd703e6` = 0.17.1 에서 분기, develop 보다 커밋 4개 앞섬) |
+| 대상 | `@withwiz/toolkit` 0.18.0 + 브랜치 `feat/cache-set-if-not-exists` 변경 (미게시) 공유 유틸 라이브러리 (`core/`, `next/`, `prisma/` 계층) |
+| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 126개 |
+| 기준 커밋 | `903068a` (브랜치 `feat/cache-set-if-not-exists`, develop `5d20189` = 0.18.0 에서 분기) |
 | 환경 | Vitest 4.0.18, Node.js 22.22.0, `environment: 'node'` (파일 단위 jsdom 지정 없음), 설정 `__tests__/vitest.config.ts`, 셋업 `__tests__/setup.ts`. 설정 없이 `npx vitest run` 을 실행하면 `globals` 가 꺼져 `describe is not defined` 로 실패한다. `exclude` 는 `configDefaults.exclude` 에 `**/.claude/**` 를 더한 값이다 (0.16.0 전 `3f26b72`: 저장소 안 워크트리의 `__tests__` 가 함께 수집되어 테스트가 두 벌 실행되던 문제 수정) |
 | 의존성 설치 | `npm ci` (`package-lock.json` 기준). `pnpm install --frozen-lockfile` 은 `pnpm-lock.yaml` 이 없어 `ERR_PNPM_NO_LOCKFILE` 로 중단됨 |
 | 실행 전제 | `npm run build` 선행. `__tests__/build/` 의 3개 파일은 `dist/` 가 없으면 실패함 |
 | 목표 커버리지 | 미설정 (`__tests__/vitest.config.ts` 에 `coverage.thresholds` 없음) |
-| 실측 커버리지 (참고) | Stmts 76.16% (4,233/5,558), Branches 72.47% (2,683/3,702), Funcs 82.79% (905/1,093), Lines 76.57% (3,976/5,192). 2026-09-29 `--coverage.include=src/**` 로 측정 (2026-09-16 판: Stmts 75.98%, Branches 72.36%, Funcs 82.71%, Lines 76.41% / 2026-09-13 판: Stmts 72.86%, Branches 69.54%, Funcs 79.19%, Lines 73.29%) |
-| 실측 결과 (2026-09-29) | 파일 125개 전부 통과, 케이스 2,843건 중 통과 2,843 · 실패 0 · 스킵 0 · todo 0 (JSON 리포터 실행과 커버리지 실행 2회 모두 같은 결과) |
-| 문서 이력 | 2026-09-13 0.15.0 (`63c492c`) 기준 최초 작성: 테스트 파일 121개, 2,723건, SC 58개 (✅ 47 / 🔲 11), TC 62개 (✅ 51 / 🔲 11). 2026-09-16 `fix/residual-defects` (`610750c`) 기준 갱신: 결함 4건 수정(`c07a669` `handlePrismaError()` 매핑표 불일치, `5ba8eff` `withCache()` 원본 함수 이중 실행, `977efc2` refresh 토큰 동시 회전, `535faec` CSV 파일명 비 ASCII 문자)과 허위 양성 테스트 2개 교체(`e37468c`, `610750c`)를 반영하고 TC-U-027·028·029, TC-I-002·003, TC-E-002 를 🔲 계획에서 ✅ 완료로 전환 (124개 파일, 2,824건, SC ✅ 53 / 🔲 5, TC ✅ 57 / 🔲 5). 2026-09-29 `fix/cache-init-order` (`c5f013f`) 기준 갱신: 0.16.0~0.17.1 변경(`51b7b44` timezone 테스트 UTC 환경 수정, `3f26b72` 워크트리 복사본 수집 제외, `be13149` release 워크플로, `1ad7d5f` 축약형 IPv6 판정·`trustedProxyHops`, `2021009` 쿠키 미초기화 폴백 1회 경고)과 이번 브랜치 4건(`4832c0e` `cache`·`geoCache` 지연 연결, `9fa8c28` 미초기화 `withCache()` degrade, `6a8ec35` CSV 파일명 날짜 `timeZone` 옵션, `c5f013f` 순수 Node ESM 빌드 테스트)을 반영하고 SC-SM-002·TC-SM-002 를 ✅ 완료로 추가 (125개 파일, 2,843건, SC ✅ 54 / 🔲 5, TC ✅ 58 / 🔲 5) |
+| 실측 커버리지 (참고) | Stmts 76.43% (4,298/5,623), Branches 72.67% (2,721/3,744), Funcs 82.87% (910/1,098), Lines 76.88% (4,042/5,257). 2026-09-30 `--coverage.include=src/**` 로 측정 (2026-09-29 판: Stmts 76.16%, Branches 72.47%, Funcs 82.79%, Lines 76.57% / 2026-09-16 판: Stmts 75.98%, Branches 72.36%, Funcs 82.71%, Lines 76.41% / 2026-09-13 판: Stmts 72.86%, Branches 69.54%, Funcs 79.19%, Lines 73.29%) |
+| 실측 결과 (2026-09-30) | 파일 126개 전부 통과, 케이스 2,872건 중 통과 2,872 · 실패 0 · 스킵 0 · todo 0 (JSON 리포터 실행과 커버리지 실행 2회 모두 같은 결과) |
+| 문서 이력 | 2026-09-13 0.15.0 (`63c492c`) 기준 최초 작성: 테스트 파일 121개, 2,723건, SC 58개 (✅ 47 / 🔲 11), TC 62개 (✅ 51 / 🔲 11). 2026-09-16 `fix/residual-defects` (`610750c`) 기준 갱신: 결함 4건 수정(`c07a669` `handlePrismaError()` 매핑표 불일치, `5ba8eff` `withCache()` 원본 함수 이중 실행, `977efc2` refresh 토큰 동시 회전, `535faec` CSV 파일명 비 ASCII 문자)과 허위 양성 테스트 2개 교체(`e37468c`, `610750c`)를 반영하고 TC-U-027·028·029, TC-I-002·003, TC-E-002 를 🔲 계획에서 ✅ 완료로 전환 (124개 파일, 2,824건, SC ✅ 53 / 🔲 5, TC ✅ 57 / 🔲 5). 2026-09-29 `fix/cache-init-order` (`c5f013f`) 기준 갱신: 0.16.0~0.17.1 변경(`51b7b44` timezone 테스트 UTC 환경 수정, `3f26b72` 워크트리 복사본 수집 제외, `be13149` release 워크플로, `1ad7d5f` 축약형 IPv6 판정·`trustedProxyHops`, `2021009` 쿠키 미초기화 폴백 1회 경고)과 이번 브랜치 4건(`4832c0e` `cache`·`geoCache` 지연 연결, `9fa8c28` 미초기화 `withCache()` degrade, `6a8ec35` CSV 파일명 날짜 `timeZone` 옵션, `c5f013f` 순수 Node ESM 빌드 테스트)을 반영하고 SC-SM-002·TC-SM-002 를 ✅ 완료로 추가 (125개 파일, 2,843건, SC ✅ 54 / 🔲 5, TC ✅ 58 / 🔲 5). 2026-09-30 `feat/cache-set-if-not-exists` (`903068a`) 기준 갱신: 캐시 매니저 4종의 원자적 `setIfNotExists` 추가를 반영해 SC-U-028·TC-U-032 를 ✅ 완료로 추가하고, TC-U-007·012, TC-I-002·003 에 단계를 더했으며, 결정 대기 사항 "Redis 계열 캐시 매니저의 원자 연산" 을 해결로 옮김 (126개 파일, 2,872건, SC ✅ 55 / 🔲 5, TC ✅ 59 / 🔲 5) |
 
 실측은 `npx vitest run -c __tests__/vitest.config.ts --reporter=json` 결과를 기준으로 삼았고, 이 문서에 기재한 파일별 테스트 수는 모두 이 결과에서 옮겼다.
 
-결함이 수정되어 회귀 테스트가 추가된 🔲 계획 TC 는 ✅ 완료로 전환하고, 단계와 예상 결과를 실제 테스트 기준으로 다시 쓴다. 결함 당시의 동작은 해당 TC 의 "결함 이력"에 남긴다. 허위 양성 파일을 교체한 TC 도 같은 방식으로 교체 전 상태를 남긴다. 2026-09-16 기준 전환 대상은 TC-U-027·028·029, TC-I-002·003, TC-E-002 이다. 2026-09-29 에는 전환할 🔲 계획 TC 가 없었고, 결함 수정이 반영된 ✅ 완료 TC (TC-U-005·011·024·028·029, TC-I-002)의 단계와 결함 이력을 갱신했으며 TC-SM-002 를 새로 추가했다. "결정 대기 사항" 에 있던 4건 중 3건(`cache` 상수 평가 시점, `withCache()` 미초기화 정책, CSV 파일명 날짜)은 해결로 옮겼다.
+결함이 수정되어 회귀 테스트가 추가된 🔲 계획 TC 는 ✅ 완료로 전환하고, 단계와 예상 결과를 실제 테스트 기준으로 다시 쓴다. 결함 당시의 동작은 해당 TC 의 "결함 이력"에 남긴다. 허위 양성 파일을 교체한 TC 도 같은 방식으로 교체 전 상태를 남긴다. 2026-09-16 기준 전환 대상은 TC-U-027·028·029, TC-I-002·003, TC-E-002 이다. 2026-09-29 에는 전환할 🔲 계획 TC 가 없었고, 결함 수정이 반영된 ✅ 완료 TC (TC-U-005·011·024·028·029, TC-I-002)의 단계와 결함 이력을 갱신했으며 TC-SM-002 를 새로 추가했다. "결정 대기 사항" 에 있던 4건 중 3건(`cache` 상수 평가 시점, `withCache()` 미초기화 정책, CSV 파일명 날짜)은 해결로 옮겼다. 2026-09-30 에는 남은 1건(Redis 계열 캐시 매니저의 원자 연산)을 해결로 옮기고 TC-U-032 를 새로 추가했으며, TC-I-003 의 "남은 한계" 를 갱신했다.
 
 ### 라이브러리 맥락의 도메인 재해석
 
@@ -25,7 +25,7 @@
 
 | 도메인 | 이 문서에서 쓰는 의미 | 물리 위치 |
 |--------|----------------------|-----------|
-| Unit | 모듈 단위 로직 검증 | `__tests__/unit/` 중 API 도메인 20개 파일을 제외한 78개 파일 |
+| Unit | 모듈 단위 로직 검증 | `__tests__/unit/` 중 API 도메인 20개 파일을 제외한 79개 파일 |
 | API | `src/next/` 의 라우트 핸들러·미들웨어·프록시·oapi 가 반환하는 요청/응답 계약 (상태 코드, 응답 body, 헤더) | `unit/oapi/`, `unit/auth/handlers/`, `unit/auth/types/`, `unit/middleware/`, `unit/proxy.test.ts` |
 | Integration | 실제 모듈을 조합한 계약 검증 | `__tests__/integration/` |
 | E2E | 빌드 산출물(`dist/`)을 import 해 실행하는 소비자 여정 | `__tests__/build/consumer-runtime.test.ts` |
@@ -69,6 +69,7 @@
 | SC-U-025 | `withCache` 래퍼와 캐시 무효화 헬퍼 | Unit | Medium | ✅ 완료 |
 | SC-U-026 | GeoIP 공급자 구현 4종과 공급자 팩토리 | Unit | Low | 🔲 계획 |
 | SC-U-027 | 브라우저용 JWT 클라이언트 유틸 | Unit | Low | 🔲 계획 |
+| SC-U-028 | 캐시 매니저의 원자적 `setIfNotExists` (Redis `SET NX`·인메모리·하이브리드 폴백·Noop) | Unit | Critical | ✅ 완료 |
 | SC-I-001 | api-key 모듈 간 해시 계약과 수명주기 | Integration | Critical | ✅ 완료 |
 | SC-I-002 | 캐시 계층 실제 조합 (목 객체만 검증하는 기존 테스트 교체) | Integration | High | ✅ 완료 |
 | SC-I-003 | 인증 서비스와 캐시 기반 토큰 저장소 실제 조합 | Integration | High | ✅ 완료 |
@@ -112,7 +113,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 **실행 명령:** `npm run test:unit`
 
-`test:unit` 스크립트는 `__tests__/unit` 디렉토리 전체(98개 파일)를 실행하므로 3절 API 도메인의 20개 파일도 함께 실행된다. 단위 도메인만 분리해 실행하는 스크립트는 없다.
+`test:unit` 스크립트는 `__tests__/unit` 디렉토리 전체(99개 파일)를 실행하므로 3절 API 도메인의 20개 파일도 함께 실행된다. 단위 도메인만 분리해 실행하는 스크립트는 없다.
 
 ---
 
@@ -282,10 +283,11 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 6 | `createCacheBlacklistChecker().revokeAccessToken('super-secret-token', 60)` | 캐시 키가 `/^revoked:at:[0-9a-f]{64}$/` 형식, 원문 미포함 |
 | 7 | `markUsedIfUnused` 를 구현한 저장소 페이크가 `false` 를 반환할 때 `refresh(t1)` | `TOKEN_REUSE_DETECTED` (401), `revokeFamily('F1')` 호출, `register` 미호출. `true` 면 `markUsed` 대신 `markUsedIfUnused('J1', { familyId: 'F1', userId })` 로 회전 |
 | 8 | 같은 조건에서 `markUsedIfUnused` 가 throw | 원본 오류로 reject, `revokeFamily`·`register` 미호출. 이 메서드가 없는 저장소는 기존과 같이 `markUsed` 로 회전 |
-| 9 | `createCacheRefreshTokenStore(InMemoryCacheManager)` 의 `markUsedIfUnused` 를 같은 jti 로 동시 10건 | `true` 1건. 캐시가 `setIfNotExists` 를 제공하면 그 결과를 쓰고 `exists`·`set` 미호출, 기록 중 캐시 오류 뒤 다음 호출은 다시 시도 |
+| 9 | `setIfNotExists` 가 없는 캐시 페이크로 만든 store 의 `markUsedIfUnused` 를 같은 jti 로 동시 10건 | `true` 1건 (store 안 jti 별 `exists` → `set` 직렬화). 캐시 페이크가 `setIfNotExists` 를 제공하면 그 결과를 쓰고 `exists`·`set` 미호출, 기록 중 캐시 오류 뒤 다음 호출은 다시 시도 |
+| 10 | `InMemoryCacheManager` 를 그대로 주입한 store 로 같은 jti 동시 10건, 같은 매니저를 공유하는 store 인스턴스 둘로 동시 2건 | 둘 다 `true` 1건. 전자는 `setIfNotExists('rt:used:jti-1', 1, 120)` 10회 호출, `exists`·`set` 미호출 (원자 경로) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 70개 (login 9, register 5, token-refresh 17, password-reset 7, email-verification 8, oauth-callback 6, cache-token-stores 18)
-- **변경 이력:** 2026-09-16 커밋 `977efc2` 에서 refresh 토큰 동시 회전 결함(TC-I-003)을 수정하면서 단계 7~9 의 12건(token-refresh 5, cache-token-stores 7)을 추가했다.
+- **자동화:** 가능 ✅ | **테스트 수:** 72개 (login 9, register 5, token-refresh 17, password-reset 7, email-verification 8, oauth-callback 6, cache-token-stores 20)
+- **변경 이력:** 2026-09-16 커밋 `977efc2` 에서 refresh 토큰 동시 회전 결함(TC-I-003)을 수정하면서 단계 7~9 의 12건(token-refresh 5, cache-token-stores 7)을 추가했다. 2026-09-30 커밋 `903068a` 에서 toolkit 캐시 매니저에 `setIfNotExists` 를 추가하면서 단계 10 의 2건을 추가했다. 두 건 모두 구현 전에는 `setIfNotExists` 가 없어 실패했다.
 
 ---
 
@@ -404,7 +406,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 5 | PING 응답이 `'ERROR'` 일 때 `checkRedisConnection()` | `success: false`, error 에 `Redis PING response differs from expected` |
 | 6 | 단일 항목이 `maxMemoryMB` 초과 / `maxSize: 0` 에서 `set()` | 2초 안에 반환하고 저장하지 않음, 기존 항목 유지 (무한 루프 방지) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 77개 (hybrid-cache-manager 35, cache-fallback 13, cache-redis 26, inmemory-cache-manager 3)
+- **자동화:** 가능 ✅ | **테스트 수:** 92개 (hybrid-cache-manager 44, cache-fallback 13, cache-redis 26, inmemory-cache-manager 9). 이 중 hybrid 9건과 inmemory 6건은 `setIfNotExists` describe 블록으로, 단계는 TC-U-032 에 적는다
 - **비고:** `cache-fallback.test.ts` 의 `should fallback to in-memory cache when Redis get throws` 는 `failingRedis.get` 호출 여부만 단언하므로 폴백 값 반환은 이 파일에서 검증되지 않는다. 폴백 값 반환은 단계 2 (`hybrid-cache-manager.test.ts`) 가 검증한다.
 
 ---
@@ -895,13 +897,47 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 ---
 
+### TC-U-032: 캐시 매니저의 원자적 setIfNotExists
+
+| 항목 | 내용 |
+|------|------|
+| **시나리오** | SC-U-028 |
+| **파일** | `__tests__/unit/cache/redis-cache-manager.test.ts` (8건), `__tests__/unit/cache/inmemory-cache-manager.test.ts` 의 `InMemoryCacheManager.setIfNotExists` 블록 (6건), `__tests__/unit/cache/hybrid-cache-manager.test.ts` 의 `HybridCacheManager.setIfNotExists` 블록 (9건) |
+| **대상** | `src/core/cache/cache-types.ts`: `IUnifiedCacheManager.setIfNotExists?` / `redis-cache-manager.ts`·`inmemory-cache-manager.ts`·`hybrid-cache-manager.ts`·`noop-cache-manager.ts`: `setIfNotExists()` |
+| **우선순위** | Critical |
+| **전제조건** | Redis 매니저 테스트는 `cache-redis` 의 `getRedisClient()` 가 `set` 을 목으로 가진 객체를 반환하도록 `vi.mock`, `cache-env` 의 `isCacheEnabled()` 목. 하이브리드 테스트는 `createMockRedisManager({ setIfNotExists })` 페이크와 실제 `InMemoryCacheManager`. TTL 케이스는 `vi.useFakeTimers()` |
+| **테스트 데이터** | prefix `sinx`, ttl 60·120초, 동시 호출 10건, Redis 응답 `'OK'`·`null`·`Error('redis down')` |
+
+| # | 단계 | 예상 결과 |
+|---|------|---------|
+| 1 | Redis 가 `'OK'` 를 반환할 때 `RedisCacheManager.setIfNotExists('rt:used:jti-1', 1, 120)`, ttl 없이 호출 | `true`, `redis.set('sinx:rt:used:jti-1', 1, { nx: true, ex: 120 })` 1회 호출, ttl 이 없으면 `{ nx: true }` 만 전달 |
+| 2 | Redis 가 `null` 을 반환 | `false` |
+| 3 | Redis `set` 이 reject | 같은 오류로 reject (true/false 로 삼키지 않음), `notifyRedisError(error, 'CacheManager.setIfNotExists:sinx')`, `errors`·`connectionErrors` 1 |
+| 4 | Redis 클라이언트 없음 / 전역 비활성 / `undefined` 값 | 각각 예외 (`/Redis/`, `/Redis/`, `TypeError`), Redis 명령 미전송 |
+| 5 | `isCacheEnabled()` 가 `false` | Redis 호출 없이 `true` (Noop 과 같음) |
+| 6 | `InMemoryCacheManager` 에 같은 키로 두 번, `set` 뒤에 한 번 | 첫 호출 `true`·이후 `false`, 기존 값 유지 |
+| 7 | `InMemoryCacheManager` 에 같은 키로 동시 10건 | `true` 정확히 1건, 저장 값은 `true` 를 받은 호출의 값 |
+| 8 | ttl 10초로 저장 후 9초·11초 경과 / ttl 생략 (`defaultTTL: 5`) / prefix 가 다른 매니저 | 9초 `false`, 11초 `true` (만료 키는 없는 것으로 봄) / 5초 뒤 만료 / 서로 막지 않음 |
+| 9 | `HybridCacheManager` 에 `setIfNotExists` 를 가진 Redis 페이크 | Redis 결과(`true`/`false`)를 그대로 반환, Redis `set`·`exists` 미호출. 저장했고 `writeToMemory` 면 인메모리에도 기록 |
+| 10 | Redis 매니저 없음 / 전역 비활성 / `backend: 'memory'` | 인메모리 원자 연산 사용 (동시 10건 중 `true` 1건), Redis `setIfNotExists` 미호출 |
+| 11 | Redis `setIfNotExists` 가 reject 하고 `fallbackOnRedisError: true` / `false` | 전자는 인메모리로 폴백해 `true`→`false`, `redisErrorCount` 2, `combined.redisFallbacks` 2 / 후자는 오류로 reject |
+| 12 | `backend: 'redis'` 에서 Redis 오류, Redis 매니저 없음 | 둘 다 예외 (인메모리로 폴백하지 않음) |
+| 13 | `setIfNotExists` 가 없는 사용자 정의 Redis 매니저 (hybrid) | 인메모리로 폴백 (`true`→`false`), Redis `exists` 미호출 |
+
+- **자동화:** 가능 ✅ | **테스트 수:** 23개 (redis-cache-manager 8, inmemory-cache-manager 6, hybrid-cache-manager 9). NoopCacheManager 의 `true` 반환은 TC-I-002 단계 13 이 검증한다
+- **구현 전 확인:** 2026-09-30 에 테스트를 먼저 작성해 23건 모두 실패(`setIfNotExists is not a function`)하는 것을 확인한 뒤 커밋 `903068a` 에서 구현했다.
+- **결정 (오류 정책):** `RedisCacheManager.setIfNotExists()` 는 `get`·`set` 과 달리 오류를 삼키지 않고 예외를 던진다. `true` 로 보고하면 토큰 재사용을 허용하고, `false` 로 보고하면 `TokenRefreshService` 가 재사용으로 판정해 정상 사용자의 family 를 무효화하기 때문이다. 예외는 갱신 실패로 끝나고 family 는 유지된다. `HybridCacheManager` 는 이 예외를 받아 `fallbackOnRedisError` 에 따라 인메모리로 폴백하며, 폴백 중에는 인스턴스 사이 원자성이 없다.
+- **결정 (인터페이스):** `IUnifiedCacheManager.setIfNotExists` 는 선택 메서드다. toolkit 매니저 4종은 모두 구현하고, 사용자 정의 매니저는 깨지지 않으며, `createCacheRefreshTokenStore()` 는 없을 때의 직렬화 경로를 유지한다.
+
+---
+
 ## 2. Integration Tests (통합 테스트)
 
 **목적:** 실제 모듈을 조합해 모듈 사이의 계약을 검증한다. 외부 저장소는 인메모리 페이크로 대체하되, 검증 대상 모듈은 실모듈을 사용한다.
 
 **실행 명령:** `npm run test:integration`
 
-2026-09-29 기준 이 도메인은 파일 3개·케이스 22건이다 (api-key 2, 캐시 계층 12, 인증 서비스와 토큰 저장소 8). 2026-09-16 판과 건수는 같고, `cache.integration.test.ts` 의 단언 1개만 바뀌었다 (TC-I-002 단계 6). 2026-09-13 판에서 소스를 전혀 실행하지 않던 `cache.integration.test.ts` 6건은 실제 모듈 조합 12건으로 교체했다.
+2026-09-30 기준 이 도메인은 파일 3개·케이스 26건이다 (api-key 2, 캐시 계층 15, 인증 서비스와 토큰 저장소 9). 2026-09-29 판(22건)보다 `setIfNotExists` 관련 4건(TC-I-002 단계 11~13, TC-I-003 단계 9)이 늘었다. 2026-09-29 판은 2026-09-16 판과 건수가 같고, `cache.integration.test.ts` 의 단언 1개만 바뀌었다 (TC-I-002 단계 6). 2026-09-13 판에서 소스를 전혀 실행하지 않던 `cache.integration.test.ts` 6건은 실제 모듈 조합 12건으로 교체했다.
 
 ---
 
@@ -934,7 +970,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |------|------|
 | **시나리오** | SC-I-002 |
 | **파일** | `__tests__/integration/cache.integration.test.ts` |
-| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-env.ts`·`cache-config.ts` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, 지연 객체 `cache` + `inmemory-cache-manager.ts` + `hybrid-cache-manager.ts` + `noop-cache-manager.ts` + `cache-redis.ts`: `isRedisGloballyDisabled()`, `resetRedisGlobalState()` + `cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` + `cache-invalidation.ts`: `deleteFromCache()`, `deletePatternFromMultipleCaches()`, `invalidateCache` |
+| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-env.ts`·`cache-config.ts` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, 지연 객체 `cache` + `inmemory-cache-manager.ts` + `hybrid-cache-manager.ts` + `noop-cache-manager.ts` (`setIfNotExists()` 포함) + `src/core/auth/services/cache-token-stores.ts`: `createCacheRefreshTokenStore()` + `cache-redis.ts`: `isRedisGloballyDisabled()`, `resetRedisGlobalState()` + `cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` + `cache-invalidation.ts`: `deleteFromCache()`, `deletePatternFromMultipleCaches()`, `invalidateCache` |
 | **우선순위** | High |
 | **전제조건** | 케이스마다 `globalThis` 의 캐시 설정(`__withwiz_config`)·매니저 싱글턴·Redis 전역 상태를 지우고 `vi.resetModules()` 뒤 `initializeCache()` 를 호출한 다음 동적 import, logger mock, TTL 케이스는 `vi.useFakeTimers()`, 종료 시 `resetRedisGlobalState()`·`InMemoryCacheManager.destroyAll()` |
 | **테스트 데이터** | `initializeCache({ enabled: true })` (redis 미지정이므로 Redis 비활성, inmemory 기본 활성), `{ enabled: false }`, `{ categories: { USER: { enabled: false } } }`, `{ fallback: { redisErrorThresholdGlobal: 100 } }`, 키 `'link:abc'`, 모든 메서드가 `Redis connection failed` 로 reject 하는 Redis 매니저 페이크 |
@@ -951,8 +987,12 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 8 | 전역 임계값 100 에서 Redis 가 모두 실패하는 `HybridCacheManager` 로 `set('abc')` 후 `get('abc')` | Redis `set`·`get` 호출 후 인메모리 값 반환, `isRedisGloballyDisabled()` 가 `false` |
 | 9 | 기본 전역 임계값(1)에서 같은 조건 | 첫 `set` 오류로 `isRedisGloballyDisabled()` 가 `true`, `get` 은 Redis 를 호출하지 않고 인메모리 값 반환 |
 | 10 | Redis 가 미스(`null`)를 반환하는 hybrid 매니저 | 인메모리 값 반환 |
+| 11 | `{ enabled: true }` 의 `getCacheManager('auth')` 를 store 인스턴스 둘에 그대로 주입하고 같은 jti 로 `markUsedIfUnused` 동시 10건 | `true` 1건, 매니저 `setIfNotExists` 10회 호출, `exists` 미호출 (원자 경로) |
+| 12 | 모든 메서드가 실패하는 Redis 페이크(`setIfNotExists` 포함)를 가진 hybrid 매니저에 같은 키로 `setIfNotExists` 동시 10건 | Redis `setIfNotExists` 호출 후 인메모리로 폴백해 `true` 1건 (프로세스 안 원자성) |
+| 13 | `{ enabled: false }` 의 `NoopCacheManager` 에 같은 키로 `setIfNotExists` 2회 | 둘 다 `true`, `exists` 는 `false` (저장하지 않음) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 12개
+- **자동화:** 가능 ✅ | **테스트 수:** 15개
+- **변경 이력:** 2026-09-30 커밋 `903068a` 에서 단계 11~13 의 3건을 추가했다. 구현 전에는 3건 모두 `setIfNotExists` 가 없어 실패했다.
 - **결함 이력 (허위 양성):** 2026-09-13 판의 이 파일(6건)은 toolkit 소스를 하나도 import 하지 않았다. 테스트 파일 안에서 만든 `mockRedis` 객체와 `Map` 에 값을 넣고 그 값을 다시 단언했으므로, 소스가 바뀌어도 결과가 달라지지 않았다. 파일 주석이 근거로 든 `docs/testing/02-integration/02-cache.md` 는 저장소에 없었고, `TC-INT-CACHE-020` 이라는 ID 가 두 테스트에 중복으로 쓰였다. 2026-09-16 커밋 `610750c` 에서 원래 의도(저장·TTL·무효화·Redis 장애 시 인메모리 폴백)를 실제 모듈 기준으로 옮겼다. 이 파일만 실행해도 `cache-factory.ts` 커버리지가 58.53% 였다.
 - **결함 이력 (import 순서와 미초기화 정책):** 2026-09-16 판은 다음 두 동작을 "테스트로 고정하지 않은 동작 (결정 필요)" 으로 기록했다. 2026-09-29 에 둘 다 수정했고, 회귀 테스트는 TC-U-011 (`cache-factory-uninitialized.test.ts`) 이 소유한다.
   - `initializeCache()` 보다 먼저 `cache-factory` 를 import 하면 `export const cache = getCacheManager('default')` 가 `NoopCacheManager` 로 고정되어, 초기화 뒤에도 `cache.get('k')` 가 `null` 이고 `invalidateCache` 가 no-op 이었다. 같은 시점의 `getCacheManager('default')` 는 `InMemoryCacheManager` 를 반환했다. 커밋 `4832c0e` 에서 `cache`·`geoCache` 를 호출 시점에 백엔드로 연결하는 지연 객체로 바꿨다. 이 때문에 단계 6 의 `expect(m.cache).toBe(m.getCacheManager('default'))` (객체 동일성)는 성립하지 않게 되어, 같은 저장소를 쓰는지 확인하는 단언으로 바꿨다.
@@ -981,14 +1021,17 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 6 | 같은 refresh 토큰으로 `refresh()` 를 `Promise.allSettled` 로 동시에 2회 | 1건 성공, 1건 `TOKEN_REUSE_DETECTED`, family 무효화로 성공한 쪽의 새 토큰도 `TOKEN_REVOKED` |
 | 7 | 같은 저장소를 공유하는 `TokenRefreshService` 인스턴스 2개가 동시에 갱신 | 1건만 성공 |
 | 8 | 같은 토큰으로 동시에 5회 갱신 | 1건만 성공, 나머지 4건은 모두 `TOKEN_REUSE_DETECTED` |
+| 9 | 서버 인스턴스 둘을 흉내 내 `createCacheRefreshTokenStore(cache)` 를 따로 두 번 만들고 각 store 의 `TokenRefreshService` 로 동시에 갱신 | 1건만 성공, 나머지는 `TOKEN_REUSE_DETECTED` (store 안 직렬화는 공유되지 않으므로 공유 캐시의 `setIfNotExists` 가 막음) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 8개
+- **자동화:** 가능 ✅ | **테스트 수:** 9개
+- **단계 9 비고:** 2026-09-30 에 추가했다. 이 조합은 로그인·토큰 서명 await 의 타이밍에 따라 구현 전에도 통과했으므로 회귀를 결정적으로 잡지는 못한다. 인스턴스 사이 원자성의 결정적 검증은 TC-U-007 단계 10 (store 인스턴스 둘, 구현 전 실패 확인)과 TC-U-032 가 맡는다.
 - **결함 이력:** 2026-09-13 판에서는 계획 TC 였고, 같은 refresh 토큰으로 `refresh()` 를 동시에 두 번 호출하면 두 호출이 모두 성공하고 각각 새 토큰을 받는 동작을 "알려진 한계"로 기록만 했다. `isUsed` 확인과 `markUsed` 기록 사이에 사용자 조회와 토큰 서명 await 가 끼어 있고, 캐시 기반 store 는 두 동작을 원자적으로 묶지 않았기 때문이다. 2026-09-16 에 이 파일을 먼저 작성해 단계 6~8 이 실패하는 것(2건 중 2건, 5건 중 5건 성공)을 확인한 뒤, 커밋 `977efc2` 에서 다음과 같이 수정했다.
   - `IRefreshTokenStore` 에 선택 메서드 `markUsedIfUnused(jti, meta)` 를 추가했다. 이번 호출이 기록했으면 `true`, 이미 사용된 jti 면 `false` 를 반환하는 compare-and-set 이다.
   - `TokenRefreshService.refresh()` 는 사용자 조회 전의 `isUsed` 사전 확인을 유지하고, 회전 시점에 `markUsedIfUnused` 로 소비를 확정한다. 결과가 `false` 면 재사용으로 판정해 family 를 무효화하고 `TOKEN_REUSE_DETECTED` 로 거부한다.
   - `createCacheRefreshTokenStore()` 는 `TokenStoreCache` 의 선택 메서드 `setIfNotExists` 가 있으면 그 원자 연산을 쓰고, 없으면 store 인스턴스 안에서 jti 별 `exists` → `set` 을 직렬화한다.
 - **결정:** 동시 갱신의 패자는 순차 재사용과 같게 취급해 family 를 무효화한다. 따라서 같은 refresh 토큰을 여러 탭에서 동시에 갱신하면 사용자가 로그아웃된다. `markUsedIfUnused` 가 없는 저장소는 기존 `isUsed` → `markUsed` 흐름을 그대로 유지한다 (하위 호환).
-- **남은 한계:** `setIfNotExists` 가 없는 캐시를 여러 서버 인스턴스가 공유하면 인스턴스 사이의 동시 회전은 막지 못한다. 직렬화가 프로세스 안에서만 동작하기 때문이다. toolkit 의 `RedisCacheManager`·`HybridCacheManager` 에는 아직 `setIfNotExists` 가 없으므로, 여러 인스턴스 배포에서는 auth README 3절의 예시처럼 원자 연산을 제공하는 cache 를 주입해야 한다. `markUsedIfUnused` 를 구현하지 않은 사용자 정의 저장소도 동시 회전을 막지 못한다.
+- **해결 (2026-09-30, `903068a`):** 2026-09-29 판의 "남은 한계" 는 toolkit 의 `RedisCacheManager`·`HybridCacheManager` 에 `setIfNotExists` 가 없어, 캐시 기반 store 를 그대로 주입하면 여러 서버 인스턴스 사이의 동시 회전을 막지 못한다는 것이었다. 이제 toolkit 캐시 매니저 4종이 모두 `setIfNotExists` 를 제공하므로 그대로 주입하면 원자 경로를 탄다 (TC-U-032). `RedisCacheManager` 는 인스턴스 사이에서 원자적이다.
+- **남은 한계:** `HybridCacheManager` 가 인메모리로 폴백하는 동안(Redis 없음·비활성, `fallbackOnRedisError` 에 따른 Redis 오류 폴백)은 프로세스 안에서만 원자적이어서 인스턴스 사이의 동시 회전을 막지 못한다. `setIfNotExists` 가 없는 사용자 정의 캐시와 `markUsedIfUnused` 를 구현하지 않은 사용자 정의 저장소도 마찬가지다.
 
 ---
 
@@ -1757,8 +1800,8 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 유형 | 현재 파일 수 | 현재 테스트 수 | SC 수 (완료/계획) | TC 수 (완료/계획) | 실행 스크립트 |
 |------|------------|-------------|-----------------|-----------------|--------------|
-| **Unit** | 78개 | 1,832개 | 27 (25/2) | 31 (29/2) | `test:unit` (API 20개 파일 포함 실행) |
-| **Integration** | 3개 | 22개 | 3 (3/0) | 3 (3/0) | `test:integration` |
+| **Unit** | 79개 | 1,857개 | 28 (26/2) | 32 (30/2) | `test:unit` (API 20개 파일 포함 실행) |
+| **Integration** | 3개 | 26개 | 3 (3/0) | 3 (3/0) | `test:integration` |
 | **API** | 20개 | 264개 | 11 (10/1) | 11 (10/1) | 없음 |
 | **E2E** | 1개 | 7개 | 2 (2/0) | 2 (2/0) | 없음 |
 | **Security** | 14개 | 283개 | 8 (8/0) | 8 (8/0) | `test:security` |
@@ -1767,9 +1810,11 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | **Load/Stress** | 1개 | 2개 | 2 (1/1) | 2 (1/1) | 없음 |
 | **Smoke** | 2개 | 331개 | 2 (2/0) | 2 (2/0) | 없음 |
 | **Chaos** | 1개 | 4개 | 2 (1/1) | 2 (1/1) | 없음 |
-| **합계** | **125개** | **2,843개** | **59 (54/5)** | **63 (58/5)** | |
+| **합계** | **126개** | **2,872개** | **60 (55/5)** | **64 (59/5)** | |
 
-파일 수와 테스트 수는 2026-09-29 실측값이다. 2026-09-16 판(124개 파일, 2,824건)과 비교하면 신규 파일 1개(`build/pure-node-esm.test.ts` 1건, TC-SM-002)가 추가되었고, 기존 파일 4개가 늘었다: `unit/utils/ip-utils.test.ts` 36 → 45 (0.17.0 `1ad7d5f`, TC-U-024), `unit/auth/cookie.test.ts` 17 → 19 (0.17.1 `2021009`, TC-U-005), `unit/cache/cache-factory-uninitialized.test.ts` 3 → 7 (`4832c0e` 에서 1건을 2건으로 나누고 1건 추가, `9fa8c28` 에서 2건 추가, TC-U-011), `unit/utils/csv-export.test.ts` 43 → 46 (`6a8ec35`, TC-U-028). 합계 19건(1 + 9 + 2 + 4 + 3)이 늘었다. `integration/cache.integration.test.ts` (`4832c0e`), `unit/cache/cache-wrapper.test.ts` (`9fa8c28`), `unit/utils/timezone.test.ts` (`51b7b44`)는 단언이나 목만 바뀌고 건수는 같다. 줄어든 파일은 없다.
+파일 수와 테스트 수는 2026-09-30 실측값이다. 2026-09-29 판(125개 파일, 2,843건)과 비교하면 신규 파일 1개(`unit/cache/redis-cache-manager.test.ts` 8건, TC-U-032)가 추가되었고, 기존 파일 5개가 늘었다: `unit/cache/inmemory-cache-manager.test.ts` 3 → 9, `unit/cache/hybrid-cache-manager.test.ts` 35 → 44 (TC-U-012·032), `unit/auth/services/cache-token-stores.test.ts` 18 → 20 (TC-U-007), `integration/cache.integration.test.ts` 12 → 15 (TC-I-002), `integration/auth/token-rotation-flow.integration.test.ts` 8 → 9 (TC-I-003). 합계 29건(8 + 6 + 9 + 2 + 3 + 1)이 늘었다. 줄어든 파일은 없다.
+
+2026-09-29 판 설명: 2026-09-16 판(124개 파일, 2,824건)과 비교하면 신규 파일 1개(`build/pure-node-esm.test.ts` 1건, TC-SM-002)가 추가되었고, 기존 파일 4개가 늘었다: `unit/utils/ip-utils.test.ts` 36 → 45 (0.17.0 `1ad7d5f`, TC-U-024), `unit/auth/cookie.test.ts` 17 → 19 (0.17.1 `2021009`, TC-U-005), `unit/cache/cache-factory-uninitialized.test.ts` 3 → 7 (`4832c0e` 에서 1건을 2건으로 나누고 1건 추가, `9fa8c28` 에서 2건 추가, TC-U-011), `unit/utils/csv-export.test.ts` 43 → 46 (`6a8ec35`, TC-U-028). 합계 19건(1 + 9 + 2 + 4 + 3)이 늘었다. `integration/cache.integration.test.ts` (`4832c0e`), `unit/cache/cache-wrapper.test.ts` (`9fa8c28`), `unit/utils/timezone.test.ts` (`51b7b44`)는 단언이나 목만 바뀌고 건수는 같다. 줄어든 파일은 없다.
 
 2026-09-16 판 설명: 2026-09-13 판(121개 파일, 2,723건)과 비교하면 신규 파일 3개(`unit/error/prisma-error-map-contract.test.ts` 37건, `unit/cache/cache-wrapper.test.ts` 19건, `integration/auth/token-rotation-flow.integration.test.ts` 8건)가 추가되었다. 기존 파일 5개도 늘었다: `unit/utils/csv-export.test.ts` 29 → 43, `integration/cache.integration.test.ts` 6 → 12, `unit/auth/services/token-refresh.service.test.ts` 12 → 17, `unit/auth/services/cache-token-stores.test.ts` 11 → 18, `build/consumer-runtime.test.ts` 2 → 7. 합계 101건이 늘었다. 2026-09-13 판에서 허위 양성으로 판정한 2개 파일은 교체했으므로 해당 TC-U-028·TC-I-002 를 ✅ 완료로 분류했다.
 
@@ -1777,15 +1822,15 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 물리 디렉토리 | 파일 | 테스트 | 문서 도메인 배분 |
 |--------------|------|--------|-----------------|
-| `__tests__/unit/` | 98 | 2,096 | Unit 78/1,832 + API 20/264 |
-| `__tests__/integration/` | 3 | 22 | Integration 3/22 |
+| `__tests__/unit/` | 99 | 2,121 | Unit 79/1,857 + API 20/264 |
+| `__tests__/integration/` | 3 | 26 | Integration 3/26 |
 | `__tests__/security/` | 14 | 283 | Security 14/283 |
 | `__tests__/performance/` | 6 | 100 | Performance 5/98 + Load/Stress 1/2 |
 | `__tests__/build/` | 3 | 338 | E2E 1/7 + Smoke 2/331 |
 | `__tests__/chaos/` | 1 | 4 | Chaos 1/4 |
-| **합계** | **125** | **2,843** | |
+| **합계** | **126** | **2,872** | |
 
-2026-09-29 갱신 후 스크립트로 다시 대조한 결과, 125개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다. 도메인별 파일 수·건수의 합(125개, 2,843건)은 JSON 리포터의 전체 값과 일치한다.
+2026-09-30 갱신 후 스크립트로 다시 대조한 결과, 126개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다. 도메인별 파일 수·건수의 합(126개, 2,872건)은 JSON 리포터의 전체 값과 일치한다.
 
 ---
 
@@ -1795,9 +1840,9 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 도메인 | 판정 | 근거 |
 |--------|------|------|
-| Unit | 적용 | 78개 파일·1,832건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
+| Unit | 적용 | 79개 파일·1,857건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
 | API | 적용(재해석) | HTTP 서버가 없어 `src/next/` 핸들러·미들웨어·프록시·oapi 의 요청/응답 계약으로 재정의했고 20개 파일·264건이 해당한다 |
-| Integration | 적용 | 3개 파일·22건이 api-key 수명주기, 캐시 계층 조합(초기화·팩토리·래퍼·무효화·Redis 폴백), 인증 서비스와 캐시 기반 토큰 저장소 조합을 실제 모듈로 검증한다. 2026-09-13 판에서 소스를 실행하지 않던 6건은 교체했다 |
+| Integration | 적용 | 3개 파일·26건이 api-key 수명주기, 캐시 계층 조합(초기화·팩토리·래퍼·무효화·Redis 폴백), 인증 서비스와 캐시 기반 토큰 저장소 조합을 실제 모듈로 검증한다. 2026-09-13 판에서 소스를 실행하지 않던 6건은 교체했다 |
 | E2E | 재해석 적용 | dist 를 import 해 실행하는 소비자 여정 1개 파일·7건이 api-key 여정과 Prisma 오류 분류 여정을 다룬다 |
 | Security | 적용(강함) | 14개 파일·283건이 JWT 알고리즘 혼동, OAuth CSRF, 비밀번호 해싱, CORS 반사, 오류 정보 노출, XSS 를 다룬다 |
 | Accessibility | 미적용 | 렌더링 UI 가 없고 React 계층은 0.8.0 에서 `@withwiz/ui` 로 분리되었다 |
@@ -1829,9 +1874,13 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 ### 결정 대기 사항 (테스트로 고정하지 않음)
 
-| 항목 | 현재 동작 | 관련 TC |
-|------|----------|--------|
-| Redis 계열 캐시 매니저의 원자 연산 | `RedisCacheManager`·`HybridCacheManager` 에 `setIfNotExists` 가 없어, 캐시 기반 refresh 토큰 저장소를 그대로 주입하면 여러 인스턴스 사이의 동시 회전을 막지 못함 | TC-I-003 |
+2026-09-30 기준 남은 항목은 없다. 마지막 1건(Redis 계열 캐시 매니저의 원자 연산)은 아래 "해결된 결정 사항 (2026-09-30)" 으로 옮겼다. TC-U-031 `atob()` 처리와 TC-C-002 `register` 훅 장애는 계획 TC 의 선행 조건으로 관리한다.
+
+### 해결된 결정 사항 (2026-09-30, 브랜치 `feat/cache-set-if-not-exists`)
+
+| 항목 | 이전 동작 | 결정과 수정 | 커밋 | 관련 TC |
+|------|----------|-----------|------|--------|
+| Redis 계열 캐시 매니저의 원자 연산 | `RedisCacheManager`·`HybridCacheManager` 에 `setIfNotExists` 가 없어, 캐시 기반 refresh 토큰 저장소를 그대로 주입하면 여러 인스턴스 사이의 동시 회전을 막지 못함 | 매니저 4종에 `setIfNotExists` 추가. Redis 는 `SET NX [EX]` 로 인스턴스 사이 원자적이며 오류·Redis 부재 시 예외, 인메모리는 프로세스 안 원자적, 하이브리드는 Redis 우선이고 `fallbackOnRedisError` 에 따라 인메모리 폴백(폴백 중에는 프로세스 안에서만 원자적), Noop 은 `true`. `IUnifiedCacheManager` 에는 선택 메서드로 추가 | `903068a` | TC-U-032, TC-U-007 단계 10, TC-I-002 단계 11~13, TC-I-003 단계 9 |
 
 ### 해결된 결정 사항 (2026-09-29, 브랜치 `fix/cache-init-order`)
 
@@ -1958,8 +2007,8 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 ## 리뷰 체크리스트
 
 - [x] 10개 도메인 모두 판정 (Accessibility 미적용 근거 포함)
-- [x] 125개 테스트 파일이 모두 TC "파일" 칸에 등장 (2026-09-29 스크립트 재대조, 누락 0)
-- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,843건 일치 확인 (2026-09-29)
+- [x] 126개 테스트 파일이 모두 TC "파일" 칸에 등장 (2026-09-30 스크립트 재대조, 누락 0)
+- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,872건 일치 확인 (2026-09-30)
 - [x] 완료 TC 의 단계·예상 결과를 실제 테스트 이름과 단언에서 발췌
 - [x] 계획 TC 는 대상 소스를 읽고 작성, 동작이 불분명한 4개 흐름은 워크트리 밖 스크래치 실행으로 재현
 - [x] Prisma 오류 분류 기준표 (P2002 → 409, P2025 → 404, P2011 → 400, `PrismaClientValidationError` → 400) 기재
@@ -1969,6 +2018,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 - [x] 계획 TC 의 선행 결정 사항 중 3건 확정 (TC-U-027·029, TC-I-003, 2026-09-16)
 - [x] 결정 대기 사항 3건 해결 (`cache` 상수 평가 시점, `withCache()` 미초기화 정책, CSV 파일명 날짜 시간대, 2026-09-29) 과 순수 Node ESM 경계 고정 (TC-SM-002)
 - [x] 0.16.0~0.17.1 변경 반영 (TC-U-005 쿠키 폴백 경고, TC-U-024 축약형 IPv6·`trustedProxyHops`, TC-U-025 timezone 단언, 개요의 vitest `exclude`, 9절의 release 워크플로)
-- [ ] 남은 결정 사항 확정 필요 (TC-U-031 `atob()` 처리, TC-C-002 `register` 훅 장애, TC-I-003 Redis 계열 매니저의 `setIfNotExists` 부재)
+- [x] Redis 계열 캐시 매니저의 `setIfNotExists` 부재 해결 (TC-U-032, TC-I-003, 2026-09-30)
+- [ ] 남은 결정 사항 확정 필요 (TC-U-031 `atob()` 처리, TC-C-002 `register` 훅 장애)
 - [ ] 도메인별 실행 스크립트 정비 필요 (이번 작업에서 package.json 미수정)
 - [ ] 커버리지 임계값 설정 필요 (현재 미설정)
