@@ -31,6 +31,7 @@ export interface TokenStoreCache {
    * 제공하면 refresh store 의 markUsedIfUnused 가 이 연산을 사용하므로 여러 서버
    * 인스턴스 사이에서도 동시 회전을 막는다 (예: Redis `SET key value NX EX ttl`).
    * 없으면 store 인스턴스 안에서 같은 키의 확인·기록을 직렬화한다(단일 프로세스 한정).
+   * toolkit 캐시 매니저(Redis·Hybrid·InMemory·Noop)는 모두 이 메서드를 제공한다.
    */
   setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
 }
@@ -107,6 +108,9 @@ const noop = (): void => {};
  * - 없으면 이 store 인스턴스 안에서 같은 jti 의 exists→set 을 직렬화한다.
  *   단일 프로세스 안의 동시 요청은 막지만, 여러 서버 인스턴스가 캐시를 공유하는
  *   배포에서는 setIfNotExists 를 제공하는 cache 를 주입해야 한다.
+ * - toolkit 캐시 매니저는 setIfNotExists 를 제공하므로 그대로 주입하면 원자 경로를 탄다.
+ *   RedisCacheManager 는 인스턴스 사이에서 원자적이고, HybridCacheManager 는 Redis 를 쓸 수
+ *   있을 때만 그렇다(인메모리 폴백 중에는 프로세스 안에서만 원자적).
  */
 export function createCacheRefreshTokenStore(
   cache: TokenStoreCache,

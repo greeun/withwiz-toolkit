@@ -101,6 +101,39 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
    * 캐시에 값 저장
    */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    this.storeEntry(key, value, ttl);
+  }
+
+  /**
+   * 키가 없을 때만 저장 (한 프로세스 안에서 원자적)
+   *
+   * 존재 확인과 저장을 await 없이 동기로 처리하므로, 같은 키에 대한 동시 호출 사이에
+   * 다른 호출이 끼어들 수 없다. 만료된 키는 없는 것으로 본다. ttl 규칙은 set 과 같다.
+   * 프로세스(서버 인스턴스) 사이의 원자성은 보장하지 않는다.
+   *
+   * 용량 가드로 저장을 건너뛴 경우(set 과 같은 조건)에도 키가 이미 있던 것은 아니므로
+   * true 를 반환한다. false 는 "이미 있음"으로만 쓴다.
+   */
+  async setIfNotExists<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    const fullKey = this.getFullKey(key);
+    const entry = this.cache.get(fullKey);
+
+    if (entry) {
+      if (!this.isExpired(entry)) {
+        return false;
+      }
+      this.deleteEntry(fullKey);
+      this.metrics.expirations++;
+    }
+
+    this.storeEntry(key, value, ttl);
+    return true;
+  }
+
+  /**
+   * 저장 본체 (동기). set·setIfNotExists 가 공유한다.
+   */
+  private storeEntry<T>(key: string, value: T, ttl?: number): void {
     const fullKey = this.getFullKey(key);
     const actualTTL = ttl ?? this.config.defaultTTL;
     const size = this.estimateSize(value);

@@ -171,6 +171,23 @@ describe('TC-I-003: 인증 서비스와 캐시 기반 토큰 저장소 실제 �
       expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     });
 
+    it('store 를 따로 만든 서버 인스턴스 둘이 같은 캐시를 공유해도 하나만 성공한다 (setIfNotExists 원자 경로)', async () => {
+      // 인스턴스마다 createCacheRefreshTokenStore 를 따로 호출하면 store 안의 직렬화는 공유되지 않는다.
+      // 공유 캐시의 setIfNotExists 만이 두 인스턴스 사이의 동시 회전을 막는다.
+      const otherStore = createCacheRefreshTokenStore(cache);
+      const otherService = new TokenRefreshService({ userRepository, jwtSecret: JWT_SECRET, refreshTokenStore: otherStore });
+      const { tokens } = await login.login(EMAIL, PASSWORD, STORED_HASH);
+
+      const results = await Promise.allSettled([
+        refreshService.refresh(tokens.refreshToken),
+        otherService.refresh(tokens.refreshToken),
+      ]);
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const rejected = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+      expect((rejected!.reason as AuthError).code).toBe('TOKEN_REUSE_DETECTED');
+    });
+
     it('동시 갱신 5건 중 정확히 1건만 새 토큰을 받는다', async () => {
       const { tokens } = await login.login(EMAIL, PASSWORD, STORED_HASH);
 

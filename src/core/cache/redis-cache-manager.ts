@@ -384,6 +384,106 @@ export class RedisCacheManager implements IUnifiedCacheManager {
     }
   }
 
+  /**
+   * 키가 없을 때만 저장 — Upstash `SET key value NX [EX ttl]` 한 번으로 처리하므로
+   * 이 Redis 를 공유하는 모든 서버 인스턴스 사이에서 원자적이다.
+   * 저장했으면('OK') true, 키가 이미 있으면(null) false. 키 prefix·ttl(초, 없으면 만료 없음)은 set 과 같다.
+   *
+   * 오류 정책 — get·set 과 달리 오류를 삼키지 않고 예외를 던진다.
+   * 이 연산은 refresh 토큰 회전의 "사용 표시"처럼 결과가 보안 판단에 쓰인다.
+   * - true 로 보고하면 실제로는 표시되지 않은 토큰의 재사용을 허용한다.
+   * - false 로 보고하면 호출부가 재사용으로 판정해 정상 사용자의 family 를 무효화한다.
+   * 따라서 원자성을 보장할 수 없는 경우(Redis 클라이언트 없음, 전역 비활성 상태, 명령 오류,
+   * undefined 값)는 예외로 알려 호출부가 실패로 처리하게 한다. HybridCacheManager 는 이 예외를
+   * 받아 설정에 따라 인메모리로 폴백한다. 오류 메트릭·연결 상태·전역 오류 알림은 set 과 같게 갱신한다.
+   *
+   * 캐시 자체가 꺼져 있으면(isCacheEnabled false) NoopCacheManager 와 같게 저장 없이 true 를 반환한다.
+   */
+  async setIfNotExists<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    const startTime = Date.now();
+    const fullKey = `${this.prefix}:${key}`;
+
+    if (value === undefined) {
+      logger.warn(`[Cache:R] Attempted to setIfNotExists undefined value: ${fullKey}`);
+      throw new TypeError(`setIfNotExists: undefined value is not storable (${fullKey})`);
+    }
+
+    // 캐시가 비활성화된 경우 NoopCacheManager 와 같게 동작
+    if (!isCacheEnabled()) {
+      logger.debug(`Cache setIfNotExists skipped due to cache disabled: ${fullKey}`, {
+        prefix: this.prefix,
+        key,
+        fullKey,
+      });
+      return true;
+    }
+
+    // 전역적으로 Redis 가 비활성화된 경우 원자성을 보장할 수 없다
+    if (isRedisGloballyDisabled()) {
+      throw new Error(`setIfNotExists: Redis is globally disabled (${fullKey})`);
+    }
+
+    const redis = getRedisClient();
+    if (!redis) {
+      logger.warn(
+        `Cache setIfNotExists failed due to Redis unavailability: ${fullKey}`,
+        { prefix: this.prefix, key, fullKey },
+      );
+      this.metrics.errors++;
+      throw new Error(`setIfNotExists: Redis client is unavailable (${fullKey})`);
+    }
+
+    try {
+      const result = ttl
+        ? await redis.set(fullKey, value, { nx: true, ex: ttl })
+        : await redis.set(fullKey, value, { nx: true });
+      const responseTime = Date.now() - startTime;
+      const stored = result === "OK";
+
+      // 연결 상태 업데이트 및 전역 상태 리셋
+      this.connectionStatus.isConnected = true;
+      this.connectionStatus.lastPingTime = new Date();
+      resetRedisGlobalState();
+
+      logger.info(`[Cache:R] setIfNotExists: ${fullKey} → ${stored ? "stored" : "exists"}`, {
+        prefix: this.prefix,
+        key,
+        fullKey,
+        responseTime: `${responseTime}ms`,
+        ttl: ttl ? `${ttl}s` : "기본값",
+      });
+
+      return stored;
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+
+      this.metrics.errors++;
+      this.connectionStatus.connectionErrors++;
+      this.connectionStatus.lastConnectionError = errorMessage;
+      this.connectionStatus.lastConnectionErrorTime = new Date();
+
+      // 전역 Redis 에러 상태 업데이트
+      notifyRedisError(
+        error instanceof Error ? error : new Error(errorMessage),
+        `CacheManager.setIfNotExists:${this.prefix}`,
+      );
+
+      logger.error(`Cache setIfNotExists failed: ${fullKey}`, {
+        prefix: this.prefix,
+        key,
+        fullKey,
+        error: errorMessage,
+        responseTime: `${responseTime}ms`,
+        ttl,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
+  }
+
   async delete(key: string): Promise<void> {
     const startTime = Date.now();
     const fullKey = `${this.prefix}:${key}`;
