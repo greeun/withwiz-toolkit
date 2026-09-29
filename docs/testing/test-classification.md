@@ -4,20 +4,20 @@
 
 | 항목 | 내용 |
 |------|------|
-| 대상 | `@withwiz/toolkit` 0.15.0 공유 유틸 라이브러리 (`core/`, `next/`, `prisma/` 계층) |
-| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 124개 |
-| 기준 커밋 | `610750c` (브랜치 `fix/residual-defects`, develop `dd4f7d8` = 0.15.0 에서 분기) |
-| 환경 | Vitest 4.0.18, Node.js 22.22.0, `environment: 'node'` (파일 단위 jsdom 지정 없음), 설정 `__tests__/vitest.config.ts`, 셋업 `__tests__/setup.ts` |
+| 대상 | `@withwiz/toolkit` 0.17.1 + 브랜치 `fix/cache-init-order` 변경 4건 (미게시) 공유 유틸 라이브러리 (`core/`, `next/`, `prisma/` 계층) |
+| 범위 | `src/` 전체 (core: api-key, auth, cache, config, constants, cors, error, geolocation, logger, storage, system, types, utils, validators / next: auth-handlers, auth-types, error, middleware, oapi, utils, proxy / prisma: auth-adapter), `__tests__/` 테스트 파일 125개 |
+| 기준 커밋 | `c5f013f` (브랜치 `fix/cache-init-order`, develop `bd703e6` = 0.17.1 에서 분기, develop 보다 커밋 4개 앞섬) |
+| 환경 | Vitest 4.0.18, Node.js 22.22.0, `environment: 'node'` (파일 단위 jsdom 지정 없음), 설정 `__tests__/vitest.config.ts`, 셋업 `__tests__/setup.ts`. 설정 없이 `npx vitest run` 을 실행하면 `globals` 가 꺼져 `describe is not defined` 로 실패한다. `exclude` 는 `configDefaults.exclude` 에 `**/.claude/**` 를 더한 값이다 (0.16.0 전 `3f26b72`: 저장소 안 워크트리의 `__tests__` 가 함께 수집되어 테스트가 두 벌 실행되던 문제 수정) |
 | 의존성 설치 | `npm ci` (`package-lock.json` 기준). `pnpm install --frozen-lockfile` 은 `pnpm-lock.yaml` 이 없어 `ERR_PNPM_NO_LOCKFILE` 로 중단됨 |
-| 실행 전제 | `npm run build` 선행. `__tests__/build/` 의 2개 파일은 `dist/` 가 없으면 실패함 |
+| 실행 전제 | `npm run build` 선행. `__tests__/build/` 의 3개 파일은 `dist/` 가 없으면 실패함 |
 | 목표 커버리지 | 미설정 (`__tests__/vitest.config.ts` 에 `coverage.thresholds` 없음) |
-| 실측 커버리지 (참고) | Stmts 75.98% (4,183/5,505), Branches 72.36% (2,652/3,665), Funcs 82.71% (895/1,082), Lines 76.41% (3,936/5,151). 2026-09-16 `--coverage.include=src/**` 로 측정 (2026-09-13 판: Stmts 72.86%, Branches 69.54%, Funcs 79.19%, Lines 73.29%) |
-| 실측 결과 (2026-09-16) | 파일 124개 전부 통과, 케이스 2,824건 중 통과 2,824 · 실패 0 · 스킵 0 · todo 0 |
-| 문서 이력 | 2026-09-13 0.15.0 (`63c492c`) 기준 최초 작성: 테스트 파일 121개, 2,723건, SC 58개 (✅ 47 / 🔲 11), TC 62개 (✅ 51 / 🔲 11). 2026-09-16 `fix/residual-defects` (`610750c`) 기준 갱신: 결함 4건 수정(`c07a669` `handlePrismaError()` 매핑표 불일치, `5ba8eff` `withCache()` 원본 함수 이중 실행, `977efc2` refresh 토큰 동시 회전, `535faec` CSV 파일명 비 ASCII 문자)과 허위 양성 테스트 2개 교체(`e37468c`, `610750c`)를 반영하고 TC-U-027·028·029, TC-I-002·003, TC-E-002 를 🔲 계획에서 ✅ 완료로 전환 (124개 파일, 2,824건, SC ✅ 53 / 🔲 5, TC ✅ 57 / 🔲 5) |
+| 실측 커버리지 (참고) | Stmts 76.16% (4,233/5,558), Branches 72.47% (2,683/3,702), Funcs 82.79% (905/1,093), Lines 76.57% (3,976/5,192). 2026-09-29 `--coverage.include=src/**` 로 측정 (2026-09-16 판: Stmts 75.98%, Branches 72.36%, Funcs 82.71%, Lines 76.41% / 2026-09-13 판: Stmts 72.86%, Branches 69.54%, Funcs 79.19%, Lines 73.29%) |
+| 실측 결과 (2026-09-29) | 파일 125개 전부 통과, 케이스 2,843건 중 통과 2,843 · 실패 0 · 스킵 0 · todo 0 (JSON 리포터 실행과 커버리지 실행 2회 모두 같은 결과) |
+| 문서 이력 | 2026-09-13 0.15.0 (`63c492c`) 기준 최초 작성: 테스트 파일 121개, 2,723건, SC 58개 (✅ 47 / 🔲 11), TC 62개 (✅ 51 / 🔲 11). 2026-09-16 `fix/residual-defects` (`610750c`) 기준 갱신: 결함 4건 수정(`c07a669` `handlePrismaError()` 매핑표 불일치, `5ba8eff` `withCache()` 원본 함수 이중 실행, `977efc2` refresh 토큰 동시 회전, `535faec` CSV 파일명 비 ASCII 문자)과 허위 양성 테스트 2개 교체(`e37468c`, `610750c`)를 반영하고 TC-U-027·028·029, TC-I-002·003, TC-E-002 를 🔲 계획에서 ✅ 완료로 전환 (124개 파일, 2,824건, SC ✅ 53 / 🔲 5, TC ✅ 57 / 🔲 5). 2026-09-29 `fix/cache-init-order` (`c5f013f`) 기준 갱신: 0.16.0~0.17.1 변경(`51b7b44` timezone 테스트 UTC 환경 수정, `3f26b72` 워크트리 복사본 수집 제외, `be13149` release 워크플로, `1ad7d5f` 축약형 IPv6 판정·`trustedProxyHops`, `2021009` 쿠키 미초기화 폴백 1회 경고)과 이번 브랜치 4건(`4832c0e` `cache`·`geoCache` 지연 연결, `9fa8c28` 미초기화 `withCache()` degrade, `6a8ec35` CSV 파일명 날짜 `timeZone` 옵션, `c5f013f` 순수 Node ESM 빌드 테스트)을 반영하고 SC-SM-002·TC-SM-002 를 ✅ 완료로 추가 (125개 파일, 2,843건, SC ✅ 54 / 🔲 5, TC ✅ 58 / 🔲 5) |
 
 실측은 `npx vitest run -c __tests__/vitest.config.ts --reporter=json` 결과를 기준으로 삼았고, 이 문서에 기재한 파일별 테스트 수는 모두 이 결과에서 옮겼다.
 
-결함이 수정되어 회귀 테스트가 추가된 🔲 계획 TC 는 ✅ 완료로 전환하고, 단계와 예상 결과를 실제 테스트 기준으로 다시 쓴다. 결함 당시의 동작은 해당 TC 의 "결함 이력"에 남긴다. 허위 양성 파일을 교체한 TC 도 같은 방식으로 교체 전 상태를 남긴다. 2026-09-16 기준 전환 대상은 TC-U-027·028·029, TC-I-002·003, TC-E-002 이다.
+결함이 수정되어 회귀 테스트가 추가된 🔲 계획 TC 는 ✅ 완료로 전환하고, 단계와 예상 결과를 실제 테스트 기준으로 다시 쓴다. 결함 당시의 동작은 해당 TC 의 "결함 이력"에 남긴다. 허위 양성 파일을 교체한 TC 도 같은 방식으로 교체 전 상태를 남긴다. 2026-09-16 기준 전환 대상은 TC-U-027·028·029, TC-I-002·003, TC-E-002 이다. 2026-09-29 에는 전환할 🔲 계획 TC 가 없었고, 결함 수정이 반영된 ✅ 완료 TC (TC-U-005·011·024·028·029, TC-I-002)의 단계와 결함 이력을 갱신했으며 TC-SM-002 를 새로 추가했다. "결정 대기 사항" 에 있던 4건 중 3건(`cache` 상수 평가 시점, `withCache()` 미초기화 정책, CSV 파일명 날짜)은 해결로 옮겼다.
 
 ### 라이브러리 맥락의 도메인 재해석
 
@@ -25,14 +25,14 @@
 
 | 도메인 | 이 문서에서 쓰는 의미 | 물리 위치 |
 |--------|----------------------|-----------|
-| Unit | 모듈 단위 로직 검증 | `__tests__/unit/` 중 API 도메인 20개 파일을 제외한 76개 파일 |
+| Unit | 모듈 단위 로직 검증 | `__tests__/unit/` 중 API 도메인 20개 파일을 제외한 78개 파일 |
 | API | `src/next/` 의 라우트 핸들러·미들웨어·프록시·oapi 가 반환하는 요청/응답 계약 (상태 코드, 응답 body, 헤더) | `unit/oapi/`, `unit/auth/handlers/`, `unit/auth/types/`, `unit/middleware/`, `unit/proxy.test.ts` |
 | Integration | 실제 모듈을 조합한 계약 검증 | `__tests__/integration/` |
 | E2E | 빌드 산출물(`dist/`)을 import 해 실행하는 소비자 여정 | `__tests__/build/consumer-runtime.test.ts` |
 | Security | 비밀 재료 취급, 인증 우회·XSS·CORS·정보 노출 방어 | `__tests__/security/` |
 | Performance | 차수 단위 처리 시간 회귀 감지와 대용량 캐시 동작 | `__tests__/performance/` 중 Load/Stress 1개 파일을 제외한 5개 파일 |
 | Load/Stress | 이벤트 루프에서 동시 호출될 때의 결과 일관성과 unhandled rejection 부재 | `__tests__/performance/api-key/api-key-concurrency.test.ts` |
-| Smoke | 배포 전 exports 무결성과 dist 산출물 검증 | `__tests__/build/exports-integrity.test.ts` |
+| Smoke | 배포 전 exports 무결성, dist 산출물 검증, 순수 Node ESM import 가능 범위 | `__tests__/build/exports-integrity.test.ts`, `__tests__/build/pure-node-esm.test.ts` |
 | Chaos | 포트(외부 저장소 추상화) 장애 주입 시 degrade 계약 | `__tests__/chaos/` |
 | Accessibility | 미적용 (렌더링되는 UI 요소가 없음) | 없음 |
 
@@ -98,6 +98,7 @@
 | SC-L-001 | api-key 동시 호출 결과 일관성 | Load/Stress | High | ✅ 완료 |
 | SC-L-002 | 인메모리 캐시 카운터·용량 동시 호출 일관성 | Load/Stress | Medium | 🔲 계획 |
 | SC-SM-001 | exports 무결성과 dist 산출물 검증 | Smoke | Critical | ✅ 완료 |
+| SC-SM-002 | `next/*` 밖 서브패스의 순수 Node ESM import | Smoke | High | ✅ 완료 |
 | SC-C-001 | api-key 포트 장애 degrade 계약 | Chaos | High | ✅ 완료 |
 | SC-C-002 | refresh 토큰 저장소 장애 시 갱신·로그아웃 동작 | Chaos | High | 🔲 계획 |
 
@@ -218,8 +219,8 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | **파일** | `__tests__/unit/auth/cookie.test.ts`, `__tests__/unit/auth/oauth-state-cookie.test.ts` |
 | **대상** | `src/core/auth/jwt/cookie.ts`: `setTokenCookies()`, `clearTokenCookies()` / `src/core/auth/oauth/state-cookie.ts`: `validateOAuthState()`, `setOAuthStateCookie()`, `clearOAuthStateCookie()`, `generateOAuthState()` |
 | **우선순위** | High |
-| **전제조건** | `NODE_ENV=test` (Secure 속성 미포함 조건) |
-| **테스트 데이터** | auth 미초기화 시 기본 만료 7d/30d, 초기화 시 `accessTokenExpiry: '15m'`, `refreshTokenExpiry: '7d'` |
+| **전제조건** | `NODE_ENV=test` (Secure 속성 미포함 조건). 폴백 경고 케이스는 경고 플래그가 모듈 상태이므로 `vi.resetModules()` 뒤 `cookie` 모듈을 동적 import 하고 `console.warn` 을 spy |
+| **테스트 데이터** | auth 미초기화 시 기본 만료 7d/30d, 초기화 시 `accessTokenExpiry: '15m'`, `refreshTokenExpiry: '7d'`, 경고 케이스의 초기화 값 `accessTokenExpiry: '1h'`, `refreshTokenExpiry: '30d'` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
@@ -229,8 +230,11 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 4 | `clearTokenCookies(response)` 호출 | access 쿠키에 `Max-Age=0` |
 | 5 | `setOAuthStateCookie(res, 'nonce-1', { secure: true })` 호출 | `httpOnly: true`, `sameSite: 'lax'`, `path: '/'`, `maxAge: 600` |
 | 6 | `validateOAuthState('abc', 'abc')` 호출 | `true` (둘 중 하나라도 없거나 다르면 `false`) |
+| 7 | `resetAuth()` 상태에서 `setTokenCookies()` 2회, `clearTokenCookies()` 1회 (`TC-UNIT-COOKIE-030`) | `before initializeAuth()` 를 포함한 `[Auth]` 경고가 1회만 출력, access 쿠키 `maxAge` 는 폴백 값 `7 * 24 * 3600` 그대로 |
+| 8 | `initializeAuth({ accessTokenExpiry: '1h', ... })` 후 `setTokenCookies()` (`TC-UNIT-COOKIE-031`) | 폴백 경고 0회, access 쿠키 `maxAge` 가 `3600` |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 25개 (cookie 17, oauth-state-cookie 8)
+- **자동화:** 가능 ✅ | **테스트 수:** 27개 (cookie 19, oauth-state-cookie 8)
+- **결함 이력:** 0.17.1 이전에는 `initializeAuth()` 전에 `setTokenCookies()`·`clearTokenCookies()` 가 호출되면 `secure=false` 와 `JWT_DEFAULTS` 기준 만료(access 7d, refresh 30d)로 조용히 폴백해, 앱이 access 만료를 1h 로 설정해도 쿠키만 7일로 나가고 아무 신호가 없었다. 0.17.1 커밋 `2021009` 에서 폴백 값은 유지하고 프로세스당 1회 `[Auth]` 경고를 남기도록 수정하면서 단계 7·8 의 2건을 추가했다.
 
 ---
 
@@ -356,19 +360,27 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |------|------|
 | **시나리오** | SC-U-009 |
 | **파일** | `__tests__/unit/cache/cache-config.test.ts`, `__tests__/unit/cache/cache-env.test.ts`, `__tests__/unit/cache/cache-factory-uninitialized.test.ts` |
-| **대상** | `src/core/cache/cache-config.ts`: `getCacheConfig`, `getCacheTTL` / `cache-env.ts`: `getConfig()`, `validateRedisEnvironment()` / `cache-factory.ts`: 모듈 import 시점 동작 |
+| **대상** | `src/core/cache/cache-config.ts`: `getCacheConfig`, `getCacheTTL` / `cache-env.ts`: `getConfig()`, `validateRedisEnvironment()` / `cache-factory.ts`: 모듈 import 시점 동작, 지연 객체 `cache`·`geoCache`, `getCacheManager()` / `cache-wrapper.ts`: 미초기화 상태의 `withCache()` / `config.ts`: `initializeCache()` |
 | **우선순위** | High |
-| **전제조건** | `cache-env`·`config/common` 을 `vi.mock` 으로 대체, 팩토리 테스트는 `initializeCache()` 미호출 상태에서 동적 import |
+| **전제조건** | `cache-env`·`config/common` 을 `vi.mock` 으로 대체. 팩토리 테스트는 `config`·`cache-env` 를 mock 하지 않고 logger 만 mock 하며, 케이스마다 `globalThis.__withwiz_config` 삭제와 `vi.resetModules()` 뒤 `initializeCache()` 미호출 상태에서 동적 import, `console.warn` 을 spy |
+| **테스트 데이터** | 초기화 케이스 `initializeCache({ enabled: true, inmemory: { enabled: true } })`, 키 `'before'`·`'after'`·`'geo-key'`, `withCache` 키 `'k'`·`'link:k'` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
 | 1 | 전역 캐시 비활성 (`isCacheEnabled` → `false`) 상태에서 `getCacheConfig.analytics.enabled()` | `false` |
 | 2 | Redis URL 이 공백 `'   '` 인 설정으로 `validateRedisEnvironment()` | `isValid: false`, errors 에 `Redis URL is an empty string.` |
 | 3 | `getCommonConfig()` 가 throw 하는 상태에서 `getConfig()` | `env.NODE_ENV` 가 `'development'` 로 폴백 |
-| 4 | `initializeCache()` 없이 `cache-factory` 동적 import | import 가 reject 되지 않음 |
+| 4 | `initializeCache()` 없이 `cache-factory` 동적 import | import 가 reject 되지 않고, import 만으로는 `console.warn` 이 호출되지 않음 (import 시점에 백엔드를 해석하지 않음) |
 | 5 | 같은 상태에서 `cache.get('any-key')`, `cache.set('any-key', 'value')` | 각각 `null`, `undefined` 로 resolve (no-op 로 degrade) |
+| 6 | 같은 상태에서 `cache.get('a')`, `cache.get('b')`, `geoCache.get('c')` | `not initialized` 경고가 첫 사용 시점에 1회만 출력되고 메시지에 `cache`·`initiali` 포함 |
+| 7 | `initializeCache()` 전에 import 한 `cache` 로 `set('before')`·`get('before')` 후 `initializeCache({ enabled: true, inmemory: { enabled: true } })`, 이어서 `cache.set('after', 'value')`, `geoCache.set('geo-key', { country: 'KR' })` | 초기화 전 `get('before')` 은 `null`, 초기화 뒤 `cache.get('after')` 가 `'value'`, `geoCache.get('geo-key')` 가 `{ country: 'KR' }`, `getCacheManager('default').get('after')` 도 `'value'` (같은 저장소 공유) |
+| 8 | 초기화 전 `withCache('k', fetch)`, `withCache('link:k', fetch, { ttl: 60 })` | 둘 다 예외 없이 `'original'` 로 resolve, fetch 2회, `not initialized` 경고 1회 |
+| 9 | `initializeCache()` 뒤 `withCache('k', fetch)` 2회 | fetch 1회 (정상 캐싱) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 47개 (cache-config 22, cache-env 22, cache-factory-uninitialized 3)
+- **자동화:** 가능 ✅ | **테스트 수:** 51개 (cache-config 22, cache-env 22, cache-factory-uninitialized 7)
+- **결함 이력 (`cache` 상수 평가 시점):** 2026-09-16 판까지 `cache`·`geoCache` 는 `export const cache = getCacheManager('default')` 처럼 모듈 평가 시점에 매니저를 얻었다. 그래서 `initializeCache()` 보다 먼저 import 되면 `NoopCacheManager` 로 영구히 고정되어, 초기화 뒤에도 `cache.get()` 이 `null` 이고 이 상수를 쓰는 `invalidateCache` 도 no-op 이었다. 미초기화 경고도 import 시점에 나왔다. 2026-09-16 판은 이 동작을 TC-I-002 의 "테스트로 고정하지 않은 동작 (결정 필요)" 에 기록했다. 2026-09-29 커밋 `4832c0e` 에서 두 상수를 호출할 때마다 `getCacheManager(prefix)` 로 위임하는 지연 객체(Proxy)로 바꾸고, 기존 `warns once that cache is not initialized` (import 시점 경고 단언)를 단계 4 의 import 시점 무경고와 단계 6 의 첫 사용 시점 1회 경고로 나누었으며 단계 7 을 추가했다 (3건 → 5건).
+- **결함 이력 (미초기화 `withCache()`):** 2026-09-16 판까지 `initializeCache()` 없이 `withCache()` 를 호출하면 TTL 계산에서 캐시 설정을 먼저 읽어 `ConfigurationError: [cache] Cache config not initialized. Call initializeCache() first.` 로 reject 하고 원본 함수를 실행하지 않았다. 같은 상황의 `getCacheManager()` 는 경고 후 Noop 으로 degrade 하므로 두 정책이 달랐다. 2026-09-29 커밋 `9fa8c28` 에서 설정을 읽기 전에 초기화 여부를 확인하고, 미초기화면 `getCacheManager()` 로 경고를 1회 낸 뒤 원본 함수 결과를 반환하도록 수정하면서 단계 8·9 의 2건을 추가했다 (5건 → 7건).
+- **결정:** 캐시 초기화 누락은 오류가 아니라 경고 1회와 캐시 없는 실행으로 degrade 한다. 공개 상수 `cache`·`geoCache` 의 이름·타입·사용법은 유지하되 같은 객체 동일성(`toBe`)은 보장하지 않고 저장소 공유만 보장한다.
 
 ---
 
@@ -670,9 +682,10 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |------|------|
 | **시나리오** | SC-U-020 |
 | **파일** | `__tests__/unit/utils/url-normalizer.test.ts`, `__tests__/unit/utils/ip-utils.test.ts` |
-| **대상** | `src/core/utils/url-normalizer.ts`: `normalizeUrl()`, `validateUrl()`, `hasValidScheme()`, `getUrlType()` / `src/core/utils/ip-utils.ts`: `extractClientIp()`, `isPrivateIP()`, `isValidIP()`, `normalizeIP()` |
+| **대상** | `src/core/utils/url-normalizer.ts`: `normalizeUrl()`, `validateUrl()`, `hasValidScheme()`, `getUrlType()` / `src/core/utils/ip-utils.ts`: `extractClientIp()` (선택 인자 `ExtractClientIpOptions.trustedProxyHops`), `isPrivateIP()`, `isValidIP()`, `normalizeIP()` |
 | **우선순위** | High |
 | **전제조건** | 없음 |
+| **테스트 데이터** | 축약형 IPv6 `2001:db8::1`·`fe80::1`·`::`·`::ffff:192.0.2.1`, 잘못된 IPv6 `::1::2`·`12345::1`·`1:2:3:4:5:6:7`, 비십진 IPv4 `1abc.2.3.4`·`01.2.3.4`·`+1.2.3.4`, `x-forwarded-for: 1.2.3.4, 5.6.7.8, 9.10.11.12` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
@@ -680,8 +693,15 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 2 | 2,100자 경로를 가진 URL 로 `validateUrl()` | `isValid: false`, `messageKey: 'urlTooLong'` |
 | 3 | `x-forwarded-for: 1.2.3.4, 5.6.7.8, 9.10.11.12` 로 `extractClientIp()` | `'9.10.11.12'` (프록시가 추가한 마지막 IP) |
 | 4 | `x-real-ip` 만 있는 헤더로 `extractClientIp()` | `null` (위조 가능 헤더 무시) |
+| 5 | `isValidIP()` 에 축약형 IPv6 5종, `::` 가 두 번인 값, 그룹 수·자릿수가 틀린 값 | 축약형은 모두 `true`, 나머지는 `false` |
+| 6 | `isValidIP('1abc.2.3.4')`, `('01.2.3.4')`, `(' 1.2.3.4')`, `('+1.2.3.4')` | 모두 `false` (선행 0·부호·공백·비숫자 옥텟 거부) |
+| 7 | `cf-connecting-ip: 2001:db8::1` 과 `x-forwarded-for: 2001:db8::1, 172.16.0.1` 로 `extractClientIp()` | `'2001:db8::1'` (IPv6 CF 헤더가 검증을 통과해 XFF 폴백으로 내려가지 않음) |
+| 8 | 같은 3홉 XFF 로 `trustedProxyHops: 1`, `2` | `'5.6.7.8'`, `'1.2.3.4'` |
+| 9 | 2홉 XFF 로 `trustedProxyHops: 2`, `5` | 둘 다 `null` (체인보다 긴 홉 수는 클라이언트가 쓴 구간을 읽지 않음) |
+| 10 | `cf-connecting-ip` 가 있을 때 `trustedProxyHops: 1`, 인자 없음·`{}`·`0` | CF 값 `'1.2.3.4'` 는 홉 수의 영향을 받지 않음, 기본값은 마지막 IP `'9.10.11.12'` |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 89개 (url-normalizer 53, ip-utils 36)
+- **자동화:** 가능 ✅ | **테스트 수:** 98개 (url-normalizer 53, ip-utils 45)
+- **결함 이력:** 0.17.0 이전 `isValidIP()` 의 IPv6 분기는 전개형 8그룹, `::1`, `::` 로 시작하는 문자열, 하드코딩한 Google DNS 주소만 받아 `2001:db8::1` 같은 일반 축약형을 거부했다. 그래서 `CF-Connecting-IP` 가 IPv6 이면 검증에서 떨어져 XFF 폴백으로 내려가고 프록시 주소를 클라이언트로 반환했으므로, 이 값을 키로 쓰는 rate limit 이 IPv6 접속자 전원을 한 클라이언트로 취급했다. IPv4 옥텟은 `parseInt` 로 판정해 `1abc.2.3.4` 가 통과했고 `01.2.3.4` 가 `1.2.3.4` 의 다른 표기로 통과했다. 기존 36건의 IPv6 사례는 전용 특수 분기에 걸리는 세 값뿐이어서 이 결함을 잡지 못했다. 0.17.0 커밋 `1ad7d5f` 에서 IPv6 를 파싱으로 판정하고 IPv4 옥텟을 십진 패턴으로 제한했으며, `extractClientIp()` 에 선택 인자 `{ trustedProxyHops }` (기본 0 = 종전 동작)를 추가하면서 단계 5~10 의 9건을 추가했다.
 
 ---
 
@@ -706,6 +726,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 - **자동화:** 가능 ✅ | **테스트 수:** 186개 (type-guards 90, timezone 31, short-code-generator 29, format-number 17, startup-banner 12, optimistic-lock 7)
 - **비고:** `short-code-generator.test.ts` 의 `should not contain ambiguous characters` 는 `toBeDefined()` 만 단언하므로 이름이 뜻하는 검증을 수행하지 않는다.
+- **변경 이력:** `timezone.test.ts` 의 `getUserTimezone` › `returns a valid IANA timezone name` 은 반환값에 `/` 가 있는지로 판정해, TZ 가 `UTC` 인 CI 러너에서 실패했다 (`UTC` 는 슬래시 없는 유효한 이름). 0.16.0 직후 커밋 `51b7b44` 에서 `new Intl.DateTimeFormat(undefined, { timeZone: result })` 가 throw 하지 않는지로 단언을 바꿨다. 테스트 수는 그대로 31건이다.
 
 ---
 
@@ -765,10 +786,10 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |------|------|
 | **시나리오** | SC-U-024 |
 | **파일** | `__tests__/unit/utils/csv-export.test.ts` |
-| **대상** | `src/next/utils/csv-export.ts`: `escapeCsvField()`, `rowToCsv()`, `createCsvHeader()`, `createSimpleCsvResponse()`, `createStreamingCsvResponse()`, `dateFormatter`, `boolFormatter`, 내부 `buildContentDisposition()` / `src/next/utils/csv-export-format.ts`: `customDateFormatter()` |
+| **대상** | `src/next/utils/csv-export.ts`: `escapeCsvField()`, `rowToCsv()`, `createCsvHeader()`, `createSimpleCsvResponse()`, `createStreamingCsvResponse()`, `dateFormatter`, `boolFormatter`, 내부 `buildContentDisposition()`·`formatFilenameDate()`, 옵션 `CsvExportOptions.timeZone` / `src/next/utils/csv-export-format.ts`: `customDateFormatter()` |
 | **우선순위** | High |
-| **전제조건** | logger mock, `next/server` 는 devDependency 실모듈 사용, 응답 테스트는 `Date` 만 가짜 타이머로 `2026-09-15T08:00:00Z` 에 고정, 본문은 `arrayBuffer()` 바이트로 읽음 (`Response.text()` 는 BOM 을 제거함) |
-| **테스트 데이터** | `columns: [{ header: '이름', accessor: 'name' }]`, 행 `{ name: '홍길동' }`, 스트리밍 fetcher 2배치 (2행 + `nextCursor: 'c1'`, 1행), 파일명 `users`·`회원목록`·`주문내역`·`report "Q3"`·`a\r\nX-Injected: 1` |
+| **전제조건** | logger mock, `next/server` 는 devDependency 실모듈 사용, 응답 테스트는 `Date` 만 가짜 타이머로 `2026-09-15T08:00:00Z` 에 고정, 본문은 `arrayBuffer()` 바이트로 읽음 (`Response.text()` 는 BOM 을 제거함), 시간대 케이스는 `Date` 를 `2026-09-15T20:00:00Z` (UTC 9월 15일 20시 = `Asia/Seoul` 9월 16일 05시)에 고정 |
+| **테스트 데이터** | `columns: [{ header: '이름', accessor: 'name' }]`, 행 `{ name: '홍길동' }`, 스트리밍 fetcher 2배치 (2행 + `nextCursor: 'c1'`, 1행), 파일명 `users`·`회원목록`·`주문내역`·`report "Q3"`·`a\r\nX-Injected: 1`, 시간대 `'Asia/Seoul'`·`'Not/AZone'` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
@@ -780,11 +801,15 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 6 | `boolFormatter.korean(true)`, `customDateFormatter(null, 'yyyy-MM-dd')`, `customDateFormatter(date, 'j')` | `'예'`, `''`, `date.toISOString()` (date-fns 가 거부한 형식의 폴백) |
 | 7 | 파일명 `회원목록` 으로 `createSimpleCsvResponse()`, `주문내역` 으로 `createStreamingCsvResponse()` | 응답 생성 성공, `Content-Disposition: attachment; filename="_____2026-09-15.csv"; filename*=UTF-8''%ED%9A%8C%EC%9B%90%EB%AA%A9%EB%A1%9D_2026-09-15.csv`, 스트리밍 본문도 끝까지 읽힘 |
 | 8 | 파일명 `report "Q3"`, `a\r\nX-Injected: 1` | 대체 이름의 따옴표는 `_` 로 치환하고 `filename*` 에 원래 이름을 실음, 줄바꿈 파일명으로 `X-Injected` 헤더가 생기지 않음 |
+| 9 | `2026-09-15T20:00:00Z` 에 `timeZone` 없이 `createSimpleCsvResponse({ filename: 'users' })` | `Content-Disposition: attachment; filename="users_2026-09-15.csv"` (UTC 날짜, 기존 동작) |
+| 10 | 같은 시각에 `timeZone: 'Asia/Seoul'` 로 `createSimpleCsvResponse()`·`createStreamingCsvResponse({ filename: 'stream' })` | 각각 `users_2026-09-16.csv`, `stream_2026-09-16.csv` |
+| 11 | 같은 시각에 `timeZone: 'Not/AZone'` | `status: 200`, 파일명 `users_2026-09-15.csv` (UTC 대체), `logger.warn` 1회이고 메시지에 `timeZone` 포함 |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 43개 (이스케이프 7, 행·헤더 4, 날짜 포맷터 10, 불리언 포맷터 10, 단순 응답 4, 스트리밍 응답 4, 파일명 인코딩 4)
+- **자동화:** 가능 ✅ | **테스트 수:** 46개 (이스케이프 7, 행·헤더 4, 날짜 포맷터 10, 불리언 포맷터 10, 단순 응답 4, 스트리밍 응답 4, 파일명 인코딩 4, 파일명 날짜 시간대 3)
 - **결함 이력 (허위 양성):** 2026-09-13 판의 이 파일(29건)은 `NextResponse` 의존을 피하려고 같은 함수를 테스트 파일 안에 다시 구현해 검증했으므로 소스를 실행하지 않았고, 커버리지 실측에서 `csv-export.ts` 가 0% 였다. 복제본 `boolFormatter.korean(true)` 는 `'Yes'` 를 반환해 소스의 `'예'` 와 달랐고, 복제본에 있던 `dateFormatter.custom` 은 이미 소스에서 `customDateFormatter()` 로 분리된 뒤였다. 2026-09-16 커밋 `e37468c` 에서 소스 import 방식으로 교체했다 (39건). 이 파일만 실행해도 `csv-export.ts`·`csv-export-format.ts` 커버리지가 100% 였다.
 - **결함 이력 (파일명 인코딩):** 교체 테스트로 실제 소스를 실행하자, 파일명에 한글 같은 비 ASCII 문자가 있으면 두 응답 함수가 `TypeError: Cannot convert argument to a ByteString` 으로 실패하는 결함이 드러났다. HTTP 헤더 값은 ByteString 이어야 하는데 파일명을 `Content-Disposition` 에 그대로 넣었기 때문이다. 줄바꿈이 있는 파일명도 `Headers.append` 의 `TypeError` 로 실패했다. 단계 7·8 의 4건을 먼저 추가해 4건 실패를 확인한 뒤, 커밋 `535faec` 에서 수정했다. 따옴표·역슬래시가 없는 출력 가능 ASCII 이름은 기존 형식을 그대로 유지하고, 그 밖의 이름은 ASCII 대체 이름과 RFC 5987 `filename*` 을 함께 싣는다.
-- **비고:** 파일명 날짜는 `new Date().toISOString()` 의 UTC 날짜이므로 한국 시간 00:00~09:00 에 내려받으면 전날 날짜가 붙는다. 동작 변경 여부가 결정되지 않아 수정하지 않았다.
+- **결함 이력 (파일명 날짜 시간대):** 2026-09-16 판까지 파일명 날짜는 항상 `new Date().toISOString()` 의 UTC 날짜였으므로, UTC 보다 앞선 시간대(예: UTC+9)의 사용자가 현지 자정 이후 UTC 날짜가 바뀌기 전(UTC+9 기준 00:00~09:00)에 내려받으면 전날 날짜가 붙었다. 2026-09-16 판은 이 동작을 "결정 대기 사항" 으로 두고 수정하지 않았다. 패키지는 소비 프로젝트의 시간대를 알 수 없으므로, 2026-09-29 커밋 `6a8ec35` 에서 `CsvExportOptions` (와 이를 확장하는 `BatchExportOptions`)에 IANA 시간대 옵션 `timeZone` 을 추가하고 단계 9~11 의 3건을 추가했다.
+- **결정:** 기본값은 종전과 같은 UTC 날짜로 두어 하위 호환을 유지한다. 알 수 없는 시간대는 응답을 실패시키지 않고 UTC 로 대체하며 경고를 남긴다.
 
 ---
 
@@ -796,7 +821,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | **파일** | `__tests__/unit/cache/cache-wrapper.test.ts` |
 | **대상** | `src/core/cache/cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` / `src/core/cache/cache-invalidation.ts`: `invalidateCache`, `deleteFromCache()`, `deletePatternFromCache()`, `deletePatternFromMultipleCaches()` |
 | **우선순위** | Medium |
-| **전제조건** | logger, `cache-factory` (`getCacheManager`, `getEffectiveCacheBackend`, `cache`, `geoCache`), `cache-env` (`isCacheEnabled`), `cache-config` (`getCacheConfig: {}`, `getCacheTTL.default()` 가 600) 를 `vi.mock` 으로 대체 |
+| **전제조건** | logger, `cache-factory` (`getCacheManager`, `getEffectiveCacheBackend`, `cache`, `geoCache`), `cache-env` (`isCacheEnabled`), `cache-config` (`getCacheConfig: {}`, `getCacheTTL.default()` 가 600), `config` (`isCacheConfigInitialized` 가 항상 `true`) 를 `vi.mock` 으로 대체. 이 파일은 초기화된 상태의 `withCache()` 만 검증하며, 미초기화 경로는 TC-U-011 단계 8·9 (`cache-factory-uninitialized.test.ts`)가 검증한다 |
 | **테스트 데이터** | 키 `'community:recent'`, `'plain'`, `'k'`, `options.ttl = 5`, `options.prefix = 'community'`, 매니저 페이크 `{ get, set }` |
 
 | # | 단계 | 예상 결과 |
@@ -814,6 +839,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 - **자동화:** 가능 ✅ | **테스트 수:** 19개 (정상 경로 6, 실패 경로 6, 백엔드 라벨 4, 무효화 헬퍼 3)
 - **결함 이력:** 2026-09-13 판에서는 계획 TC 였고, 단계 5·6 의 현재 동작을 "fetch 총 2회" 로 기록했다. 당시 `withCache()` 는 캐시 조회·fetch·저장을 하나의 try 로 감싸고 catch 블록에서 원본 함수를 다시 호출했다. 그래서 fetch 가 throw 하거나 fetch 성공 뒤 `set`·저장 로그 직렬화가 실패하면 부수 효과가 있는 fetch 가 두 번 실행되었다. 2026-09-16 에 이 파일을 먼저 작성해 4건 실패(단계 5 의 2건, 단계 6 의 2건)를 확인했다. 이어서 커밋 `5ba8eff` 에서 캐시 조회 실패만 원본 함수 1회 실행으로 degrade 하고, 미스 경로의 fetch 오류는 그대로 전파하며, 저장 실패는 기록만 하도록 수정했다.
 - **결정:** 원본 함수는 `withCache()` 호출당 최대 한 번만 실행한다.
+- **변경 이력:** 2026-09-29 커밋 `9fa8c28` 에서 `withCache()` 가 설정을 읽기 전에 `isCacheConfigInitialized()` 로 초기화 여부를 확인하게 되었다. 이 파일은 `config` 모듈을 mock 하지 않으면 미초기화로 판정되어 캐시 경로를 타지 않으므로, 초기화 판정 목(`isCacheConfigInitialized: () => true`)을 추가했다. 단계와 테스트 수(19건)는 바뀌지 않았다. 초기화 전 호출이 `ConfigurationError` 대신 원본 함수 1회 실행으로 degrade 하는 동작은 TC-U-011 이 소유한다.
 
 ---
 
@@ -875,7 +901,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 **실행 명령:** `npm run test:integration`
 
-2026-09-16 기준 이 도메인은 파일 3개·케이스 22건이다 (api-key 2, 캐시 계층 12, 인증 서비스와 토큰 저장소 8). 2026-09-13 판에서 소스를 전혀 실행하지 않던 `cache.integration.test.ts` 6건은 실제 모듈 조합 12건으로 교체했다.
+2026-09-29 기준 이 도메인은 파일 3개·케이스 22건이다 (api-key 2, 캐시 계층 12, 인증 서비스와 토큰 저장소 8). 2026-09-16 판과 건수는 같고, `cache.integration.test.ts` 의 단언 1개만 바뀌었다 (TC-I-002 단계 6). 2026-09-13 판에서 소스를 전혀 실행하지 않던 `cache.integration.test.ts` 6건은 실제 모듈 조합 12건으로 교체했다.
 
 ---
 
@@ -908,7 +934,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 |------|------|
 | **시나리오** | SC-I-002 |
 | **파일** | `__tests__/integration/cache.integration.test.ts` |
-| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-env.ts`·`cache-config.ts` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, `cache` + `inmemory-cache-manager.ts` + `hybrid-cache-manager.ts` + `noop-cache-manager.ts` + `cache-redis.ts`: `isRedisGloballyDisabled()`, `resetRedisGlobalState()` + `cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` + `cache-invalidation.ts`: `deleteFromCache()`, `deletePatternFromMultipleCaches()`, `invalidateCache` |
+| **대상** | `src/core/cache/config.ts`: `initializeCache()` + `cache-env.ts`·`cache-config.ts` + `cache-factory.ts`: `getCacheManager()`, `getEffectiveCacheBackend()`, 지연 객체 `cache` + `inmemory-cache-manager.ts` + `hybrid-cache-manager.ts` + `noop-cache-manager.ts` + `cache-redis.ts`: `isRedisGloballyDisabled()`, `resetRedisGlobalState()` + `cache-wrapper.ts`: `withCache()`, `getCacheBackendLabel()` + `cache-invalidation.ts`: `deleteFromCache()`, `deletePatternFromMultipleCaches()`, `invalidateCache` |
 | **우선순위** | High |
 | **전제조건** | 케이스마다 `globalThis` 의 캐시 설정(`__withwiz_config`)·매니저 싱글턴·Redis 전역 상태를 지우고 `vi.resetModules()` 뒤 `initializeCache()` 를 호출한 다음 동적 import, logger mock, TTL 케이스는 `vi.useFakeTimers()`, 종료 시 `resetRedisGlobalState()`·`InMemoryCacheManager.destroyAll()` |
 | **테스트 데이터** | `initializeCache({ enabled: true })` (redis 미지정이므로 Redis 비활성, inmemory 기본 활성), `{ enabled: false }`, `{ categories: { USER: { enabled: false } } }`, `{ fallback: { redisErrorThresholdGlobal: 100 } }`, 키 `'link:abc'`, 모든 메서드가 `Redis connection failed` 로 reject 하는 Redis 매니저 페이크 |
@@ -920,7 +946,7 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 | 3 | `deleteFromCache(getCacheManager('link'), 'abc')` 후 `withCache('link:abc', fetch)` | fetch 가 다시 호출됨 (총 2회) |
 | 4 | `withCache('link:t', fetch, { ttl: 1 })` 후 900ms, 이어서 200ms 진행하며 재호출 | 900ms 시점은 적중 (fetch 1회), 1,100ms 시점은 만료로 fetch 재실행 |
 | 5 | fetch 가 `null` 을 반환하는 키를 두 번 호출 | fetch 1회, 두 번 모두 `null` |
-| 6 | 초기화 뒤 import 한 모듈로 `withCache('greeting')` 후 `invalidateCache.byKey('greeting')`, `deletePatternFromMultipleCaches([link, geo], 'user:*')` | `cache` 상수가 `getCacheManager('default')` 와 같고 무효화 뒤 fetch 재실행, 두 매니저의 `user:1` 삭제와 `keep` 유지 |
+| 6 | 초기화 뒤 import 한 모듈로 `withCache('greeting')` 후 `invalidateCache.byKey('greeting')`, `deletePatternFromMultipleCaches([link, geo], 'user:*')` | 무효화 뒤 fetch 재실행 (총 2회), `cache.set('shared', 'v')` 한 값을 `getCacheManager('default').get('shared')` 가 `'v'` 로 조회 (지연 객체라 같은 객체는 아니지만 같은 저장소 공유), 두 매니저의 `user:1` 삭제와 `keep` 유지 |
 | 7 | `{ enabled: false }` 로 두 번 호출, `USER` 카테고리만 비활성으로 `user:u1`·`link:l1` 을 두 번씩 호출 | 전자는 `NoopCacheManager` 이고 fetch 2회, 후자는 user fetch 2회·link fetch 1회 |
 | 8 | 전역 임계값 100 에서 Redis 가 모두 실패하는 `HybridCacheManager` 로 `set('abc')` 후 `get('abc')` | Redis `set`·`get` 호출 후 인메모리 값 반환, `isRedisGloballyDisabled()` 가 `false` |
 | 9 | 기본 전역 임계값(1)에서 같은 조건 | 첫 `set` 오류로 `isRedisGloballyDisabled()` 가 `true`, `get` 은 Redis 를 호출하지 않고 인메모리 값 반환 |
@@ -928,9 +954,9 @@ Accessibility 도메인은 적용 대상이 아니므로 시나리오를 두지 
 
 - **자동화:** 가능 ✅ | **테스트 수:** 12개
 - **결함 이력 (허위 양성):** 2026-09-13 판의 이 파일(6건)은 toolkit 소스를 하나도 import 하지 않았다. 테스트 파일 안에서 만든 `mockRedis` 객체와 `Map` 에 값을 넣고 그 값을 다시 단언했으므로, 소스가 바뀌어도 결과가 달라지지 않았다. 파일 주석이 근거로 든 `docs/testing/02-integration/02-cache.md` 는 저장소에 없었고, `TC-INT-CACHE-020` 이라는 ID 가 두 테스트에 중복으로 쓰였다. 2026-09-16 커밋 `610750c` 에서 원래 의도(저장·TTL·무효화·Redis 장애 시 인메모리 폴백)를 실제 모듈 기준으로 옮겼다. 이 파일만 실행해도 `cache-factory.ts` 커버리지가 58.53% 였다.
-- **테스트로 고정하지 않은 동작 (결정 필요):**
-  - 2026-09-13 판 단계 6 의 import 순서 문제는 그대로 남아 있다. `initializeCache()` 보다 먼저 `cache-factory` 를 import 하면 `export const cache = getCacheManager('default')` 가 `NoopCacheManager` 로 고정된다. 그러면 초기화 뒤에도 `cache.get('k')` 가 `null` 이고, 이 상수를 쓰는 `invalidateCache` 는 no-op 이 된다. 같은 시점에 `getCacheManager('default')` 를 호출하면 `InMemoryCacheManager` 를 반환한다. 2026-09-16 임시 테스트로 다시 확인했으며, 공개 상수의 평가 시점을 바꾸는 설계 결정이 필요하므로 수정하지 않았고 테스트로도 고정하지 않았다.
-  - `initializeCache()` 없이 `withCache()` 를 호출하면 fetch 를 실행하지 않고 `ConfigurationError: [cache] Cache config not initialized. Call initializeCache() first.` 로 reject 한다. 같은 상황에서 `getCacheManager()` 는 경고 후 Noop 으로 degrade 하므로 두 정책이 다르다. 2026-09-16 임시 테스트로 확인했으며, 초기화 누락을 명시적 오류로 알릴지 degrade 할지 결정이 필요해 수정하지 않았다.
+- **결함 이력 (import 순서와 미초기화 정책):** 2026-09-16 판은 다음 두 동작을 "테스트로 고정하지 않은 동작 (결정 필요)" 으로 기록했다. 2026-09-29 에 둘 다 수정했고, 회귀 테스트는 TC-U-011 (`cache-factory-uninitialized.test.ts`) 이 소유한다.
+  - `initializeCache()` 보다 먼저 `cache-factory` 를 import 하면 `export const cache = getCacheManager('default')` 가 `NoopCacheManager` 로 고정되어, 초기화 뒤에도 `cache.get('k')` 가 `null` 이고 `invalidateCache` 가 no-op 이었다. 같은 시점의 `getCacheManager('default')` 는 `InMemoryCacheManager` 를 반환했다. 커밋 `4832c0e` 에서 `cache`·`geoCache` 를 호출 시점에 백엔드로 연결하는 지연 객체로 바꿨다. 이 때문에 단계 6 의 `expect(m.cache).toBe(m.getCacheManager('default'))` (객체 동일성)는 성립하지 않게 되어, 같은 저장소를 쓰는지 확인하는 단언으로 바꿨다.
+  - `initializeCache()` 없이 `withCache()` 를 호출하면 fetch 를 실행하지 않고 `ConfigurationError` 로 reject 했다 (`getCacheManager()` 는 경고 후 Noop degrade). 커밋 `9fa8c28` 에서 경고 1회 후 원본 함수를 실행하도록 맞췄다.
 
 ---
 
@@ -1607,12 +1633,12 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/performance/api-key/api-k
 
 ## 9. Smoke Tests (배포 산출물 스모크 테스트)
 
-**목적:** 배포(publish) 직전 크리티컬 경로인 `package.json` exports 와 `dist/` 산출물이 일치하는지 검증한다. exports 목록을 데이터로 삼아 테스트를 생성하므로 subpath 가 추가되면 케이스도 자동으로 늘어난다.
+**목적:** 배포(publish) 직전 크리티컬 경로인 `package.json` exports 와 `dist/` 산출물이 일치하는지, 그리고 `next/*` 밖의 서브패스가 Next.js 없이 순수 Node ESM 에서 import 되는지 검증한다. exports 목록을 데이터로 삼아 테스트를 생성하므로 subpath 가 추가되면 케이스나 검사 대상도 자동으로 늘어난다.
 
-**실행 명령:** 도메인 전용 스크립트는 없다. `prepublishOnly` (`npm run build && npm test`)가 전체 테스트에 포함해 실행한다.
+**실행 명령:** 도메인 전용 스크립트는 없다. `prepublishOnly` (`npm run build && npm test`)가 전체 테스트에 포함해 실행한다. 0.16.0 전 커밋 `be13149` 로 추가된 `.github/workflows/release.yml` 은 `v*` 태그 push 또는 수동 실행 시 태그와 `package.json` 버전 일치를 확인한 뒤 `npm ci`, `npm publish` 를 실행하므로, 게시 경로에서도 `prepublishOnly` 를 거쳐 이 도메인이 실행된다.
 
 ```bash
-npm run build && npx vitest run -c __tests__/vitest.config.ts __tests__/build/exports-integrity.test.ts
+npm run build && npx vitest run -c __tests__/vitest.config.ts __tests__/build/exports-integrity.test.ts __tests__/build/pure-node-esm.test.ts
 ```
 
 ---
@@ -1638,7 +1664,31 @@ npm run build && npx vitest run -c __tests__/vitest.config.ts __tests__/build/ex
 
 - **자동화:** 가능 ✅ | **테스트 수:** 330개 (현재)
 - **관련 문서:** [smoke-gap-scenarios.md](../../__tests__/docs/scenarios/smoke-gap-scenarios.md) (신규 케이스 없음 판정)
-- **비고:** 330건은 exports 개수에 비례한다 (정적 subpath 159 × 2 = 318, wildcard 없음 1, 전역 type 검사 3, 번들 오염 3, 메타데이터 5, 조건부 테스트 `documents known missing exports` 는 `KNOWN_MISSING` 이 비어 있어 등록되지 않음). 런타임 import 검증은 TC-E-001 이 소유한다.
+- **비고:** 330건은 exports 개수에 비례한다 (정적 subpath 159 × 2 = 318, wildcard 없음 1, 전역 type 검사 3, 번들 오염 3, 메타데이터 5, 조건부 테스트 `documents known missing exports` 는 `KNOWN_MISSING` 이 비어 있어 등록되지 않음). 소비자 여정의 런타임 실행은 TC-E-001·002 가, 순수 Node ESM import 가능 범위는 TC-SM-002 가 소유한다.
+
+---
+
+### TC-SM-002: `next/*` 밖 서브패스의 순수 Node ESM import
+
+`next/*` 서브패스는 `next/server` 를 확장자 없이 import 한다. `next` 패키지에는 `exports` 필드가 없어 순수 Node ESM 은 이 경로를 해석하지 못하지만, Next.js 번들러는 `next/server` 를 런타임(edge·node)별 구현으로 연결하므로 소스는 그대로 둔다. 대신 `next/*` 밖의 서브패스는 Next.js 없이 import 되어야 하며, 이 케이스가 그 경계를 고정한다.
+
+| 항목 | 내용 |
+|------|------|
+| **시나리오** | SC-SM-002 |
+| **파일** | `__tests__/build/pure-node-esm.test.ts` |
+| **대상** | `package.json` `exports` 중 `./package.json`·wildcard·`.css`·`./next*` 를 제외한 서브패스 120개 (정적 subpath 159개 중 `./next*` 39개 제외), `dist/` 산출물 |
+| **우선순위** | High |
+| **전제조건** | `npm run build` 선행 (`dist/initialize.js` 가 없으면 `beforeAll` 이 `먼저 npm run build 실행 필요` 오류로 실패). Vitest 는 자체 해석기를 쓰므로 `execFileSync(process.execPath, ['--input-type=module', '-e', script])` 로 별도 `node` 프로세스를 띄워 패키지 자기 이름(`@withwiz/toolkit/...`)으로 import |
+| **테스트 데이터** | 서브패스 `.` → `@withwiz/toolkit`, 그 밖의 `./x` → `@withwiz/toolkit/x` |
+
+| # | 단계 | 예상 결과 |
+|---|------|---------|
+| 1 | `package.json` `exports` 에서 대상 서브패스 목록 산출 | 100개 초과 (2026-09-29 실측 120개) |
+| 2 | 별도 `node` 프로세스에서 각 specifier 를 차례로 `await import()` 하고 실패한 specifier 와 `error.code` 를 수집 | 실패 목록이 `[]` |
+
+- **자동화:** 가능 ✅ | **테스트 수:** 1개 (현재)
+- **결함 이력:** 이 케이스는 2026-09-29 커밋 `c5f013f` 에서 추가되었다. 추가 전에는 순수 Node ESM 소비 가능 범위를 검증하는 테스트가 없었다. TC-SM-001 은 파일 존재만 확인하고, TC-E-001·002 는 Vitest 해석기로 dist 를 import 하며 `next` 가 devDependency 로 설치되어 있어 `next/server` 도 해석되므로, core 모듈이 `next/server` 를 끌어오는 회귀가 생겨도 두 케이스 모두 통과한다. 커밋 당시 정적 subpath 159개를 순수 Node 에서 import 한 결과 131개가 성공하고 실패 28개는 모두 `next/*` 였다 (2026-09-29 재확인 결과 같음). core 모듈에 `next/server` import 를 넣으면 이 테스트가 해당 서브패스를 실패로 보고하는 것을 커밋 당시 확인했다.
+- **결정:** `next/*` 서브패스는 Next.js 라우트·미들웨어 전용으로 두고 확장자를 붙이지 않는다. README (한국어·영어)의 core·next 절에 사용 범위를 적었다.
 
 ---
 
@@ -1707,7 +1757,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 유형 | 현재 파일 수 | 현재 테스트 수 | SC 수 (완료/계획) | TC 수 (완료/계획) | 실행 스크립트 |
 |------|------------|-------------|-----------------|-----------------|--------------|
-| **Unit** | 78개 | 1,814개 | 27 (25/2) | 31 (29/2) | `test:unit` (API 20개 파일 포함 실행) |
+| **Unit** | 78개 | 1,832개 | 27 (25/2) | 31 (29/2) | `test:unit` (API 20개 파일 포함 실행) |
 | **Integration** | 3개 | 22개 | 3 (3/0) | 3 (3/0) | `test:integration` |
 | **API** | 20개 | 264개 | 11 (10/1) | 11 (10/1) | 없음 |
 | **E2E** | 1개 | 7개 | 2 (2/0) | 2 (2/0) | 없음 |
@@ -1715,25 +1765,27 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | **Performance** | 5개 | 98개 | 2 (2/0) | 2 (2/0) | `test:performance` (Load/Stress 1개 파일 포함 실행) |
 | **Accessibility** | 0개 | 0개 | 0 | 0 | `test:accessibility` (디렉토리 없음, 종료 코드 1) |
 | **Load/Stress** | 1개 | 2개 | 2 (1/1) | 2 (1/1) | 없음 |
-| **Smoke** | 1개 | 330개 | 1 (1/0) | 1 (1/0) | 없음 |
+| **Smoke** | 2개 | 331개 | 2 (2/0) | 2 (2/0) | 없음 |
 | **Chaos** | 1개 | 4개 | 2 (1/1) | 2 (1/1) | 없음 |
-| **합계** | **124개** | **2,824개** | **58 (53/5)** | **62 (57/5)** | |
+| **합계** | **125개** | **2,843개** | **59 (54/5)** | **63 (58/5)** | |
 
-파일 수와 테스트 수는 2026-09-16 실측값이다. 2026-09-13 판(121개 파일, 2,723건)과 비교하면 신규 파일 3개(`unit/error/prisma-error-map-contract.test.ts` 37건, `unit/cache/cache-wrapper.test.ts` 19건, `integration/auth/token-rotation-flow.integration.test.ts` 8건)가 추가되었다. 기존 파일 5개도 늘었다: `unit/utils/csv-export.test.ts` 29 → 43, `integration/cache.integration.test.ts` 6 → 12, `unit/auth/services/token-refresh.service.test.ts` 12 → 17, `unit/auth/services/cache-token-stores.test.ts` 11 → 18, `build/consumer-runtime.test.ts` 2 → 7. 합계 101건이 늘었다. 2026-09-13 판에서 허위 양성으로 판정한 2개 파일은 교체했으므로 해당 TC-U-028·TC-I-002 를 ✅ 완료로 분류했다.
+파일 수와 테스트 수는 2026-09-29 실측값이다. 2026-09-16 판(124개 파일, 2,824건)과 비교하면 신규 파일 1개(`build/pure-node-esm.test.ts` 1건, TC-SM-002)가 추가되었고, 기존 파일 4개가 늘었다: `unit/utils/ip-utils.test.ts` 36 → 45 (0.17.0 `1ad7d5f`, TC-U-024), `unit/auth/cookie.test.ts` 17 → 19 (0.17.1 `2021009`, TC-U-005), `unit/cache/cache-factory-uninitialized.test.ts` 3 → 7 (`4832c0e` 에서 1건을 2건으로 나누고 1건 추가, `9fa8c28` 에서 2건 추가, TC-U-011), `unit/utils/csv-export.test.ts` 43 → 46 (`6a8ec35`, TC-U-028). 합계 19건(1 + 9 + 2 + 4 + 3)이 늘었다. `integration/cache.integration.test.ts` (`4832c0e`), `unit/cache/cache-wrapper.test.ts` (`9fa8c28`), `unit/utils/timezone.test.ts` (`51b7b44`)는 단언이나 목만 바뀌고 건수는 같다. 줄어든 파일은 없다.
+
+2026-09-16 판 설명: 2026-09-13 판(121개 파일, 2,723건)과 비교하면 신규 파일 3개(`unit/error/prisma-error-map-contract.test.ts` 37건, `unit/cache/cache-wrapper.test.ts` 19건, `integration/auth/token-rotation-flow.integration.test.ts` 8건)가 추가되었다. 기존 파일 5개도 늘었다: `unit/utils/csv-export.test.ts` 29 → 43, `integration/cache.integration.test.ts` 6 → 12, `unit/auth/services/token-refresh.service.test.ts` 12 → 17, `unit/auth/services/cache-token-stores.test.ts` 11 → 18, `build/consumer-runtime.test.ts` 2 → 7. 합계 101건이 늘었다. 2026-09-13 판에서 허위 양성으로 판정한 2개 파일은 교체했으므로 해당 TC-U-028·TC-I-002 를 ✅ 완료로 분류했다.
 
 **물리 디렉토리와 문서 도메인 대응**
 
 | 물리 디렉토리 | 파일 | 테스트 | 문서 도메인 배분 |
 |--------------|------|--------|-----------------|
-| `__tests__/unit/` | 98 | 2,078 | Unit 78/1,814 + API 20/264 |
+| `__tests__/unit/` | 98 | 2,096 | Unit 78/1,832 + API 20/264 |
 | `__tests__/integration/` | 3 | 22 | Integration 3/22 |
 | `__tests__/security/` | 14 | 283 | Security 14/283 |
 | `__tests__/performance/` | 6 | 100 | Performance 5/98 + Load/Stress 1/2 |
-| `__tests__/build/` | 2 | 337 | E2E 1/7 + Smoke 1/330 |
+| `__tests__/build/` | 3 | 338 | E2E 1/7 + Smoke 2/331 |
 | `__tests__/chaos/` | 1 | 4 | Chaos 1/4 |
-| **합계** | **124** | **2,824** | |
+| **합계** | **125** | **2,843** | |
 
-2026-09-16 갱신 후 스크립트로 다시 대조한 결과, 124개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다.
+2026-09-29 갱신 후 스크립트로 다시 대조한 결과, 125개 테스트 파일이 모두 이 문서의 TC "파일" 칸에 등장하며 누락은 0개이다. 도메인별 파일 수·건수의 합(125개, 2,843건)은 JSON 리포터의 전체 값과 일치한다.
 
 ---
 
@@ -1743,7 +1795,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 | 도메인 | 판정 | 근거 |
 |--------|------|------|
-| Unit | 적용 | 78개 파일·1,814건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
+| Unit | 적용 | 78개 파일·1,832건으로 가장 두껍고 api-key·auth·cache·config·error·utils 핵심 모듈을 모두 포함한다 |
 | API | 적용(재해석) | HTTP 서버가 없어 `src/next/` 핸들러·미들웨어·프록시·oapi 의 요청/응답 계약으로 재정의했고 20개 파일·264건이 해당한다 |
 | Integration | 적용 | 3개 파일·22건이 api-key 수명주기, 캐시 계층 조합(초기화·팩토리·래퍼·무효화·Redis 폴백), 인증 서비스와 캐시 기반 토큰 저장소 조합을 실제 모듈로 검증한다. 2026-09-13 판에서 소스를 실행하지 않던 6건은 교체했다 |
 | E2E | 재해석 적용 | dist 를 import 해 실행하는 소비자 여정 1개 파일·7건이 api-key 여정과 Prisma 오류 분류 여정을 다룬다 |
@@ -1751,7 +1803,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | Accessibility | 미적용 | 렌더링 UI 가 없고 React 계층은 0.8.0 에서 `@withwiz/ui` 로 분리되었다 |
 | Performance | 적용 | 처리 시간 상한을 단언하는 테스트는 3건(api-key hot path 2, noop 오버헤드 1)이고 나머지 95건은 대용량 캐시 기능 검증이다 |
 | Load/Stress | 재해석 적용 | 동시 호출 일관성 2건이 있다. 2026-09-13 조사에서 재현된 refresh 토큰 동시 회전 경쟁은 2026-09-16 에 수정되었고 TC-I-003 이 검증한다 |
-| Smoke | 적용 | exports 데이터로 생성한 330건이 dist 파일 존재·타입 선언·번들 오염·메타데이터를 검증한다 |
+| Smoke | 적용 | exports 데이터로 생성한 330건이 dist 파일 존재·타입 선언·번들 오염·메타데이터를 검증하고, 1건이 `next/*` 밖 서브패스 120개의 순수 Node ESM import 를 검증한다 (2개 파일·331건) |
 | Chaos | 적용 | api-key 포트 장애 degrade 계약 4건이 있으나 refresh 토큰 저장소 장애는 비어 있다 |
 
 ---
@@ -1773,16 +1825,24 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 - **TC-U-027:** `handlePrismaError()` 도 공통 매핑표를 단일 기준으로 삼는다 (P2011 → 400, P2003 → 400).
 - **TC-U-029:** `withCache()` 는 원본 함수를 호출당 최대 한 번만 실행한다.
 - **TC-I-003:** 동시 회전 경쟁은 저장소의 선택적 원자 연산(`markUsedIfUnused`)으로 해결하고, 동시 갱신의 패자는 재사용으로 판정한다.
-- **TC-I-002:** import 순서에 따른 `cache` 상수의 Noop 고정은 결정하지 않았으므로 테스트로 고정하지 않았다.
+- **TC-I-002:** import 순서에 따른 `cache` 상수의 Noop 고정은 결정하지 않았으므로 테스트로 고정하지 않았다. (2026-09-29 에 해결. 아래 "해결된 결정 사항" 참조)
 
 ### 결정 대기 사항 (테스트로 고정하지 않음)
 
 | 항목 | 현재 동작 | 관련 TC |
 |------|----------|--------|
-| `cache`·`geoCache` 상수의 평가 시점 | `initializeCache()` 전에 import 하면 Noop 으로 고정되어 `invalidateCache` 가 no-op | TC-I-002 |
-| `withCache()` 미초기화 호출 | fetch 를 실행하지 않고 `ConfigurationError` 로 reject (`getCacheManager()` 는 Noop degrade) | TC-I-002 |
 | Redis 계열 캐시 매니저의 원자 연산 | `RedisCacheManager`·`HybridCacheManager` 에 `setIfNotExists` 가 없어, 캐시 기반 refresh 토큰 저장소를 그대로 주입하면 여러 인스턴스 사이의 동시 회전을 막지 못함 | TC-I-003 |
-| CSV 파일명 날짜 | UTC 날짜를 사용해 한국 시간 00:00~09:00 에는 전날 날짜가 붙음 | TC-U-028 |
+
+### 해결된 결정 사항 (2026-09-29, 브랜치 `fix/cache-init-order`)
+
+2026-09-16 판의 결정 대기 사항 4건 중 3건을 수정하고 회귀 테스트로 고정했다. 순수 Node ESM 소비 범위는 결정 대기 사항에 없던 항목이지만 같은 브랜치에서 경계를 정하고 테스트로 고정했다.
+
+| 항목 | 이전 동작 | 결정과 수정 | 커밋 | 관련 TC |
+|------|----------|-----------|------|--------|
+| `cache`·`geoCache` 상수의 평가 시점 | `initializeCache()` 전에 import 하면 Noop 으로 고정되어 `invalidateCache` 가 no-op, 미초기화 경고는 import 시점 | 호출 시점에 `getCacheManager(prefix)` 로 위임하는 지연 객체. 경고는 첫 사용 시점 1회, 같은 prefix 매니저와 저장소 공유 | `4832c0e` | TC-U-011 단계 4·6·7, TC-I-002 단계 6 |
+| `withCache()` 미초기화 호출 | fetch 를 실행하지 않고 `ConfigurationError` 로 reject | 경고 1회 후 원본 함수 실행 (`getCacheManager()` 의 degrade 정책과 일치) | `9fa8c28` | TC-U-011 단계 8·9, TC-U-029 (초기화 판정 목) |
+| CSV 파일명 날짜 | 항상 UTC 날짜라 UTC+9 기준 00:00~09:00 에는 전날 날짜 | `timeZone` 옵션 추가, 기본 UTC 유지, 알 수 없는 시간대는 UTC 대체와 경고 | `6a8ec35` | TC-U-028 단계 9~11 |
+| 순수 Node ESM 소비 범위 | 검증 테스트 없음 | `next/*` 는 Next.js 전용으로 두고, 그 밖의 서브패스는 순수 Node ESM import 를 빌드 테스트로 고정 | `c5f013f` | TC-SM-002 |
 
 ### 사전 조사 우선순위 갭 8번 반영
 
@@ -1812,7 +1872,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 
 "존재 확인만 하는 단언" 은 `toBeDefined`·`toBeTruthy`·`not.toThrow` 만 쓰는 테스트를 스크립트로 추출한 43건 가운데, 이름과 단언이 어긋나는 사례만 골랐다. 나머지는 예외가 없음을 확인하는 것이 목적인 정상 사례이다.
 
-### 커버리지 0% 소스 파일 (2026-09-16 재측정)
+### 커버리지 0% 소스 파일 (2026-09-29 재측정)
 
 | 파일 | 측정 줄 수 | 계획 TC |
 |------|----------|--------|
@@ -1825,9 +1885,9 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | `src/core/auth/password/client-helper.ts` | 14 | 미정의 |
 | `src/core/constants/messages.ts`, `pagination.ts`, `src/core/types/qr-code.ts` | 4, 5, 2 | 해당 없음 (상수·타입) |
 
-2026-09-13 판의 0% 목록에 있던 `src/core/cache/cache-wrapper.ts`·`cache-invalidation.ts` (TC-U-029)는 각각 89.7%·90%, `src/next/utils/csv-export.ts`·`csv-export-format.ts` (TC-U-028)는 각각 98.5%·100% (줄 기준)로 목록에서 빠졌다. 나머지 0% 파일 20개는 2026-09-13 판과 같다.
+2026-09-13 판의 0% 목록에 있던 `src/core/cache/cache-wrapper.ts`·`cache-invalidation.ts` (TC-U-029)는 각각 89.7%·90%, `src/next/utils/csv-export.ts`·`csv-export-format.ts` (TC-U-028)는 각각 98.5%·100% (줄 기준)로 목록에서 빠졌다. 나머지 0% 파일 20개는 2026-09-13 판과 같다. 2026-09-29 재측정에서도 0% 파일은 위 표의 20개 그대로이다.
 
-낮은 커버리지 파일: `src/next/utils/api-helpers.ts` 6.66% (`requireAdmin()` 만 테스트됨), `src/next/utils/cors.ts` 43.67%, `src/core/error/extract-error-info.ts` 57.89%. `src/core/cache/cache-factory.ts` 는 2026-09-13 판 21.95% 에서 TC-I-002 교체 뒤 68.29% 가 되었다.
+낮은 커버리지 파일: `src/next/utils/api-helpers.ts` 6.66% (`requireAdmin()` 만 테스트됨), `src/next/utils/cors.ts` 43.67%, `src/core/error/extract-error-info.ts` 57.89%. `src/core/cache/cache-factory.ts` 는 2026-09-13 판 21.95% 에서 TC-I-002 교체 뒤 68.29% 가 되었고, 2026-09-29 에는 지연 객체와 TC-U-011 추가 케이스를 반영해 69.56% (32/46줄)이다. 이번 판에서 바뀐 소스의 줄 커버리지는 `src/core/utils/ip-utils.ts` 98.18%, `src/core/auth/jwt/cookie.ts` 100%, `src/core/cache/cache-wrapper.ts` 90.14%, `src/next/utils/csv-export.ts` 98.63% 이다.
 
 ---
 
@@ -1866,6 +1926,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | SC-LOAD-AK-001~002 | TC-LOAD-AK-001~002 | SC-L-001 | TC-L-001 | `performance/api-key/api-key-concurrency.test.ts` | 일치 |
 | SC-CHAOS-AK-001~004 | TC-CHAOS-AK-001~004 | SC-C-001 | TC-C-001 | `chaos/api-key-port-faults.test.ts` | 일치. 케이스 문서에 "001~003 은 실패 예상" 이라는 작성 당시 메모가 남아 있으나 현재 4건 모두 통과한다 |
 | (smoke-gap, ID 없음) | 없음 | SC-SM-001 | TC-SM-001 | `build/exports-integrity.test.ts` | 신규 케이스 없음 판정과 일치 |
+| (3세대 문서에 없음) | 없음 | SC-SM-002 | TC-SM-002 | `build/pure-node-esm.test.ts` | 2026-09-29 신규. 3세대 smoke-gap 판정 이후 추가된 케이스로, 3세대 문서에는 대응 ID 가 없다 |
 | (accessibility-gap, ID 없음) | 없음 | 해당 없음 | 해당 없음 | 없음 | 검증 표면 없음 판정과 일치 |
 
 ### 테스트 이름에 남아 있는 기존 ID (레거시)
@@ -1878,7 +1939,7 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 | SC-CONST-VAL-001~003, TC-CONST-VAL-001~002 | 1세대 `TEST_SCENARIOS.md` (삭제) | `security/validators/validation-constants.test.ts` | TC-S-005 |
 | SC-INT-CACHE-001~005, TC-INT-CACHE-001~023 (2026-09-16 교체로 테스트 이름에서 제거) | 파일 주석의 `docs/testing/02-integration/02-cache.md` (저장소에 없음) | `integration/cache.integration.test.ts` | TC-I-002 |
 | SC-UNIT-OPTAUTH-001, TC-UNIT-OPTAUTH-001~005 | 파일 주석의 `docs/testing/03-api/25-url-entry-optional-auth.md` (저장소에 없음) | `unit/middleware/optional-auth-middleware.test.ts` | TC-A-005 |
-| SC-UNIT-COOKIE-001~002, TC-UNIT-COOKIE-001~014 | 출처 문서 없음 | `unit/auth/cookie.test.ts` | TC-U-005 |
+| SC-UNIT-COOKIE-001~003, TC-UNIT-COOKIE-001~014, TC-UNIT-COOKIE-030~031 (0.17.1 `2021009` 에서 추가) | 출처 문서 없음 | `unit/auth/cookie.test.ts` | TC-U-005 |
 | SC-UNIT-AUTHCOOKIE-001~002, TC-UNIT-AUTHCOOKIE-001~007 | 출처 문서 없음 | `unit/middleware/auth-cookie-extraction.test.ts` | TC-A-005 |
 | SC-UNIT-ORIGIN-001, TC-UNIT-ORIGIN-001~009 | 출처 문서 없음 | `unit/middleware/origin-verification.test.ts` | TC-A-008 |
 | SC-API-RLFIX-001~002, TC-API-RLFIX-001~014, SC-UNIT-RLTYPE-001, TC-UNIT-RLTYPE-001~004 | 출처 문서 없음 | `unit/middleware/rate-limit-is-enabled.test.ts` | TC-A-009 |
@@ -1897,8 +1958,8 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 ## 리뷰 체크리스트
 
 - [x] 10개 도메인 모두 판정 (Accessibility 미적용 근거 포함)
-- [x] 124개 테스트 파일이 모두 TC "파일" 칸에 등장 (2026-09-16 스크립트 재대조, 누락 0)
-- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,824건 일치 확인 (2026-09-16)
+- [x] 125개 테스트 파일이 모두 TC "파일" 칸에 등장 (2026-09-29 스크립트 재대조, 누락 0)
+- [x] 파일별 테스트 수를 JSON 리포터 실측값으로 기재하고 합계 2,843건 일치 확인 (2026-09-29)
 - [x] 완료 TC 의 단계·예상 결과를 실제 테스트 이름과 단언에서 발췌
 - [x] 계획 TC 는 대상 소스를 읽고 작성, 동작이 불분명한 4개 흐름은 워크트리 밖 스크래치 실행으로 재현
 - [x] Prisma 오류 분류 기준표 (P2002 → 409, P2025 → 404, P2011 → 400, `PrismaClientValidationError` → 400) 기재
@@ -1906,6 +1967,8 @@ npx vitest run -c __tests__/vitest.config.ts __tests__/chaos
 - [x] 1세대·2세대 문서 5개를 내용 대조 후 삭제
 - [x] 허위 양성 2개 파일 교체 (TC-I-002, TC-U-028, 2026-09-16)
 - [x] 계획 TC 의 선행 결정 사항 중 3건 확정 (TC-U-027·029, TC-I-003, 2026-09-16)
-- [ ] 남은 결정 사항 확정 필요 (TC-U-031 `atob()` 처리, TC-C-002 `register` 훅 장애, TC-I-002 `cache` 상수 평가 시점과 `withCache()` 미초기화 정책)
+- [x] 결정 대기 사항 3건 해결 (`cache` 상수 평가 시점, `withCache()` 미초기화 정책, CSV 파일명 날짜 시간대, 2026-09-29) 과 순수 Node ESM 경계 고정 (TC-SM-002)
+- [x] 0.16.0~0.17.1 변경 반영 (TC-U-005 쿠키 폴백 경고, TC-U-024 축약형 IPv6·`trustedProxyHops`, TC-U-025 timezone 단언, 개요의 vitest `exclude`, 9절의 release 워크플로)
+- [ ] 남은 결정 사항 확정 필요 (TC-U-031 `atob()` 처리, TC-C-002 `register` 훅 장애, TC-I-003 Redis 계열 매니저의 `setIfNotExists` 부재)
 - [ ] 도메인별 실행 스크립트 정비 필요 (이번 작업에서 package.json 미수정)
 - [ ] 커버리지 임계값 설정 필요 (현재 미설정)
