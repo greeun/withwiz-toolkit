@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0]
+
+### Added
+- `core/cache`: atomic `setIfNotExists(key, value, ttl?)` on all four cache
+  managers. It returns `true` when this call stored the value and `false` when
+  the key already existed, so a toolkit manager passed straight to
+  `createCacheRefreshTokenStore()` now takes the atomic path when marking a
+  refresh token as used. Previously no toolkit manager had the method, and
+  rotation was only serialized inside one process, so instances sharing a cache
+  could both accept the same refresh token.
+  - `RedisCacheManager`: Upstash `SET key value NX` (with `EX ttl` when given),
+    atomic across instances. Redis errors are thrown rather than reported as
+    `true` (which would allow token reuse) or `false` (which the refresh service
+    treats as reuse and answers by revoking the whole token family).
+  - `InMemoryCacheManager`: atomic within one process; expired keys count as
+    absent.
+  - `HybridCacheManager`: uses Redis when available; falls back to in-memory
+    when Redis is unavailable or errors with `fallbackOnRedisError` enabled
+    (atomic only within one process while falling back).
+  - `NoopCacheManager`: always `true`, matching the previous behaviour of the
+    token store on a disabled cache.
+  - The method is optional on `IUnifiedCacheManager`, so custom managers keep
+    compiling; the token store still serializes in-process when it is missing.
+
 ## [0.18.0]
 
 ### Added
