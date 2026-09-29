@@ -417,7 +417,8 @@ const auth = createAuthHandlers({
   // 권장: refresh 회전 + 재사용 탐지 + stateful 로그아웃 활성화.
   // 미주입 시 refresh 는 access 재발급만, logout 은 쿠키 삭제만 수행한다.
   // 같은 토큰의 동시 갱신은 store.markUsedIfUnused 로 한 요청만 성공한다.
-  // 여러 인스턴스가 캐시를 공유하면 setIfNotExists 를 구현한 cache 를 주입한다 (auth README 3절).
+  // toolkit 캐시 매니저는 setIfNotExists 를 제공해 원자 경로를 탄다. Redis 는 인스턴스 사이에서
+  // 원자적이고, 하이브리드의 인메모리 폴백 중에는 프로세스 안에서만 원자적이다 (auth README 3절).
   refreshTokenStore: createCacheRefreshTokenStore(cache),
 });
 
