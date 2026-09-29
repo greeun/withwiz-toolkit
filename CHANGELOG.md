@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0]
+
+### Added
+- `next/utils/csv-export`: `timeZone` option (IANA name, e.g. `'Asia/Seoul'`) on
+  `CsvExportOptions`/`BatchExportOptions` for the filename date
+  (`{filename}_{YYYY-MM-DD}.csv`). The date was always computed in UTC, so users
+  ahead of UTC who downloaded between local midnight and the UTC date change got
+  the previous day's date. Without the option the date is still UTC; an unknown
+  time zone falls back to UTC and logs a warning.
+- Build test `__tests__/build/pure-node-esm.test.ts`: every subpath outside
+  `next/*` must import from plain Node.js ESM without Next.js. `next/*` subpaths
+  import `next/server` without an extension, as Next.js expects, and are meant to
+  run inside a Next.js app; the README now states this boundary.
+
+### Fixed
+- `core/cache`: the `cache` and `geoCache` constants were created by calling
+  `getCacheManager()` at module evaluation. When the module was imported before
+  `initializeCache()`, both stayed a no-op manager for the life of the process,
+  so caching and `invalidateCache` silently did nothing even after
+  initialization. They are now lazy objects that resolve the configured manager
+  on every call; names, types and usage are unchanged, and they share storage
+  with `getCacheManager()` for the same prefix. The "not initialized" warning is
+  now logged once on first use instead of at import time.
+- `core/cache`: `withCache()` called before `initializeCache()` threw
+  `ConfigurationError` while computing the TTL and never ran the original
+  function. It now logs the "not initialized" warning once and returns the
+  original function's result without caching, matching `getCacheManager()`.
+
 ## [0.17.1]
 
 ### Fixed
