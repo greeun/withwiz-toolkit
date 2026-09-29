@@ -188,6 +188,18 @@ export interface HybridConnectionStatus {
 export interface IUnifiedCacheManager {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
+  /**
+   * (선택) 키가 없을 때만 저장하는 원자 연산. 이번 호출이 저장했으면 true,
+   * 만료되지 않은 키가 이미 있어 저장하지 않았으면 false. ttl 단위·기본값은 set 과 같다.
+   *
+   * toolkit 매니저 4종(Redis·Hybrid·InMemory·Noop)은 모두 구현한다. 사용자 정의 매니저가
+   * 깨지지 않도록 인터페이스에서는 선택 메서드로 둔다. 이를 쓰는 쪽(예:
+   * createCacheRefreshTokenStore)은 없을 때의 대체 경로를 갖는다.
+   *
+   * 원자성의 범위는 구현마다 다르다: Redis 는 인스턴스 사이, InMemory 는 한 프로세스 안,
+   * Hybrid 는 Redis 를 쓸 수 있을 때만 인스턴스 사이(인메모리 폴백 중에는 프로세스 안).
+   */
+  setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   deletePattern(pattern: string): Promise<void>;
   exists(key: string): Promise<boolean>;
