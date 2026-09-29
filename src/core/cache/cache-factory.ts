@@ -95,9 +95,8 @@ let _notInitializedWarningLogged = false;
  */
 export function getCacheManager(prefix: string): RedisCacheManager | HybridCacheManager | InMemoryCacheManager | NoopCacheManager {
   // 미초기화 graceful degrade:
-  // initializeCache() 없이 import 된 경우 throw 대신 1회 warn 후 noop 으로
-  // 동작한다. (eager `export const cache = getCacheManager(...)` 가
-  // import-time 에 throw 하던 문제 — storage/geolocation 의 degrade 패턴과 일치)
+  // initializeCache() 전에 호출되면 throw 대신 1회 warn 후 noop 으로
+  // 동작한다. (storage/geolocation 의 degrade 패턴과 일치)
   if (!isCacheConfigInitialized()) {
     if (!_notInitializedWarningLogged) {
       configWarn(
@@ -169,12 +168,35 @@ export function getCacheManager(prefix: string): RedisCacheManager | HybridCache
 // 범용 캐시 매니저 인스턴스들 (지연 초기화)
 // ============================================================================
 
-/**
- * 기본 범용 캐시
- */
-export const cache = getCacheManager('default');
+type CacheManagerInstance = ReturnType<typeof getCacheManager>;
 
 /**
- * GeoIP 캐시 (범용)
+ * 호출할 때마다 `getCacheManager(prefix)` 로 실제 캐시 매니저를 찾아 위임하는 지연 객체.
+ *
+ * 모듈 상수로 `getCacheManager()` 를 바로 평가하면 `initializeCache()` 보다 먼저 import 된 경우
+ * noop 매니저로 영구히 고정된다. 지연 객체는 import 시점에 아무것도 평가하지 않으므로,
+ * 초기화 뒤의 호출부터는 설정된 백엔드를 쓴다. 백엔드 매니저는 prefix 별 싱글턴이라
+ * 같은 prefix 의 `getCacheManager()` 와 저장소를 공유한다.
  */
-export const geoCache = getCacheManager('geo');
+function createLazyCacheManager(prefix: string): CacheManagerInstance {
+  return new Proxy({} as CacheManagerInstance, {
+    get(_target, property) {
+      const manager = getCacheManager(prefix);
+      const value = Reflect.get(manager, property, manager);
+      return typeof value === 'function' ? value.bind(manager) : value;
+    },
+    has(_target, property) {
+      return property in getCacheManager(prefix);
+    },
+  });
+}
+
+/**
+ * 기본 범용 캐시 (호출 시점에 설정된 백엔드로 연결)
+ */
+export const cache = createLazyCacheManager('default');
+
+/**
+ * GeoIP 캐시 (범용, 호출 시점에 설정된 백엔드로 연결)
+ */
+export const geoCache = createLazyCacheManager('geo');

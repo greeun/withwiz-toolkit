@@ -7,6 +7,7 @@ import { logger } from '@withwiz/toolkit/core/logger/logger';
 import { isCacheEnabled } from '@withwiz/toolkit/core/cache/cache-env';
 import { getCacheConfig, getCacheTTL, CacheOptions } from '@withwiz/toolkit/core/cache/cache-config';
 import { getCacheManager, getEffectiveCacheBackend } from '@withwiz/toolkit/core/cache/cache-factory';
+import { isCacheConfigInitialized } from '@withwiz/toolkit/core/cache/config';
 
 // 캐시 백엔드 타입 약어 (R=Redis, M=Memory, H=Hybrid, N=Noop)
 export function getCacheBackendLabel(): string {
@@ -96,6 +97,13 @@ export async function withCache<T>(
   }
 
   const prefix = cacheManagerPrefix;
+
+  // initializeCache() 전에는 설정 값을 읽을 수 없으므로(읽으면 ConfigurationError) 캐시 없이
+  // 원본 함수만 실행한다. getCacheManager() 가 미초기화 경고를 1회 출력하고 noop 을 돌려준다.
+  if (!isCacheConfigInitialized()) {
+    getCacheManager(prefix);
+    return await fetchFunction();
+  }
 
   // 새로운 통일된 캐시 설정에서 TTL 가져오기
   const cacheConfig = getCacheConfig[prefix as keyof typeof getCacheConfig];
