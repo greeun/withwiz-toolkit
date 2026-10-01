@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0]
+
+### Added
+- `core/error/messages`: Japanese dictionary (`jaMessages`). `getErrorMessage(code, 'ja')`
+  previously returned the Korean text because the `ja` registry pointed at
+  `koMessages`. All three dictionaries now carry the same codes and fields, and a
+  unit test fails when a code or field is missing from `en` or `ja`.
+- `next/error/locale-detector`: `detectServer()` also reads the `NEXT_LOCALE`
+  cookie (the name Next.js and next-intl use), after the existing `locale`
+  cookie. Accept-Language now picks the first supported language in the list
+  instead of looking only at the first entry, and cookie values are matched
+  case-insensitively.
+
+### Fixed
+- `next/middleware/wrappers`: `withPublicApi`, `withAuthApi`, `withAdminApi`,
+  `withOptionalAuthApi` and `withCustomApi` seeded the context with
+  `locale: 'ko'`. `initRequestMiddleware` only detects a locale when none is set,
+  so detection never ran and every error envelope's `userMessage` was Korean.
+  The wrappers now detect the locale from the request when building the context,
+  so errors thrown before `initRequestMiddleware` (security, CORS) are localized
+  too. Handlers that read `ctx.locale` now see the request locale instead of
+  always `'ko'`.
+- `core/error/friendly-messages` (deprecated, not in the export map):
+  `getFriendlyMessage()` ignored `locale` and always returned its own Korean
+  table. It now delegates to `getErrorMessage()`, so its Korean text matches
+  `friendly-messages-v2` (for example 50001).
+
 ## [0.19.0]
 
 ### Added
