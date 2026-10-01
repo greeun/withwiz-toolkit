@@ -17,6 +17,7 @@ describe('LocaleDetector', () => {
   describe('detectServer', () => {
     function createMockRequest(options: {
       cookieLocale?: string;
+      nextLocaleCookie?: string;
       acceptLanguage?: string;
     }) {
       return {
@@ -24,6 +25,9 @@ describe('LocaleDetector', () => {
           get: (name: string) => {
             if (name === 'locale' && options.cookieLocale) {
               return { value: options.cookieLocale };
+            }
+            if (name === 'NEXT_LOCALE' && options.nextLocaleCookie) {
+              return { value: options.nextLocaleCookie };
             }
             return undefined;
           },
@@ -77,6 +81,31 @@ describe('LocaleDetector', () => {
     it('ignores invalid cookie locale and falls back to accept-language', () => {
       const request = createMockRequest({ cookieLocale: 'xx', acceptLanguage: 'en-US' });
       expect(LocaleDetector.detectServer(request)).toBe('en');
+    });
+
+    it('reads the NEXT_LOCALE cookie when the locale cookie is absent', () => {
+      const request = createMockRequest({ nextLocaleCookie: 'ja', acceptLanguage: 'ko-KR' });
+      expect(LocaleDetector.detectServer(request)).toBe('ja');
+    });
+
+    it('prefers the locale cookie over NEXT_LOCALE', () => {
+      const request = createMockRequest({ cookieLocale: 'en', nextLocaleCookie: 'ja' });
+      expect(LocaleDetector.detectServer(request)).toBe('en');
+    });
+
+    it('ignores an invalid NEXT_LOCALE cookie and falls back to accept-language', () => {
+      const request = createMockRequest({ nextLocaleCookie: 'xx', acceptLanguage: 'en-US' });
+      expect(LocaleDetector.detectServer(request)).toBe('en');
+    });
+
+    it('normalizes cookie case', () => {
+      const request = createMockRequest({ nextLocaleCookie: 'JA' });
+      expect(LocaleDetector.detectServer(request)).toBe('ja');
+    });
+
+    it('picks the first supported language listed in accept-language', () => {
+      const request = createMockRequest({ acceptLanguage: 'fr-FR,fr;q=0.9,ja;q=0.8,en;q=0.7' });
+      expect(LocaleDetector.detectServer(request)).toBe('ja');
     });
 
     it('returns ko when both cookie and accept-language are invalid', () => {
