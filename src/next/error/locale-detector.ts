@@ -7,6 +7,11 @@ import { NextRequest } from 'next/server';
 import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
 
 /**
+ * 서버 측에서 확인하는 로케일 쿠키 이름 (앞쪽이 우선)
+ */
+const SERVER_LOCALE_COOKIES = ['locale', 'NEXT_LOCALE'] as const;
+
+/**
  * 로케일 감지기
  */
 export class LocaleDetector {
@@ -56,7 +61,10 @@ export class LocaleDetector {
 
   /**
    * 서버 측 로케일 감지
-   * 우선순위: Cookie > Accept-Language 헤더 > 기본값
+   * 우선순위: Cookie(`locale` > `NEXT_LOCALE`) > Accept-Language 헤더 > 기본값
+   *
+   * `NEXT_LOCALE` 은 Next.js 와 next-intl 이 쓰는 로케일 쿠키 이름이다.
+   * Accept-Language 는 나열된 언어 중 지원하는 첫 언어를 고른다.
    *
    * @param request - NextRequest 객체
    * @returns 감지된 로케일
@@ -64,24 +72,22 @@ export class LocaleDetector {
   static detectServer(request: NextRequest): TLocale {
     try {
       // 1. Cookie 우선 확인
-      const cookieLocale = request.cookies.get('locale')?.value;
-      if (cookieLocale && this.isValidLocale(cookieLocale)) {
-        return cookieLocale as TLocale;
+      for (const name of SERVER_LOCALE_COOKIES) {
+        const cookieLocale = request.cookies.get(name)?.value;
+        if (cookieLocale && this.isValidLocale(cookieLocale)) {
+          return cookieLocale.toLowerCase() as TLocale;
+        }
       }
 
       // 2. Accept-Language 헤더
       const acceptLanguage = request.headers.get('accept-language');
       if (acceptLanguage) {
-        // "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7" 형식 파싱
-        const primaryLang = acceptLanguage
-          .split(',')[0]
-          .split('-')[0]
-          .split(';')[0]
-          .toLowerCase()
-          .trim();
-
-        if (this.isValidLocale(primaryLang)) {
-          return primaryLang as TLocale;
+        // "fr-FR,ja;q=0.9,en;q=0.8" 형식 파싱 — 나열 순서대로 지원 언어를 찾는다
+        for (const entry of acceptLanguage.split(',')) {
+          const lang = entry.split(';')[0].split('-')[0].toLowerCase().trim();
+          if (lang && this.isValidLocale(lang)) {
+            return lang as TLocale;
+          }
         }
       }
 

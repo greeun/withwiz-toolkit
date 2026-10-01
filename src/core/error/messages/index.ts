@@ -6,6 +6,7 @@
 import type { IErrorMessage, TLocale, TErrorMessages, IDefaultMessages } from '@withwiz/toolkit/core/error/messages/types';
 import { koMessages } from '@withwiz/toolkit/core/error/messages/ko';
 import { enMessages } from '@withwiz/toolkit/core/error/messages/en';
+import { jaMessages } from '@withwiz/toolkit/core/error/messages/ja';
 
 /**
  * 메시지 레지스트리
@@ -13,7 +14,7 @@ import { enMessages } from '@withwiz/toolkit/core/error/messages/en';
 const messageRegistry: Record<TLocale, TErrorMessages> = {
   ko: koMessages,
   en: enMessages,
-  ja: koMessages, // Fallback to Korean for now
+  ja: jaMessages,
 };
 
 /**
