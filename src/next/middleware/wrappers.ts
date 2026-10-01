@@ -14,6 +14,24 @@ import { rateLimitMiddleware } from '@withwiz/toolkit/next/middleware/rate-limit
 import { responseLoggerMiddleware } from '@withwiz/toolkit/next/middleware/response-logger';
 import { corsMiddleware } from '@withwiz/toolkit/next/middleware/cors';
 import { securityMiddleware } from '@withwiz/toolkit/next/middleware/security';
+import { LocaleDetector } from '@withwiz/toolkit/next/error/locale-detector';
+
+/**
+ * 초기 컨텍스트 생성
+ *
+ * locale 은 여기서 요청(쿠키·Accept-Language)으로 감지한다. initRequestMiddleware 는
+ * locale 이 비어 있을 때만 감지하므로 초기값을 고정하면 감지가 실행되지 않는다. 또한
+ * security·cors 처럼 initRequestMiddleware 보다 앞에서 던진 오류도 요청 로케일로 응답해야 한다.
+ */
+function createInitialContext(request: NextRequest): IApiContext {
+  return {
+    request,
+    locale: LocaleDetector.detectServer(request),
+    requestId: '',
+    startTime: Date.now(),
+    metadata: {},
+  };
+}
 
 /**
  * 공개 API 래퍼
@@ -40,13 +58,7 @@ export function withPublicApi(handler: TApiHandler) {
 
   return async (request: NextRequest, props?: unknown) => {
     // 초기 컨텍스트 생성
-    const context: IApiContext = {
-      request,
-      locale: 'ko',
-      requestId: '',
-      startTime: Date.now(),
-      metadata: {},
-    };
+    const context = createInitialContext(request);
 
     // 미들웨어 체인 실행 (동적 라우트 params 전달)
     return await chain.execute(context, handler, props);
@@ -80,13 +92,7 @@ export function withAuthApi(handler: TApiHandler) {
 
   return async (request: NextRequest, props?: unknown) => {
     // 초기 컨텍스트 생성
-    const context: IApiContext = {
-      request,
-      locale: 'ko',
-      requestId: '',
-      startTime: Date.now(),
-      metadata: {},
-    };
+    const context = createInitialContext(request);
 
     // 미들웨어 체인 실행 (동적 라우트 params 전달)
     return await chain.execute(context, handler, props);
@@ -121,13 +127,7 @@ export function withAdminApi(handler: TApiHandler) {
 
   return async (request: NextRequest, props?: unknown) => {
     // 초기 컨텍스트 생성
-    const context: IApiContext = {
-      request,
-      locale: 'ko',
-      requestId: '',
-      startTime: Date.now(),
-      metadata: {},
-    };
+    const context = createInitialContext(request);
 
     // 미들웨어 체인 실행 (동적 라우트 params 전달)
     return await chain.execute(context, handler, props);
@@ -161,13 +161,7 @@ export function withOptionalAuthApi(handler: TApiHandler) {
 
   return async (request: NextRequest, props?: unknown) => {
     // 초기 컨텍스트 생성
-    const context: IApiContext = {
-      request,
-      locale: 'ko',
-      requestId: '',
-      startTime: Date.now(),
-      metadata: {},
-    };
+    const context = createInitialContext(request);
 
     // 미들웨어 체인 실행 (동적 라우트 params 전달)
     return await chain.execute(context, handler, props);
@@ -201,13 +195,7 @@ export function withCustomApi(
 
   return async (request: NextRequest, props?: unknown) => {
     // 초기 컨텍스트 생성
-    const context: IApiContext = {
-      request,
-      locale: 'ko',
-      requestId: '',
-      startTime: Date.now(),
-      metadata: {},
-    };
+    const context = createInitialContext(request);
 
     // 미들웨어 체인 실행 (동적 라우트 params 전달)
     return await chain.execute(context, handler, props);
