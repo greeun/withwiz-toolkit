@@ -86,12 +86,21 @@ vi.mock('@withwiz/toolkit/next/middleware/response-logger', () => ({
 }));
 
 // Create a minimal NextRequest mock
-function createMockRequest(method = 'GET', url = 'http://localhost/api/test') {
+function createMockRequest(
+  method = 'GET',
+  url = 'http://localhost/api/test',
+  options: { cookies?: Record<string, string>; acceptLanguage?: string } = {},
+) {
+  const headers = new Headers();
+  if (options.acceptLanguage) headers.set('accept-language', options.acceptLanguage);
   return {
     method,
     url,
-    headers: new Headers(),
-    cookies: { get: () => undefined },
+    headers,
+    cookies: {
+      get: (name: string) =>
+        options.cookies?.[name] !== undefined ? { value: options.cookies[name] } : undefined,
+    },
     nextUrl: new URL(url),
   } as any;
 }
@@ -204,5 +213,31 @@ describe('withOptionalAuthApi', () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(response).toBeInstanceOf(NextResponse);
+  });
+
+  it('요청의 NEXT_LOCALE 쿠키로 context.locale 을 감지한다', async () => {
+    const { withOptionalAuthApi } = await import('@withwiz/toolkit/next/middleware/wrappers');
+    const handler = vi.fn().mockImplementation((ctx) => {
+      expect(ctx.locale).toBe('ja');
+      return NextResponse.json({ ok: true });
+    });
+
+    const wrapped = withOptionalAuthApi(handler);
+    await wrapped(createMockRequest('GET', undefined, { cookies: { NEXT_LOCALE: 'ja' } }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('쿠키가 없으면 Accept-Language 로 context.locale 을 감지한다', async () => {
+    const { withPublicApi } = await import('@withwiz/toolkit/next/middleware/wrappers');
+    const handler = vi.fn().mockImplementation((ctx) => {
+      expect(ctx.locale).toBe('en');
+      return NextResponse.json({ ok: true });
+    });
+
+    const wrapped = withPublicApi(handler);
+    await wrapped(createMockRequest('GET', undefined, { acceptLanguage: 'en-US,en;q=0.9' }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 });
