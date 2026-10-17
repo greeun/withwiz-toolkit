@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1]
+
+### Fixed
+- `next/auth-handlers`: with a `passwordPolicy`, a password over 72 bytes was rejected by the request
+  schema, so the reason reached the field error as the English zod text ("Password cannot exceed 72
+  bytes"). The limit is now checked after the policy and answered as 400 `PASSWORD_TOO_WEAK` with a
+  ko/en/ja message in the request locale. A policy that rejects long passwords itself keeps its own
+  message. Without a policy nothing changes (schema failure, `Invalid input`).
+
 ## [0.21.0]
 
 ### Added
