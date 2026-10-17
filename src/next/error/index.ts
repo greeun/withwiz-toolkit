@@ -6,5 +6,7 @@
  */
 
 export * from "@withwiz/toolkit/next/error/error-handler";
+export * from "@withwiz/toolkit/next/error/build-error-response";
+export * from "@withwiz/toolkit/next/error/with-standard-errors";
 export { LocaleDetector } from "@withwiz/toolkit/next/error/locale-detector";
 export * from "@withwiz/toolkit/next/error/ErrorBoundary";

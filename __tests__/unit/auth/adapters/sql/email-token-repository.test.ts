@@ -151,3 +151,17 @@ describe('SqlEmailTokenRepository (mysql)', () => {
     expect(exec.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM "pw_resets"'), ['a@b.com', 'tok']);
   });
 });
+
+describe('SqlEmailTokenRepository.findEmailByToken (0.21)', () => {
+  it('해시된 토큰으로 종류별 테이블에서 email 을 찾는다', async () => {
+    const exec = createMockExec([{ email: 'a@b.com' }]);
+    const repo = new SqlEmailTokenRepository(exec, { dialect: 'postgres' });
+    await expect(repo.findEmailByToken('hashed', TokenType.PASSWORD_RESET)).resolves.toBe('a@b.com');
+    expect(exec.query).toHaveBeenCalledWith('SELECT "email" FROM "password_reset_tokens" WHERE "token" = $1', ['hashed']);
+  });
+
+  it('행이 없으면 null', async () => {
+    const repo = new SqlEmailTokenRepository(createMockExec([]), { dialect: 'postgres' });
+    await expect(repo.findEmailByToken('none', TokenType.EMAIL_VERIFICATION)).resolves.toBeNull();
+  });
+});

@@ -12,8 +12,10 @@ import { OAuthCallbackService } from '@withwiz/toolkit/core/auth/services/oauth-
 import { setTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
+  const respond = createAuthResponder(options);
   const { dependencies, jwt, oauth, hooks, cookie, urls } = options;
   const callbackService = new OAuthCallbackService({
     userRepository: dependencies.userRepository,
@@ -36,17 +38,14 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
       const provider = url.searchParams.get('provider') ?? url.pathname.split('/').pop();
 
       if (!code || !provider || !oauth?.[provider]) {
-        return NextResponse.json({ success: false, error: 'Invalid callback' }, { status: 400 });
+        return respond.error(request, { status: 400, key: 'OAUTH_CALLBACK_INVALID', message: 'Invalid callback' });
       }
 
       // O-1: 코드 교환 이전에 state(query) 와 쿠키를 strict 검증.
       const stateParam = url.searchParams.get('state');
       const stateCookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
       if (!validateOAuthState(stateCookie, stateParam)) {
-        const res = NextResponse.json(
-          { success: false, error: 'Invalid OAuth state' },
-          { status: 400 },
-        );
+        const res = respond.error(request, { status: 400, key: 'OAUTH_STATE_INVALID', message: 'Invalid OAuth state' });
         return clearOAuthStateCookie(res, stateCookieOpts);
       }
 
@@ -63,7 +62,7 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
       if (hooks?.allowEmail) {
         const allowed = await hooks.allowEmail(userInfo.email);
         if (!allowed) {
-          const res = NextResponse.json({ success: false, error: 'Email not allowed' }, { status: 403 });
+          const res = respond.error(request, { status: 403, key: 'EMAIL_NOT_ALLOWED', message: 'Email not allowed' });
           return clearOAuthStateCookie(res, stateCookieOpts);
         }
       }
@@ -95,10 +94,10 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
       return clearOAuthStateCookie(response, stateCookieOpts);
     } catch (error) {
       if (error instanceof AuthError) {
-        const res = NextResponse.json({ success: false, error: error.message }, { status: error.statusCode });
+        const res = respond.fromAuthError(request, error, false);
         return clearOAuthStateCookie(res, stateCookieOpts);
       }
-      const res = NextResponse.json({ success: false, error: 'OAuth callback failed' }, { status: 500 });
+      const res = respond.error(request, { status: 500, key: 'INTERNAL_SERVER_ERROR', message: 'OAuth callback failed' });
       return clearOAuthStateCookie(res, stateCookieOpts);
     }
   };

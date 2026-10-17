@@ -8,8 +8,10 @@ import {
   setOAuthStateCookie,
 } from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
+  const respond = createAuthResponder(options);
   const { oauth } = options;
 
   return async (request: NextRequest): Promise<Response> => {
@@ -18,7 +20,7 @@ export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
       const provider = body.provider as string;
 
       if (!provider || !oauth?.[provider]) {
-        return NextResponse.json({ success: false, error: 'Invalid provider' }, { status: 400 });
+        return respond.error(request, { status: 400, key: 'OAUTH_PROVIDER_INVALID', message: 'Invalid provider' });
       }
 
       const providers: Record<string, { clientId: string; clientSecret: string; redirectUri: string }> = {};
@@ -39,7 +41,7 @@ export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
       });
       return response;
     } catch {
-      return NextResponse.json({ success: false, error: 'OAuth initialization failed' }, { status: 500 });
+      return respond.error(request, { status: 500, key: 'OAUTH_INIT_FAILED', message: 'OAuth initialization failed' });
     }
   };
 }

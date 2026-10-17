@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/toolkit",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "packageManager": "npm@11.16.0",
   "description": "Shared utility library for withwiz projects",
   "license": "MIT",
@@ -113,6 +113,7 @@
     "./core/error/messages": "./dist/core/error/messages/index.js",
     "./core/error/messages/types": "./dist/core/error/messages/types.js",
     "./core/error/prisma-error": "./dist/core/error/prisma-error.js",
+    "./core/error/read-api-error": "./dist/core/error/read-api-error.js",
     "./core/geolocation": "./dist/core/geolocation/index.js",
     "./core/geolocation/batch-processor": "./dist/core/geolocation/batch-processor.js",
     "./core/geolocation/config": "./dist/core/geolocation/config.js",
@@ -166,9 +167,15 @@
     "./next/auth-handlers/me.handler": "./dist/next/auth-handlers/me.handler.js",
     "./next/auth-handlers/oauth-authorize.handler": "./dist/next/auth-handlers/oauth-authorize.handler.js",
     "./next/auth-handlers/oauth-callback.handler": "./dist/next/auth-handlers/oauth-callback.handler.js",
+    "./next/auth-handlers/password-policy": "./dist/next/auth-handlers/password-policy.js",
     "./next/auth-handlers/refresh.handler": "./dist/next/auth-handlers/refresh.handler.js",
+    "./next/auth-handlers/register-flow": "./dist/next/auth-handlers/register-flow.js",
     "./next/auth-handlers/register.handler": "./dist/next/auth-handlers/register.handler.js",
     "./next/auth-handlers/reset-password.handler": "./dist/next/auth-handlers/reset-password.handler.js",
+    "./next/auth-handlers/respond": "./dist/next/auth-handlers/respond.js",
+    "./next/auth-handlers/session": "./dist/next/auth-handlers/session.js",
+    "./next/auth-handlers/signup.handler": "./dist/next/auth-handlers/signup.handler.js",
+    "./next/auth-handlers/token-email": "./dist/next/auth-handlers/token-email.js",
     "./next/auth-handlers/verify-email.handler": "./dist/next/auth-handlers/verify-email.handler.js",
     "./next/auth-types": "./dist/next/auth-types/index.js",
     "./next/auth-types/handler-types": "./dist/next/auth-types/handler-types.js",
@@ -178,7 +185,9 @@
       "types": "./dist/next/error/ErrorBoundary.d.ts",
       "import": "./dist/next/error/index.js"
     },
+    "./next/error/build-error-response": "./dist/next/error/build-error-response.js",
     "./next/error/locale-detector": "./dist/next/error/locale-detector.js",
+    "./next/error/with-standard-errors": "./dist/next/error/with-standard-errors.js",
     "./next/oapi": {
       "types": "./dist/next/oapi/index.d.ts",
       "import": "./dist/next/oapi/index.js"

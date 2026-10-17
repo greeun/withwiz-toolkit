@@ -13,7 +13,8 @@ import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
-import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
+import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage, getErrorByCode } from '@withwiz/toolkit/core/constants/error-codes';
+import { representativeCode } from '@withwiz/toolkit/next/error/build-error-response';
 import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
@@ -134,11 +135,16 @@ function createErrorResponse(
   // HTTP 상태 코드 추출 (40907 -> 409)
   const httpStatus = Math.floor(code / 100);
 
+  // 0.21+: 기계 분기용 key 와 필드 오류(details.fieldErrors)를 함께 싣는다. 기존 필드는 그대로 둔다.
+  const key = getErrorByCode(code)?.key ?? getErrorByCode(representativeCode(httpStatus))?.key ?? 'INTERNAL_SERVER_ERROR';
+  const fieldErrors = fieldErrorsFromIssues(metadata?.issues);
+
   // 에러 응답 구조 (code는 별도 필드로 제공, message에 포함하지 않음)
   const errorResponse = {
     success: false,
     error: {
       code,
+      key,
       message,
       userMessage: {
         title: userMessage.title,
@@ -147,6 +153,7 @@ function createErrorResponse(
       },
       requestId,
       ...(metadata && { metadata }),
+      ...(fieldErrors && { details: { fieldErrors } }),
     },
   };
 
@@ -156,4 +163,16 @@ function createErrorResponse(
       'Content-Type': 'application/json',
     },
   });
+}
+
+/** zod issues(`{ path, message }`)를 `fieldErrors`(필드별 사유 배열)로 바꾼다. issues 가 없으면 undefined */
+function fieldErrorsFromIssues(issues: unknown): Record<string, string[]> | undefined {
+  if (!Array.isArray(issues) || issues.length === 0) return undefined;
+  const out: Record<string, string[]> = {};
+  for (const issue of issues as Array<{ path?: unknown; message?: unknown }>) {
+    const field = typeof issue.path === 'string' && issue.path ? issue.path.split('.')[0] : undefined;
+    if (!field || typeof issue.message !== 'string') continue;
+    (out[field] ??= []).push(issue.message);
+  }
+  return Object.keys(out).length ? out : undefined;
 }

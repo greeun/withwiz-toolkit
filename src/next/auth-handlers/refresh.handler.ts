@@ -4,8 +4,10 @@ import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-r
 import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createRefreshHandler(options: AuthHandlerOptions) {
+  const respond = createAuthResponder(options);
   const { dependencies, jwt, hooks, cookie, tokenDelivery, refreshTokenStore } = options;
   const refreshService = new TokenRefreshService({
     userRepository: dependencies.userRepository,
@@ -22,7 +24,7 @@ export function createRefreshHandler(options: AuthHandlerOptions) {
       const strategy = getTokenDeliveryStrategy(tokenDelivery);
       const refreshToken = await strategy.extractRefreshToken(request);
       if (!refreshToken) {
-        return NextResponse.json({ success: false, error: 'No refresh token' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'UNAUTHORIZED', message: 'No refresh token' });
       }
 
       if (hooks?.onBeforeTokenRefresh) {
@@ -50,13 +52,8 @@ export function createRefreshHandler(options: AuthHandlerOptions) {
       );
       return response;
     } catch (error) {
-      if (error instanceof AuthError) {
-        return NextResponse.json(
-          { success: false, error: error.message, code: error.code },
-          { status: error.statusCode },
-        );
-      }
-      return NextResponse.json({ success: false, error: 'Token refresh failed' }, { status: 401 });
+      if (error instanceof AuthError) return respond.fromAuthError(request, error, true);
+      return respond.error(request, { status: 401, key: 'UNAUTHORIZED', message: 'Token refresh failed' });
     }
   };
 }

@@ -3,34 +3,43 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
+import { TokenType } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-
-// bcrypt 는 72바이트 초과분을 조용히 절단하므로 검증 단계에서 거부 (바이트 수 기준)
-const withinBcryptByteLimit = (value: string): boolean =>
-  new TextEncoder().encode(value).length <= 72;
-
-const schema = z.object({
-  email: z.string().email(),
-  token: z.string().min(1),
-  password: z
-    .string()
-    .min(8)
-    .refine(withinBcryptByteLimit, { message: 'Password cannot exceed 72 bytes' }),
-});
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { passwordField, checkPasswordPolicy, passwordPolicyViolation } from '@withwiz/toolkit/next/auth-handlers/password-policy';
+import { resolveTokenEmail } from '@withwiz/toolkit/next/auth-handlers/token-email';
 
 export function createResetPasswordHandler(options: AuthHandlerOptions) {
-  const { dependencies } = options;
+  const { dependencies, passwordPolicy } = options;
+  const respond = createAuthResponder(options);
+  // email 은 0.21 부터 선택 항목 — 없으면 토큰으로 찾는다(저장소가 findEmailByToken 을 구현한 경우)
+  const schema = z.object({
+    email: z.string().email().optional(),
+    token: z.string().min(1),
+    password: passwordField(passwordPolicy),
+  });
+  const invalidInput = (request: NextRequest, fieldErrors?: Record<string, string[]>) =>
+    respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors });
 
   return async (request: NextRequest): Promise<Response> => {
     try {
       const body = await request.json();
       const parsed = schema.safeParse(body);
-      if (!parsed.success) {
-        return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
+      if (!parsed.success) return invalidInput(request, zodFieldErrors(parsed.error));
+
+      const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'reset', request);
+      if (!policy.ok) return passwordPolicyViolation(respond, request, policy.message);
+
+      const account = await resolveTokenEmail(
+        dependencies.emailTokenRepository, parsed.data.email, parsed.data.token, TokenType.PASSWORD_RESET,
+      );
+      if ('unsupported' in account) return invalidInput(request, { email: ['Required'] });
+      if ('notFound' in account) {
+        return respond.error(request, { status: 400, key: 'INVALID_TOKEN', message: 'Invalid or expired token' });
       }
 
       if (!dependencies.emailSender) {
-        return NextResponse.json({ success: false, error: 'Email service not configured' }, { status: 500 });
+        return respond.error(request, { status: 500, key: 'SERVER_ERROR', message: 'Email service not configured' });
       }
 
       const service = new PasswordResetService({
@@ -40,16 +49,11 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
         logger: dependencies.logger,
       });
 
-      await service.resetPassword(parsed.data.email, parsed.data.token, parsed.data.password);
+      await service.resetPassword(account.email, parsed.data.token, parsed.data.password);
       return NextResponse.json({ success: true });
     } catch (error) {
-      if (error instanceof AuthError) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: error.statusCode },
-        );
-      }
-      return NextResponse.json({ success: false, error: 'Reset failed' }, { status: 500 });
+      if (error instanceof AuthError) return respond.fromAuthError(request, error, false);
+      return respond.error(request, { status: 500, key: 'INTERNAL_SERVER_ERROR', message: 'Reset failed' });
     }
   };
 }
