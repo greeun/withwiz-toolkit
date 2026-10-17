@@ -645,19 +645,19 @@ done
   - `CACHE_ENV_VARS` 도메인 키 제거: `CACHE_TTL_LINK/ALIAS/COMMUNITY/RESERVED_WORDS`
   - `ICacheTTLConfig`, `ICacheEnv` 타입에서 도메인 필드 제거 (LINK, ALIAS, COMMUNITY, RESERVED_WORDS, URL_TOKEN, API_KEY, API_CONFIG)
 - **BREAKING**: `cache/cache-keys-legacy.ts` 모듈 통째 제거 (기존 `@deprecated`이던 `cacheKeys` export)
-- **BREAKING**: `constants/security.ts`의 `API_KEY = { LENGTH, PREFIX: 'app_' }` 상수 제거 — `app_` prefix는 도메인 종속이므로 소비 프로젝트가 자체 정의해야 함
+- **BREAKING**: `constants/security.ts`의 `API_KEY = { LENGTH, PREFIX }` 상수 제거 — API 키 prefix는 도메인 종속이므로 소비 프로젝트가 자체 정의해야 함
 - **BREAKING**: `constants/pagination.ts`의 `PAGE_SIZES`에서 도메인 키 제거: `LINKS`, `RESERVED_WORDS`, `NOTICES`, `TAGS`, `CLICK_HISTORY`. 보편 키만 유지: `USERS`, `ACTIVITY`, `SEARCH_RESULTS`
 - **BREAKING**: `types/qr-code.ts` `IQRCodeStats.aliasClicks` → `clicks`로 일반화
 
 ### Changed
-- 가이드 주석에서 "consumer app 서비스 특화" 표현을 "도메인 특화 (소비 프로젝트의 extension에 정의)"로 일반화
+- 가이드 주석에서 특정 서비스 특화 표현을 "도메인 특화 (소비 프로젝트의 extension에 정의)"로 일반화
 - `utils/README.md`에서 별칭(Alias) 검증 섹션 제거 (해당 코드는 본 패키지에 존재하지 않으며 도메인 특화)
 - `utils/optimistic-lock.ts`의 docstring 예시를 `prisma.link` → `prisma.entity`로 일반화
 
 ### Migration
 - 도메인 캐시 카테고리는 소비 프로젝트의 extension에서 자체 정의:
   ```ts
-  // 예시 — extensions/consumer-app/cache-config.ts
+  // 예시 — extensions/<서비스>/cache-config.ts
   import { isCacheEnabled } from '@withwiz/toolkit/cache';
   import { ENV } from '@/lib/env';
   export const getDomainCacheConfig = {

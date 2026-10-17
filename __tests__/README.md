@@ -4,7 +4,7 @@ A standalone test suite for the `packages/@withwiz/toolkit` module.
 
 ## Overview
 
-This test suite runs **completely independently** of the consumer app project.
+This test suite runs **completely independently** of any consuming project.
 Since `packages/@withwiz/toolkit` is a project-independent, general-purpose utility, it can be reused across other projects as well.
 
 ## Test Completion Status

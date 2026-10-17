@@ -20,17 +20,17 @@ toolkit 의 인증은 항상 "하이브리드"로 동작한다.
 2. **header 모드 불완전** — refresh 가 쿠키 전용이라 순수 헤더 클라이언트는
    toolkit refresh 핸들러를 쓸 수 없다.
 
-### 소비 프로젝트 실태 (2026-06-12 워크스페이스 조사)
+### 소비자 사용 패턴 (2026-06-12 조사)
 
-| 프로젝트 | 실제 모드 | 근거 |
+| 패턴 | 실제 모드 | 특징 |
 |---|---|---|
-| withwiz-academic-affairs | 순수 header | localStorage 에 access+refresh 저장, Bearer 첨부, refresh 를 body `{refreshToken}` 으로 POST — toolkit 핸들러로 불가능해 자체 라우트 운용 |
-| consumer-app | header | login/magic-link/OAuth callback 응답 body 토큰을 localStorage 저장 |
-| consumer-app | header | toolkit 미들웨어 + Bearer 클라이언트 |
-| consumer-app(-old) | hybrid | toolkit `createLoginHandler` + Bearer 클라이언트 |
-| consumer-app, consumer-app | cookie | `credentials: 'include'` 만 사용 |
-| consumer-app, withwiz-cms-kit | cookie 추정 | toolkit 미들웨어만, 클라이언트 Bearer 없음 |
-| consumer-app, consumer-app 등 | 혼재 | 양쪽 신호 (일부 Bearer 는 외부 API 호출) |
+| 순수 헤더 클라이언트 | header | localStorage 에 access+refresh 저장, Bearer 첨부, refresh 를 body `{refreshToken}` 으로 POST — toolkit 핸들러로 불가능해 자체 라우트 운용 |
+| 응답 body 토큰 저장 | header | login/magic-link/OAuth callback 응답 body 토큰을 localStorage 저장 |
+| 미들웨어 + Bearer | header | toolkit 미들웨어 + Bearer 클라이언트 |
+| 핸들러 + Bearer | hybrid | toolkit `createLoginHandler` + Bearer 클라이언트 |
+| 쿠키 전용 | cookie | `credentials: 'include'` 만 사용 |
+| 미들웨어 전용 | cookie 추정 | toolkit 미들웨어만, 클라이언트 Bearer 없음 |
+| 혼재 | 혼재 | 양쪽 신호 (일부 Bearer 는 외부 API 호출) |
 
 세 모드 모두 실사용 중 → 어느 것도 제거할 수 없고, 선택 메커니즘이 필요하다.
 
@@ -156,13 +156,13 @@ API 표면 3배 증가로 배제.
 - 기존 테스트는 수정하지 않고 통과해야 한다 (hybrid 기본값 검증).
 - 테스트 위치: `__tests__/unit/middleware/`, `__tests__/unit/auth/` (현행 구조 준수).
 
-## 7. 소비 프로젝트 마이그레이션 (참고, 강제 아님)
+## 7. 소비자 마이그레이션 (참고, 강제 아님)
 
-| 프로젝트군 | 권장 모드 | 작업 | 주의 |
+| 소비자 패턴 | 권장 모드 | 작업 | 주의 |
 |---|---|---|---|
-| consumer-app, consumer-app, consumer-app, cms-kit | `'cookie'` | 설정 1줄 | login 응답 body `tokens` 를 읽는 코드가 없는지 사전 확인 — cookie 모드에서 body 토큰이 사라짐 |
-| academic-affairs, consumer-app, consumer-app | `'header'` | 설정 1줄. academic-affairs 는 자체 refresh 라우트를 toolkit 핸들러로 교체 가능 | — |
-| consumer-app 등 혼재 | `'hybrid'` (기본) | 없음 | — |
+| 쿠키 전용 · 미들웨어 전용 | `'cookie'` | 설정 1줄 | login 응답 body `tokens` 를 읽는 코드가 없는지 사전 확인 — cookie 모드에서 body 토큰이 사라짐 |
+| 순수 헤더 · 응답 body 토큰 저장 · 미들웨어 + Bearer | `'header'` | 설정 1줄. 자체 refresh 라우트를 운용하던 소비자는 toolkit 핸들러로 교체 가능 | — |
+| 혼재 · 핸들러 + Bearer | `'hybrid'` (기본) | 없음 | — |
 
 ## 8. 개정 이력
 
