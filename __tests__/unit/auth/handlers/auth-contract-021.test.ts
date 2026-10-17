@@ -278,11 +278,39 @@ describe('passwordPolicy', () => {
     expect(res.status).toBe(201);
   });
 
-  it('72바이트 제한은 정책과 별개로 적용된다', async () => {
-    const res = await createRegisterHandler(createMockOptions({ passwordPolicy: () => ({ ok: true }) }))(
+  it('72바이트 제한은 정책과 별개로 적용된다 — 사유는 요청 로케일 문구로 PASSWORD_TOO_WEAK 에 실린다', async () => {
+    const req = (lang: string) =>
+      new Request('http://localhost/api/auth/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'accept-language': lang },
+        body: JSON.stringify({ email: 'a@b.com', password: '가'.repeat(25) }),
+      }) as any;
+    const handler = createRegisterHandler(createMockOptions({ errorFormat: 'standard', passwordPolicy: () => ({ ok: true }) }));
+
+    const ko = await handler(req('ko-KR,ko;q=0.9'));
+    expect(ko.status).toBe(400);
+    const koJson = await ko.json();
+    expect(koJson.error.key).toBe('PASSWORD_TOO_WEAK');
+    expect(koJson.error.details.fieldErrors.password[0]).toMatch(/[가-힣]/);
+    expect(koJson.error.details.fieldErrors.password[0]).not.toContain('cannot exceed');
+
+    const ja = await (await handler(req('ja-JP,ja;q=0.9'))).json();
+    expect(ja.error.userMessage.description).toMatch(/[ぁ-んァ-ン]/);
+    expect(mockRegister).not.toHaveBeenCalled();
+  });
+
+  it('소비자 정책이 길이 상한을 직접 판정하면 그 문구가 72바이트 기본 문구보다 우선한다', async () => {
+    const res = await createRegisterHandler(
+      createMockOptions({ passwordPolicy: (pw: string) => (pw.length > 20 ? { ok: false, message: '앱 문구' } : { ok: true }) }),
+    )(makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: '가'.repeat(25) }));
+    expect((await res.json()).error).toBe('앱 문구');
+  });
+
+  it('정책이 없으면 0.21.0 처럼 72바이트 초과는 스키마에서 Invalid input', async () => {
+    const res = await createRegisterHandler(createMockOptions())(
       makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: '가'.repeat(25) }),
     );
     expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('Invalid input');
   });
 
   it('reset-password 에도 같은 정책을 purpose reset 으로 적용한다', async () => {
