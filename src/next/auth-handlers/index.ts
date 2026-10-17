@@ -54,4 +54,6 @@ export { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers
 export { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 export { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
 export { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
-export { buildErrorResponse, withStandardErrors } from '@withwiz/toolkit/next/error';
+// next/error 묶음(index)은 클라이언트 컴포넌트(ErrorBoundary)를 함께 불러오므로 개별 모듈에서 가져온다
+export { buildErrorResponse } from '@withwiz/toolkit/next/error/build-error-response';
+export { withStandardErrors } from '@withwiz/toolkit/next/error/with-standard-errors';

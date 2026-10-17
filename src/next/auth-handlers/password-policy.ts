@@ -18,7 +18,12 @@ export function passwordField(policy: PasswordPolicy | undefined) {
   });
 }
 
-/** 정책 검사. 정책이 없으면 통과 */
+const DEFAULT_POLICY_MESSAGE = 'Password does not meet the policy';
+
+/**
+ * 정책 검사. 정책이 없으면 통과.
+ * 설정형 정책의 사유는 `PasswordValidator` 의 영어 문구다 — 요청 로케일 문구가 필요하면 함수형 정책을 쓴다.
+ */
 export async function checkPasswordPolicy(
   policy: PasswordPolicy | undefined,
   password: string,
@@ -27,10 +32,12 @@ export async function checkPasswordPolicy(
 ): Promise<PasswordPolicyResult> {
   if (!policy) return { ok: true };
   if (typeof policy === 'function') {
-    return policy(password, { purpose, locale: LocaleDetector.detectServer(request) });
+    const result = await policy(password, { purpose, locale: LocaleDetector.detectServer(request) });
+    // 사유 없이 실패만 돌려준 정책(타입 검사를 거치지 않은 JS 등)도 응답에 사유가 실리게 한다
+    return result.ok ? result : { ok: false, message: result.message || DEFAULT_POLICY_MESSAGE };
   }
   const result = createPasswordValidator(policy).validate(password);
-  return result.isValid ? { ok: true } : { ok: false, message: result.errors[0] ?? 'Password does not meet the policy' };
+  return result.isValid ? { ok: true } : { ok: false, message: result.errors[0] ?? DEFAULT_POLICY_MESSAGE };
 }
 
 /**

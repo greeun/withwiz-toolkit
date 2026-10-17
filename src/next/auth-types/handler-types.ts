@@ -5,7 +5,7 @@ import type { IRefreshTokenStore } from '@withwiz/toolkit/core/auth/services/ref
 import type { PasswordConfig } from '@withwiz/toolkit/core/auth/types';
 import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
 
-/** 가입 훅이 받는 요청 맥락 (0.21+). `body` 는 검증 전 원본 본문이다 — 동의 여부·추가 필드 검사에 쓴다. */
+/** 가입 훅이 받는 요청 맥락 (0.21+). `body` 는 검증 전 원본 본문에서 `password` 만 뺀 것이다 — 동의 여부·추가 필드 검사에 쓴다. */
 export interface RegisterHookContext {
   body: Record<string, unknown>;
   request: NextRequest;

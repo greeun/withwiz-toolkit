@@ -7,7 +7,7 @@ import { TokenType } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { passwordField, checkPasswordPolicy, passwordPolicyViolation } from '@withwiz/toolkit/next/auth-handlers/password-policy';
-import { resolveTokenEmail } from '@withwiz/toolkit/next/auth-handlers/token-email';
+import { resolveTokenEmail, linkTokenError, isLinkTokenError } from '@withwiz/toolkit/next/auth-handlers/token-email';
 
 export function createResetPasswordHandler(options: AuthHandlerOptions) {
   const { dependencies, passwordPolicy } = options;
@@ -34,9 +34,7 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
         dependencies.emailTokenRepository, parsed.data.email, parsed.data.token, TokenType.PASSWORD_RESET,
       );
       if ('unsupported' in account) return invalidInput(request, { email: ['Required'] });
-      if ('notFound' in account) {
-        return respond.error(request, { status: 400, key: 'INVALID_TOKEN', message: 'Invalid or expired token' });
-      }
+      if ('notFound' in account) return linkTokenError(respond, request, 'Invalid or expired token');
 
       if (!dependencies.emailSender) {
         return respond.error(request, { status: 500, key: 'SERVER_ERROR', message: 'Email service not configured' });
@@ -52,6 +50,7 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
       await service.resetPassword(account.email, parsed.data.token, parsed.data.password);
       return NextResponse.json({ success: true });
     } catch (error) {
+      if (isLinkTokenError(error)) return linkTokenError(respond, request, error.message);
       if (error instanceof AuthError) return respond.fromAuthError(request, error, false);
       return respond.error(request, { status: 500, key: 'INTERNAL_SERVER_ERROR', message: 'Reset failed' });
     }

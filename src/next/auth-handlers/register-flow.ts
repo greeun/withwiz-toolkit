@@ -56,10 +56,10 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
       const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'register', request);
       if (!policy.ok) return { response: passwordPolicyViolation(respond, request, policy.message) };
 
-      const ctx: RegisterHookContext = {
-        body: body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {},
-        request,
-      };
+      // 훅이 ctx 를 로그에 남겨도 평문 비밀번호가 새지 않도록 본문에서 password 를 뺀다
+      const { password: _password, ...rest } =
+        body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+      const ctx: RegisterHookContext = { body: rest, request };
 
       if (hooks?.onBeforeRegister) {
         const hookResult = await hooks.onBeforeRegister({ email: parsed.data.email, name: parsed.data.name }, ctx);

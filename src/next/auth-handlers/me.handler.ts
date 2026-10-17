@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export function createMeHandler(options: AuthHandlerOptions) {

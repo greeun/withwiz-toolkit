@@ -12,7 +12,7 @@ import { OAuthCallbackService } from '@withwiz/toolkit/core/auth/services/oauth-
 import { setTokenCookies } from '@withwiz/toolkit/core/auth/jwt/cookie';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);

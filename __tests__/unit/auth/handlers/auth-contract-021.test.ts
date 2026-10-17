@@ -312,12 +312,12 @@ describe('findEmailByToken', () => {
     expect(mockResetPassword).toHaveBeenCalledWith('found@b.com', 'plain', 'password123');
   });
 
-  it('reset-password: 토큰에 해당하는 행이 없으면 400 INVALID_TOKEN', async () => {
+  it('reset-password: 토큰에 해당하는 행이 없으면 400 TOKEN_INVALID(서비스와 같은 key)', async () => {
     const res = await createResetPasswordHandler({ ...withLookup(null), errorFormat: 'standard' })(
       makePostRequest('http://localhost/api/auth/reset-password', { token: 'plain', password: 'password123' }),
     );
     expect(res.status).toBe(400);
-    expect((await res.json()).error.key).toBe('INVALID_TOKEN');
+    expect((await res.json()).error.key).toBe('TOKEN_INVALID');
   });
 
   it('저장소가 조회를 지원하지 않으면 0.20 처럼 email 이 필수다', async () => {
@@ -412,5 +412,86 @@ describe('가입 훅 ctx', () => {
       expect.objectContaining({ body: expect.objectContaining({ consent: true }), request: expect.anything() }),
     );
     expect(mockRegister).not.toHaveBeenCalled();
+  });
+});
+
+describe('리뷰 반영 (0.21)', () => {
+  const withLookup = (email: string | null, extra: Partial<AuthHandlerOptions> = {}) => {
+    const options = createMockOptions({ dependencies: { ...createMockOptions().dependencies, emailSender: {} as any }, ...extra });
+    (options.dependencies.emailTokenRepository as any).findEmailByToken = vi.fn().mockResolvedValue(email);
+    return options;
+  };
+
+  it('verify-email(POST): 조회를 지원하지 않는 저장소에서 email 이 없으면 0.20 처럼 Invalid input', async () => {
+    const res = await createVerifyEmailHandler(createMockOptions())(makePostRequest('http://localhost/api/auth/verify-email', { token: 'plain' }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ success: false, error: 'Invalid input' });
+  });
+
+  it('verify-email(GET): 같은 경우 0.20 처럼 Missing email or token', async () => {
+    const res = await createVerifyEmailHandler(createMockOptions())(makeRequest('http://localhost/api/auth/verify-email?token=plain'));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ success: false, error: 'Missing email or token' });
+  });
+
+  it('verify-email 은 EMAIL_VERIFICATION 종류로 조회하고, 못 찾으면 400 TOKEN_INVALID + 링크 문구', async () => {
+    const options = withLookup(null, { errorFormat: 'standard' });
+    const res = await createVerifyEmailHandler(options)(makePostRequest('http://localhost/api/auth/verify-email', { token: 'plain' }));
+    expect((options.dependencies.emailTokenRepository as any).findEmailByToken).toHaveBeenCalledWith(TokenGenerator.hash('plain'), 'EMAIL_VERIFICATION');
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toEqual(expect.objectContaining({ key: 'TOKEN_INVALID', code: 40008 }));
+    expect(json.error.userMessage.description).toBe('링크가 유효하지 않거나 만료되었습니다.');
+  });
+
+  it('서비스가 던진 TOKEN_INVALID 도 같은 key·문구로 응답하고, legacy 는 0.20 과 같다', async () => {
+    mockResetPassword.mockRejectedValue(new AuthError('Invalid or expired token', 'TOKEN_INVALID', 400));
+    const body = { email: 'a@b.com', token: 't', password: 'password123' };
+    const deps = { ...createMockOptions().dependencies, emailSender: {} as any };
+    const std = await createResetPasswordHandler(createMockOptions({ dependencies: deps, errorFormat: 'standard' }))(makePostRequest('http://localhost/x', body));
+    expect((await std.json()).error).toEqual(expect.objectContaining({ key: 'TOKEN_INVALID', code: 40008 }));
+    const legacy = await createResetPasswordHandler(createMockOptions({ dependencies: deps }))(makePostRequest('http://localhost/x', body));
+    expect(legacy.status).toBe(400);
+    expect(await legacy.json()).toEqual({ success: false, error: 'Invalid or expired token' });
+  });
+
+  it('standard 의 AuthError 숫자 코드는 AUTH_ERROR_CODE_MAP 을 따른다', async () => {
+    mockRegister.mockRejectedValue(new AuthError('Email already in use', 'EMAIL_ALREADY_EXISTS', 409));
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'standard' }))(
+      makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'password123' }),
+    );
+    const { ERROR_CODES } = await import('@withwiz/toolkit/core/constants/error-codes');
+    expect((await res.json()).error.code).toBe(ERROR_CODES.EMAIL_ALREADY_EXISTS.code);
+  });
+
+  it('정책 함수와 사용자 문구는 요청 로케일(accept-language)을 따른다', async () => {
+    const policy = vi.fn().mockReturnValue({ ok: true });
+    mockRegister.mockRejectedValue(new AuthError('Email already in use', 'EMAIL_ALREADY_EXISTS', 409));
+    const req = new Request('http://localhost/api/auth/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'accept-language': 'en-US,en;q=0.9' },
+      body: JSON.stringify({ email: 'a@b.com', password: 'password123' }),
+    }) as any;
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'standard', passwordPolicy: policy }))(req);
+    expect(policy).toHaveBeenCalledWith('password123', expect.objectContaining({ locale: 'en' }));
+    const { getErrorMessage } = await import('@withwiz/toolkit/core/error/messages');
+    const json = await res.json();
+    expect(json.error.userMessage.description).toBe(getErrorMessage(json.error.code, 'en').description);
+  });
+
+  it('사유 없이 실패한 정책도 기본 문구를 싣는다', async () => {
+    const res = await createRegisterHandler(createMockOptions({ passwordPolicy: () => ({ ok: false }) as any }))(
+      makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'abc' }),
+    );
+    expect((await res.json()).error).toBe('Password does not meet the policy');
+  });
+
+  it('훅 ctx.body 에는 평문 비밀번호가 없다', async () => {
+    const onBeforeRegister = vi.fn().mockResolvedValue(undefined);
+    mockRegister.mockResolvedValue({ user: verifiedUser, verificationSent: false });
+    await createRegisterHandler(createMockOptions({ hooks: { onBeforeRegister } }))(
+      makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'password123', consent: true }),
+    );
+    const ctx = onBeforeRegister.mock.calls[0][1];
+    expect(ctx.body).toEqual({ email: 'a@b.com', consent: true });
   });
 });

@@ -203,6 +203,10 @@ interface EmailTokenRepository {
 - **미들웨어·errorToResponse**: 공용 빌더로 다시 쓰지 않고 `key`(와 각각 `details.fieldErrors`, `userMessage`)만 추가했다. 기존 필드(`metadata` 등)를 바꾸지 않기 위해서다. `errorToResponse` 는 로케일을 위해 선택 인자 `request` 를 받는다.
 - **signup 의 세션 발급 실패**: 가입은 이미 끝났으므로 실패로 응답하지 않고 세션 없는 가입 성공(201)으로 폴백하며 오류를 로그에 남긴다. 실패로 알리면 재시도가 "이미 가입된 이메일" 로 끝난다.
 - **세션 발급 공유**: login 의 세션 발급부를 `session.ts` 로 분리해 signup 과 함께 쓴다.
+- **메일 링크 토큰 오류**: 핸들러가 토큰을 찾지 못한 경우와 서비스가 `TOKEN_INVALID` 를 던진 경우 모두 key `TOKEN_INVALID`, 숫자 코드는 새 사전 항목 `LINK_INVALID`(40008)다. `TOKEN_INVALID` 의 일반 매핑(40102)은 로그인 세션 문구라 메일 링크에 맞지 않는다(결정 2 "빠진 키만 추가"에 따른 추가).
+- **key 도출 통일**: `AuthError` 는 인증 핸들러·`errorToResponse`·미들웨어·`withStandardErrors` 모두에서 자기 `code` 를 key 로 쓴다.
+- **서버 진입점**: `next/auth-handlers` 는 `next/error` 묶음(index)을 거치지 않는다. 묶음에 클라이언트 컴포넌트(ErrorBoundary)가 있어 서버 라우트 번들이 깨지기 때문이다. `__tests__/build/server-entry-graph.test.ts` 가 dist 의 import 그래프로 이를 검사한다.
+- **훅 ctx**: `ctx.body` 에서 `password` 를 뺀다(훅이 로그를 남겨도 평문 비밀번호가 새지 않게).
 - **정책이 있을 때 최소 길이**: 스키마의 `min(8)` 은 정책이 없을 때만 적용하고, 정책이 있으면 최소 길이도 정책이 정한다.
 - **legacy 의 정책 위반 응답**: `error` 문자열에 사유를, `code` 에 `PASSWORD_TOO_WEAK` 를, `details.fieldErrors.password` 에 사유를 싣는다 — 문자열 `error` 만 읽는 클라이언트도 사유를 표시할 수 있다.
 

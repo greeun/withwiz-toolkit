@@ -59,10 +59,10 @@ export interface IErrorResponse {
   error: {
     code: number;
     /** 기계 분기용 키 (0.21+) */
-    key: string;
+    key?: string;
     message: string;
     /** 요청 로케일의 사용자 문구 (0.21+) */
-    userMessage: { title?: string; description: string; action?: string };
+    userMessage?: { title?: string; description: string; action?: string };
     details?: unknown;
   };
 }
@@ -90,7 +90,8 @@ export function errorToResponse(error: unknown, requestPath?: string, request?: 
     });
   }
 
-  const key = getErrorByCode(processed.code)?.key ?? 'INTERNAL_SERVER_ERROR';
+  // AuthError 는 인증 핸들러와 같은 key(자기 code)를 쓴다 — 생성 경로가 달라도 분기 문자열이 같도록
+  const key = error instanceof AuthError ? error.code : getErrorByCode(processed.code)?.key ?? 'INTERNAL_SERVER_ERROR';
   const userMessage = getErrorMessage(processed.code, request ? LocaleDetector.detectServer(request) : 'ko');
   return NextResponse.json(
     {

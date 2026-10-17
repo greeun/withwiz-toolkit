@@ -136,3 +136,27 @@ describe('기존 응답 생성부의 표준 필드 (0.21)', () => {
     expect(json.error.metadata.issues).toBeDefined();
   });
 });
+
+describe('key 도출 통일 (0.21 리뷰 반영)', () => {
+  it('errorToResponse 와 미들웨어는 AuthError 의 code 를 key 로 쓴다', async () => {
+    const { AuthError } = await import('@withwiz/toolkit/core/auth/errors');
+    const { errorToResponse } = await import('@withwiz/toolkit/next/error/error-handler');
+    const { errorHandlerMiddleware } = await import('@withwiz/toolkit/next/middleware/error-handler');
+    const err = new AuthError('Invalid token', 'TOKEN_INVALID', 401);
+    expect((await errorToResponse(err).json()).error.key).toBe('TOKEN_INVALID');
+    const res = await errorHandlerMiddleware({ locale: 'ko', requestId: 'r' } as any, async () => { throw err; });
+    expect((await (res as Response).json()).error.key).toBe('TOKEN_INVALID');
+  });
+
+  it('withStandardErrors 는 AuthError code 의 숫자 코드를 AUTH_ERROR_CODE_MAP 으로 옮긴다', async () => {
+    const { AUTH_ERROR_CODE_MAP } = await import('@withwiz/toolkit/next/error/error-handler');
+    const body = toStandardErrorBody(409, { error: 'Email already in use', code: 'EMAIL_ALREADY_EXISTS' });
+    expect(body?.error.code).toBe(AUTH_ERROR_CODE_MAP.EMAIL_ALREADY_EXISTS);
+  });
+
+  it('쿠키 API 가 없는 표준 Request 도 accept-language 로 로케일을 정한다', () => {
+    const req = new Request('http://x', { headers: { 'accept-language': 'en' } });
+    const en = buildErrorBody('INVALID_CREDENTIALS', { request: req }).body.error.userMessage.description;
+    expect(en).toBe(buildErrorBody('INVALID_CREDENTIALS', { locale: 'en' }).body.error.userMessage.description);
+  });
+});

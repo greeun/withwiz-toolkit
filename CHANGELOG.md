@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that rewrites string-form failures of a route into the standard shape (status and headers kept).
 - `core/error`: `readApiError(body)` — client-side reader for both shapes.
 - `core/types/api`: `IApiResponse.error.key`.
+- `core/constants/error-codes`: `LINK_INVALID` (40008) with ko/en/ja messages. Mail-link token failures
+  (reset-password, verify-email) use key `TOKEN_INVALID` — the same as the services' `AuthError` — and
+  this entry's user message; the generic `TOKEN_INVALID` mapping (40102) reads as a login-session error.
 
 ### Changed
 - `hooks.onBeforeRegister(data, ctx)` / `hooks.onAfterRegister(user, ctx)` receive a second argument
@@ -35,6 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `details.fieldErrors` for validation errors, and `errorToResponse` adds `userMessage` (locale from the
   new optional `request` argument). Existing fields are unchanged.
 - `login` issues its session through the shared session issuer also used by `signup` (no behavior change).
+- `AuthError` keys are the same on every path: auth handlers, `errorToResponse`, the middleware and
+  `withStandardErrors` all use the error's own `code` as `key`.
+- `next/error/locale-detector`: `detectServer()` also reads `accept-language` from a standard `Request`
+  without the cookies API (it returned `'ko'` before).
+- Register hooks' `ctx.body` excludes `password`.
+
+### Notes
+- Config-object password policies report the `PasswordValidator` reason in English. Use a policy
+  function to return a message in the request locale.
+- Without `features`, sign-up treats email verification as required while login does not check it, so
+  `signup` issues no session unless `features.emailVerificationRequired` is `false` (as in 0.20 services).
+- `findEmailByToken` separates token kinds by table; configure distinct tables per kind.
 
 ### Planned for 0.22
 - `errorFormat` defaults to `'standard'`. Code reading the string `error` of auth handler failures

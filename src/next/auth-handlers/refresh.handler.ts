@@ -4,7 +4,7 @@ import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-r
 import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createRefreshHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);

@@ -14,6 +14,7 @@
 
 import { getErrorByCode } from '@withwiz/toolkit/core/constants/error-codes';
 import { buildErrorBody, representativeCode } from '@withwiz/toolkit/next/error/build-error-response';
+import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -32,6 +33,8 @@ export function toStandardErrorBody(status: number, body: unknown, request?: Req
       ? (body.details.fieldErrors as Record<string, string[]>)
       : undefined;
   return buildErrorBody(key, {
+    // AuthError 의 code 는 인증 핸들러와 같은 숫자 코드로 옮긴다
+    code: AUTH_ERROR_CODE_MAP[key],
     status,
     message: body.error,
     userMessage: body.error,

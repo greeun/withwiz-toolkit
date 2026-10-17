@@ -8,7 +8,7 @@ import {
   setOAuthStateCookie,
 } from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);

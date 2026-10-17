@@ -165,3 +165,12 @@ describe('SqlEmailTokenRepository.findEmailByToken (0.21)', () => {
     await expect(repo.findEmailByToken('none', TokenType.EMAIL_VERIFICATION)).resolves.toBeNull();
   });
 });
+
+describe('SqlEmailTokenRepository.findEmailByToken — 종류별 테이블 (0.21)', () => {
+  it('EMAIL_VERIFICATION 은 인증 토큰 테이블을 조회한다', async () => {
+    const exec = createMockExec([{ email: 'v@b.com' }]);
+    const repo = new SqlEmailTokenRepository(exec, { dialect: 'postgres' });
+    await repo.findEmailByToken('hashed', TokenType.EMAIL_VERIFICATION);
+    expect(exec.query).toHaveBeenCalledWith('SELECT "email" FROM "email_verification_tokens" WHERE "token" = $1', ['hashed']);
+  });
+});
