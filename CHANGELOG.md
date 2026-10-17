@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0]
+
+### Added
+- `next/auth-handlers`: `errorFormat` option. `'legacy'` (default in 0.21) keeps the 0.20 bodies
+  byte for byte; `'standard'` answers with `{ success: false, error: { code, key, message,
+  userMessage, details? } }`. HTTP statuses are the same in both. The legacy string `code` becomes
+  the standard `key`, so branching on it keeps working after switching.
+- `next/auth-handlers`: `signup` handler (`POST /signup`) — register plus a session issued the same way
+  as login when the account can sign in right away (`emailVerified` set); otherwise `verificationSent`
+  without a session. `signup.autoLogin: false` never issues a session. A session failure after a
+  successful sign-up falls back to the sign-up response instead of reporting a failure.
+- `next/auth-handlers`: `passwordPolicy` option (`Partial<PasswordConfig>` or a function receiving
+  `{ purpose: 'register' | 'reset', locale }`), applied to register, signup and reset-password.
+  A violation is 400 `PASSWORD_TOO_WEAK` with the reason in `details.fieldErrors.password` (legacy:
+  also in `error`). Without a policy the minimum stays 8 characters; the 72-byte limit always applies.
+- `core/auth/types`: optional `EmailTokenRepository.findEmailByToken(hashedToken, type)`, implemented by
+  the Prisma and SQL adapters. With it, reset-password and verify-email accept a token without `email`.
+  Repositories without it behave as in 0.20 (email required).
+- `next/error`: `buildErrorResponse(key, options)` / `buildErrorBody`, and `withStandardErrors(handler)`
+  that rewrites string-form failures of a route into the standard shape (status and headers kept).
+- `core/error`: `readApiError(body)` — client-side reader for both shapes.
+- `core/types/api`: `IApiResponse.error.key`.
+- `core/constants/error-codes`: `LINK_INVALID` (40008) with ko/en/ja messages. Mail-link token failures
+  (reset-password, verify-email) use key `TOKEN_INVALID` — the same as the services' `AuthError` — and
+  this entry's user message; the generic `TOKEN_INVALID` mapping (40102) reads as a login-session error.
+
+### Changed
+- `hooks.onBeforeRegister(data, ctx)` / `hooks.onAfterRegister(user, ctx)` receive a second argument
+  `{ body, request }` (raw request body). One-argument hooks are unaffected.
+- `next/middleware` error envelopes and `errorToResponse` now also carry `key`; the middleware adds
+  `details.fieldErrors` for validation errors, and `errorToResponse` adds `userMessage` (locale from the
+  new optional `request` argument). Existing fields are unchanged.
+- `login` issues its session through the shared session issuer also used by `signup` (no behavior change).
+- `AuthError` keys are the same on every path: auth handlers, `errorToResponse`, the middleware and
+  `withStandardErrors` all use the error's own `code` as `key`.
+- `next/error/locale-detector`: `detectServer()` also reads `accept-language` from a standard `Request`
+  without the cookies API (it returned `'ko'` before).
+- Register hooks' `ctx.body` excludes `password`.
+
+### Notes
+- Config-object password policies report the `PasswordValidator` reason in English. Use a policy
+  function to return a message in the request locale.
+- Without `features`, sign-up treats email verification as required while login does not check it, so
+  `signup` issues no session unless `features.emailVerificationRequired` is `false` (as in 0.20 services).
+- `findEmailByToken` separates token kinds by table; configure distinct tables per kind.
+
+### Planned for 0.22
+- `errorFormat` defaults to `'standard'`. Code reading the string `error` of auth handler failures
+  should switch to `readApiError` (or `error.userMessage.description` / `error.key`) before upgrading.
+
 ## [0.20.0]
 
 ### Added
@@ -645,19 +695,19 @@ done
   - `CACHE_ENV_VARS` 도메인 키 제거: `CACHE_TTL_LINK/ALIAS/COMMUNITY/RESERVED_WORDS`
   - `ICacheTTLConfig`, `ICacheEnv` 타입에서 도메인 필드 제거 (LINK, ALIAS, COMMUNITY, RESERVED_WORDS, URL_TOKEN, API_KEY, API_CONFIG)
 - **BREAKING**: `cache/cache-keys-legacy.ts` 모듈 통째 제거 (기존 `@deprecated`이던 `cacheKeys` export)
-- **BREAKING**: `constants/security.ts`의 `API_KEY = { LENGTH, PREFIX: 'app_' }` 상수 제거 — `app_` prefix는 도메인 종속이므로 소비 프로젝트가 자체 정의해야 함
+- **BREAKING**: `constants/security.ts`의 `API_KEY = { LENGTH, PREFIX }` 상수 제거 — API 키 prefix는 도메인 종속이므로 소비 프로젝트가 자체 정의해야 함
 - **BREAKING**: `constants/pagination.ts`의 `PAGE_SIZES`에서 도메인 키 제거: `LINKS`, `RESERVED_WORDS`, `NOTICES`, `TAGS`, `CLICK_HISTORY`. 보편 키만 유지: `USERS`, `ACTIVITY`, `SEARCH_RESULTS`
 - **BREAKING**: `types/qr-code.ts` `IQRCodeStats.aliasClicks` → `clicks`로 일반화
 
 ### Changed
-- 가이드 주석에서 "consumer app 서비스 특화" 표현을 "도메인 특화 (소비 프로젝트의 extension에 정의)"로 일반화
+- 가이드 주석에서 특정 서비스 특화 표현을 "도메인 특화 (소비 프로젝트의 extension에 정의)"로 일반화
 - `utils/README.md`에서 별칭(Alias) 검증 섹션 제거 (해당 코드는 본 패키지에 존재하지 않으며 도메인 특화)
 - `utils/optimistic-lock.ts`의 docstring 예시를 `prisma.link` → `prisma.entity`로 일반화
 
 ### Migration
 - 도메인 캐시 카테고리는 소비 프로젝트의 extension에서 자체 정의:
   ```ts
-  // 예시 — extensions/consumer-app/cache-config.ts
+  // 예시 — extensions/<서비스>/cache-config.ts
   import { isCacheEnabled } from '@withwiz/toolkit/cache';
   import { ENV } from '@/lib/env';
   export const getDomainCacheConfig = {

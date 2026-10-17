@@ -10,10 +10,13 @@ import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/
 import { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
 import { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 import { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
+import { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
 
 export interface AuthRouteHandlers {
   login: (req: NextRequest) => Promise<Response>;
   register: (req: NextRequest) => Promise<Response>;
+  /** 가입 + 자동 로그인 (0.21+) */
+  signup: (req: NextRequest) => Promise<Response>;
   logout: (req: NextRequest) => Promise<Response>;
   refresh: (req: NextRequest) => Promise<Response>;
   me: (req: NextRequest) => Promise<Response>;
@@ -28,6 +31,7 @@ export function createAuthHandlers(options: AuthHandlerOptions): AuthRouteHandle
   return {
     login: createLoginHandler(options),
     register: createRegisterHandler(options),
+    signup: createSignupHandler(options),
     logout: createLogoutHandler(options),
     refresh: createRefreshHandler(options),
     me: createMeHandler(options),
@@ -49,3 +53,7 @@ export { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/
 export { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
 export { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 export { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
+export { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
+// next/error 묶음(index)은 클라이언트 컴포넌트(ErrorBoundary)를 함께 불러오므로 개별 모듈에서 가져온다
+export { buildErrorResponse } from '@withwiz/toolkit/next/error/build-error-response';
+export { withStandardErrors } from '@withwiz/toolkit/next/error/with-standard-errors';

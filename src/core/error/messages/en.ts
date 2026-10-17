@@ -43,6 +43,11 @@ export const enMessages: TErrorMessages = {
     description: '8+ characters with letters, numbers, and symbols',
     action: 'Please set a more complex password.',
   },
+  40008: {
+    title: 'This link cannot be used',
+    description: 'The link is invalid or has expired.',
+    action: 'Please request a new email.',
+  },
 
   // ============================================
   // Authentication Errors (401xx)

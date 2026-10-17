@@ -7,7 +7,7 @@
 
 | ID | 시나리오 | 없으면 나갈 버그 |
 |----|---------|----------------|
-| SC-API-OAPI-001 | 모든 에러 응답 body가 `{success:false, error:{code, message}}` 형태 + code 값 40101/40301/50001 고정 | code 값 변경 시 소비처(consumer-app) 에러 분기 파손 — 배포 후에야 발견 |
+| SC-API-OAPI-001 | 모든 에러 응답 body가 `{success:false, error:{code, message}}` 형태 + code 값 40101/40301/50001 고정 | code 값 변경 시 code 로 분기하는 소비자의 에러 분기 파손 — 배포 후에야 발견 |
 | SC-API-OAPI-002 | invalid key 401의 message는 validate 결과 message 전달 | 소비처 디버깅 정보 유실 |
 | SC-API-OAPI-003 | usage 초과 메시지 daily/monthly 분기 | 잘못된 리셋 안내 |
 | SC-API-OAPI-004 | usage tracker throw → 가용성 우선 허용 (인증 성공) | 사용량 스토어 장애가 전체 API 정지로 확산 |

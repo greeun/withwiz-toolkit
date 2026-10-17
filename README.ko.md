@@ -124,6 +124,31 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 **제약**: OAuth callback 은 redirect 응답이라 모드와 무관하게 쿠키로만 토큰을 전달합니다. OAuth 를 쓰는 앱은 `'cookie'` 또는 `'hybrid'` 를 사용하세요.
 
+### 인증 계약 (0.21)
+
+`createAuthHandlers` 는 `signup`(가입 + 자동 로그인)도 돌려주고, 다음 옵션을 받는다.
+
+```typescript
+createAuthHandlers({
+  ...options,
+  errorFormat: 'standard',      // 'legacy'(0.21 기본) | 'standard'(0.22 기본)
+  passwordPolicy: { requireUppercase: true },     // 또는 (password, { purpose, locale }) => ({ ok } | { ok: false, message })
+  signup: { autoLogin: true },  // 기본 true
+});
+```
+
+- **오류 응답**: `'standard'` 는 `{ success: false, error: { code, key, message, userMessage, details? } }` 로 응답한다.
+  분기는 `key` 로 하고, 화면에는 `userMessage.description` 을 표시하며, 필드 오류는 `details.fieldErrors` 에 있다.
+  legacy 의 문자열 `code` 값이 standard 의 `key` 가 되므로 분기 문자열은 바뀌지 않는다.
+- **어댑터**: `buildErrorResponse(key, opts)` 는 표준 오류를 만들고, `withStandardErrors(handler)` 는 라우트(인증
+  디스패치 라우트 등)의 문자열형 실패 응답을 표준 형태로 다시 쓰며, `readApiError(body)`(`core/error`)는
+  클라이언트에서 두 형태를 모두 읽는다.
+- **비밀번호 정책**은 register·signup·reset-password 에 적용된다. 72바이트 제한은 항상 적용되고, 정책이 없으면
+  이전처럼 최소 8자다.
+- **토큰만 있는 링크**: 이메일 토큰 저장소가 선택 메서드 `findEmailByToken(hashedToken, type)` 을 구현하면(기본
+  Prisma·SQL 어댑터는 구현한다) reset-password·verify-email 이 `email` 없이 토큰만 받아도 처리한다.
+- **가입 훅**은 두 번째 인자 `ctx`(`{ body, request }`)로 원본 요청 본문을 받는다.
+
 ## Module reference
 
 0.7부터 모든 subpath는 프레임워크 의존성에 따라 티어로 분리됩니다
@@ -173,7 +198,7 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 | Subpath | Description |
 |---|---|
 | `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
-| `/next/auth-handlers` | Route handlers (login / refresh / oauth callback / me) |
+| `/next/auth-handlers` | Route handlers (login / signup / register / refresh / oauth callback / me / reset / verify) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |

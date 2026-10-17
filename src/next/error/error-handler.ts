@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
-import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError } from '@withwiz/toolkit/core/constants/error-codes';
+import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError, getErrorByCode } from '@withwiz/toolkit/core/constants/error-codes';
+import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
+import { LocaleDetector } from '@withwiz/toolkit/next/error/locale-detector';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
 import {
@@ -56,7 +58,11 @@ export interface IErrorResponse {
   success: false;
   error: {
     code: number;
+    /** 기계 분기용 키 (0.21+) */
+    key?: string;
     message: string;
+    /** 요청 로케일의 사용자 문구 (0.21+) */
+    userMessage?: { title?: string; description: string; action?: string };
     details?: unknown;
   };
 }
@@ -64,7 +70,7 @@ export interface IErrorResponse {
 /**
  * 에러를 NextResponse로 변환
  */
-export function errorToResponse(error: unknown, requestPath?: string): NextResponse<IErrorResponse> {
+export function errorToResponse(error: unknown, requestPath?: string, request?: NextRequest): NextResponse<IErrorResponse> {
   const processed = processError(error);
 
   // 로깅 (난독화된 번들 소스가 통째로 기록되지 않도록 길이 제한)
@@ -84,8 +90,20 @@ export function errorToResponse(error: unknown, requestPath?: string): NextRespo
     });
   }
 
+  // AuthError 는 인증 핸들러와 같은 key(자기 code)를 쓴다 — 생성 경로가 달라도 분기 문자열이 같도록
+  const key = error instanceof AuthError ? error.code : getErrorByCode(processed.code)?.key ?? 'INTERNAL_SERVER_ERROR';
+  const userMessage = getErrorMessage(processed.code, request ? LocaleDetector.detectServer(request) : 'ko');
   return NextResponse.json(
-    { success: false, error: { code: processed.code, message: processed.message, details: processed.details } },
+    {
+      success: false,
+      error: {
+        code: processed.code,
+        key,
+        message: processed.message,
+        userMessage: { title: userMessage.title, description: userMessage.description, action: userMessage.action },
+        details: processed.details,
+      },
+    },
     { status: processed.status }
   );
 }
@@ -161,7 +179,7 @@ export function withErrorHandler<T extends unknown[]>(
     try {
       return await handler(request, ...args);
     } catch (error) {
-      return errorToResponse(error, request.nextUrl.pathname);
+      return errorToResponse(error, request.nextUrl.pathname, request);
     }
   };
 }

@@ -76,6 +76,13 @@ __tests__/
 
 ### Coding Standards
 
+#### Consumer Independence
+- The package must not depend on, branch for, or be shaped around any specific consuming project
+- Never write consuming project names, paths, domains, ID prefixes, or their defects into tracked
+  files (code, comments, tests, docs, CHANGELOG) or commit messages — this repository is public
+- Describe consumers by usage pattern instead (e.g. "consumers that store tokens in localStorage")
+- Keep consumer-specific surveys and rollout plans outside this repository
+
 #### TypeScript
 - Use strict mode
 - Add proper type annotations

@@ -18,6 +18,9 @@ export * from "@withwiz/toolkit/core/error/app-error";
 // 에러 정보 추출 (프레임워크 독립)
 export * from "@withwiz/toolkit/core/error/extract-error-info";
 
+// API 오류 응답 판독 (클라이언트용, 프레임워크 독립)
+export * from "@withwiz/toolkit/core/error/read-api-error";
+
 // Prisma 오류 판정 (프레임워크 독립, 의존성 없음)
 export * from "@withwiz/toolkit/core/error/prisma-error";
 

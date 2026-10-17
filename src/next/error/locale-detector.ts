@@ -73,7 +73,8 @@ export class LocaleDetector {
     try {
       // 1. Cookie 우선 확인
       for (const name of SERVER_LOCALE_COOKIES) {
-        const cookieLocale = request.cookies.get(name)?.value;
+        // cookies API 가 없는 표준 Request 도 받는다 — 그때는 헤더만 본다
+        const cookieLocale = request.cookies?.get(name)?.value;
         if (cookieLocale && this.isValidLocale(cookieLocale)) {
           return cookieLocale.toLowerCase() as TLocale;
         }

@@ -286,6 +286,12 @@ export interface EmailTokenRepository {
   delete(email: string, token: string, type: TokenType): Promise<void>;
   deleteExpired(): Promise<void>;
   markAsUsed(id: string): Promise<void>;
+  /**
+   * 해시된 토큰으로 발급 대상 email 을 찾는다 (0.21+, 선택).
+   * 구현하면 reset-password·verify-email 이 요청에 email 이 없을 때 토큰으로 email 을 찾는다.
+   * 구현하지 않은 저장소는 지금처럼 email 이 필수다. 토큰 종류 경계는 `type` 으로 지킨다.
+   */
+  findEmailByToken?(hashedToken: string, type: TokenType): Promise<string | null>;
 }
 
 // ============================================================================

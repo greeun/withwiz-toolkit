@@ -3,10 +3,12 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 const schema = z.object({ email: z.string().email() });
 
 export function createForgotPasswordHandler(options: AuthHandlerOptions) {
+  const respond = createAuthResponder(options);
   const { dependencies } = options;
 
   return async (request: NextRequest): Promise<Response> => {
@@ -14,11 +16,11 @@ export function createForgotPasswordHandler(options: AuthHandlerOptions) {
       const body = await request.json();
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
-        return NextResponse.json({ success: false, error: 'Invalid email' }, { status: 400 });
+        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid email', fieldErrors: zodFieldErrors(parsed.error) });
       }
 
       if (!dependencies.emailSender) {
-        return NextResponse.json({ success: false, error: 'Email service not configured' }, { status: 500 });
+        return respond.error(request, { status: 500, key: 'SERVER_ERROR', message: 'Email service not configured' });
       }
 
       const service = new PasswordResetService({

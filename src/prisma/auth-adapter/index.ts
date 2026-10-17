@@ -359,4 +359,14 @@ export class PrismaEmailTokenRepository implements EmailTokenRepository {
       data: { used: true },
     });
   }
+
+  /** 해시된 토큰으로 발급 대상 email 을 찾는다. 토큰 종류는 테이블로 구분된다. */
+  async findEmailByToken(hashedToken: string, type: TokenType): Promise<string | null> {
+    const tableName = this.getTokenTable(type);
+    const result = await (this.prisma as any)[tableName].findFirst({
+      where: { token: hashedToken },
+      select: { email: true },
+    });
+    return result?.email ?? null;
+  }
 }

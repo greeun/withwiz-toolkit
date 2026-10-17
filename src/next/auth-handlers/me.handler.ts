@@ -3,9 +3,11 @@ import type { NextRequest } from 'next/server';
 import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
 export function createMeHandler(options: AuthHandlerOptions) {
+  const respond = createAuthResponder(options);
   const { dependencies, jwt, hooks } = options;
   const jwtService = new JWTService({
     secret: jwt.secret,
@@ -22,14 +24,14 @@ export function createMeHandler(options: AuthHandlerOptions) {
       );
 
       if (!token) {
-        return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'UNAUTHORIZED', message: 'Not authenticated' });
       }
 
       const payload = await jwtService.verifyAccessToken(token);
       const user = await dependencies.userRepository.findById(payload.userId);
 
       if (!user || user.isActive === false) {
-        return NextResponse.json({ success: false, error: 'User not found' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'UNAUTHORIZED', message: 'User not found' });
       }
 
       let userResponse: Record<string, unknown> = {
@@ -45,7 +47,7 @@ export function createMeHandler(options: AuthHandlerOptions) {
 
       return NextResponse.json({ success: true, user: userResponse });
     } catch {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+      return respond.error(request, { status: 401, key: 'UNAUTHORIZED', message: 'Not authenticated' });
     }
   };
 }
