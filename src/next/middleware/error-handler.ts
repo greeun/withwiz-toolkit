@@ -13,7 +13,8 @@ import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
-import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage } from '@withwiz/toolkit/core/constants/error-codes';
+import { ERROR_CODES, classifyError, getHttpStatus, formatErrorMessage, getErrorByCode } from '@withwiz/toolkit/core/constants/error-codes';
+import { representativeCode } from '@withwiz/toolkit/next/error/build-error-response';
 import { summarizeErrorForLog, truncateErrorMessage } from '@withwiz/toolkit/core/error/extract-error-info';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
@@ -71,13 +72,16 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
 
     // AuthError인 경우 (JWTError, OAuthError 등)
     if (error instanceof AuthError) {
+      // key 는 인증 핸들러와 같이 AuthError 의 code 를 쓴다
       const mappedCode = AUTH_ERROR_CODE_MAP[error.code];
       if (mappedCode) {
         return createErrorResponse(
           mappedCode,
           error.message,
           context.locale,
-          context.requestId
+          context.requestId,
+          undefined,
+          error.code
         );
       }
       // 매핑에 없는 AuthError는 statusCode 기반으로 처리
@@ -86,7 +90,9 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
         fallbackCode,
         error.message,
         context.locale,
-        context.requestId
+        context.requestId,
+        undefined,
+        error.code
       );
     }
 
@@ -126,7 +132,8 @@ function createErrorResponse(
   message: string,
   locale: 'ko' | 'en' | 'ja',
   requestId: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  keyOverride?: string
 ): NextResponse {
   // 사용자용 다중 언어 메시지
   const userMessage = getErrorMessage(code, locale);
@@ -134,11 +141,16 @@ function createErrorResponse(
   // HTTP 상태 코드 추출 (40907 -> 409)
   const httpStatus = Math.floor(code / 100);
 
+  // 0.21+: 기계 분기용 key 와 필드 오류(details.fieldErrors)를 함께 싣는다. 기존 필드는 그대로 둔다.
+  const key = keyOverride ?? getErrorByCode(code)?.key ?? getErrorByCode(representativeCode(httpStatus))?.key ?? 'INTERNAL_SERVER_ERROR';
+  const fieldErrors = fieldErrorsFromIssues(metadata?.issues);
+
   // 에러 응답 구조 (code는 별도 필드로 제공, message에 포함하지 않음)
   const errorResponse = {
     success: false,
     error: {
       code,
+      key,
       message,
       userMessage: {
         title: userMessage.title,
@@ -147,6 +159,7 @@ function createErrorResponse(
       },
       requestId,
       ...(metadata && { metadata }),
+      ...(fieldErrors && { details: { fieldErrors } }),
     },
   };
 
@@ -156,4 +169,16 @@ function createErrorResponse(
       'Content-Type': 'application/json',
     },
   });
+}
+
+/** zod issues(`{ path, message }`)를 `fieldErrors`(필드별 사유 배열)로 바꾼다. issues 가 없으면 undefined */
+function fieldErrorsFromIssues(issues: unknown): Record<string, string[]> | undefined {
+  if (!Array.isArray(issues) || issues.length === 0) return undefined;
+  const out: Record<string, string[]> = {};
+  for (const issue of issues as Array<{ path?: unknown; message?: unknown }>) {
+    const field = typeof issue.path === 'string' && issue.path ? issue.path.split('.')[0] : undefined;
+    if (!field || typeof issue.message !== 'string') continue;
+    (out[field] ??= []).push(issue.message);
+  }
+  return Object.keys(out).length ? out : undefined;
 }

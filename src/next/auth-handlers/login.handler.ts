@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { compare } from 'bcryptjs';
-import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
-import { getTokenDeliveryStrategy } from '@withwiz/toolkit/core/auth/token-delivery';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createSessionIssuer } from '@withwiz/toolkit/next/auth-handlers/session';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -21,27 +20,23 @@ const loginSchema = z.object({
 const DUMMY_PASSWORD_HASH = '$2b$12$/l4jMXYcTL.SQgNWzy1UcuSlrtLlw.GFTpWDYTficzN2kRhN/LwEO';
 
 export function createLoginHandler(options: AuthHandlerOptions) {
-  const { dependencies, jwt, hooks, features, cookie, tokenDelivery } = options;
-  const jwtService = new JWTService({
-    secret: jwt.secret,
-    accessTokenExpiry: jwt.accessTokenExpiry ?? JWT_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES,
-    refreshTokenExpiry: jwt.refreshTokenExpiry ?? JWT_DEFAULTS.DEFAULT_REFRESH_TOKEN_EXPIRES,
-    algorithm: JWT_DEFAULTS.ALGORITHM,
-  });
+  const respond = createAuthResponder(options);
+  const { dependencies, hooks, features } = options;
+  const issueSession = createSessionIssuer(options);
 
   return async (request: NextRequest): Promise<Response> => {
     try {
       const body = await request.json();
       const parsed = loginSchema.safeParse(body);
       if (!parsed.success) {
-        return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
+        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors: zodFieldErrors(parsed.error) });
       }
 
       const { email, password } = parsed.data;
 
       if (hooks?.allowEmail) {
         const allowed = await hooks.allowEmail(email);
-        if (!allowed) return NextResponse.json({ success: false, error: 'Email not allowed' }, { status: 403 });
+        if (!allowed) return respond.error(request, { status: 403, key: 'EMAIL_NOT_ALLOWED', message: 'Email not allowed' });
       }
 
       if (hooks?.onBeforeLogin) {
@@ -53,11 +48,11 @@ export function createLoginHandler(options: AuthHandlerOptions) {
       if (!user) {
         // 계정이 없어도 동일 비용의 compare 를 수행해 타이밍을 균일화한다
         await compare(password, DUMMY_PASSWORD_HASH);
-        return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
       }
 
       if (user.isActive === false) {
-        return NextResponse.json({ success: false, error: 'Account disabled' }, { status: 403 });
+        return respond.error(request, { status: 403, key: 'ACCOUNT_DISABLED', message: 'Account disabled' });
       }
 
       // The repository findByEmail should return the full user including password for auth
@@ -65,56 +60,23 @@ export function createLoginHandler(options: AuthHandlerOptions) {
       if (!userRecord.password) {
         // 비밀번호가 없는 계정(OAuth 전용)도 동일하게 더미 compare 로 타이밍 균일화
         await compare(password, DUMMY_PASSWORD_HASH);
-        return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
       }
 
       const isValid = await compare(password, userRecord.password);
       if (!isValid) {
-        return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+        return respond.error(request, { status: 401, key: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
       }
 
       if (features?.emailVerificationRequired && !user.emailVerified) {
-        return NextResponse.json(
-          { success: false, error: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' },
-          { status: 403 },
-        );
+        return respond.error(request, { status: 403, key: 'EMAIL_NOT_VERIFIED', message: 'Email not verified', legacyCode: 'EMAIL_NOT_VERIFIED' });
       }
 
-      const tokens = await jwtService.createTokenPair({
-        id: user.id,
-        email: user.email,
-        role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
-        emailVerified: user.emailVerified,
-      });
-
-      await dependencies.userRepository.updateLastLoginAt(user.id);
-      if (hooks?.onAfterLogin) await hooks.onAfterLogin(user, request);
-
-      let userResponse: Record<string, unknown> = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      };
-      if (hooks?.extendUserResponse) {
-        userResponse = { ...userResponse, ...(await hooks.extendUserResponse(user)) };
-      }
-
-      const strategy = getTokenDeliveryStrategy(tokenDelivery);
-      const response = NextResponse.json(
-        strategy.buildTokenResponse({ success: true, user: userResponse }, { tokens }),
-      );
-      strategy.attachCookies(response, tokens, { secure: cookie?.secure });
-      return response;
+      // await: 세션 발급 중 예외도 아래 catch 가 처리해야 한다
+      return await issueSession(user, request);
     } catch (error) {
-      if (error instanceof AuthError) {
-        return NextResponse.json(
-          { success: false, error: error.message, code: error.code },
-          { status: error.statusCode },
-        );
-      }
-      return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+      if (error instanceof AuthError) return respond.fromAuthError(request, error, true);
+      return respond.error(request, { status: 500, key: 'INTERNAL_SERVER_ERROR', message: 'Internal server error' });
     }
   };
 }

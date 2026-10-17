@@ -865,3 +865,31 @@ describe('PrismaEmailTokenRepository', () => {
     });
   });
 });
+
+describe('PrismaEmailTokenRepository.findEmailByToken (0.21)', () => {
+  it('종류별 테이블에서 토큰으로 email 만 조회한다', async () => {
+    const mockPrisma = createMockPrisma();
+    const repo = new PrismaEmailTokenRepository(mockPrisma);
+    mockPrisma.passwordResetToken.findFirst.mockResolvedValue({ email: 'a@b.com' });
+    await expect(repo.findEmailByToken('hashed', 'PASSWORD_RESET' as any)).resolves.toBe('a@b.com');
+    expect(mockPrisma.passwordResetToken.findFirst).toHaveBeenCalledWith({ where: { token: 'hashed' }, select: { email: true } });
+  });
+
+  it('행이 없으면 null', async () => {
+    const mockPrisma = createMockPrisma();
+    const repo = new PrismaEmailTokenRepository(mockPrisma);
+    mockPrisma.emailVerificationToken.findFirst.mockResolvedValue(null);
+    await expect(repo.findEmailByToken('none', 'EMAIL_VERIFICATION' as any)).resolves.toBeNull();
+  });
+});
+
+describe('PrismaEmailTokenRepository.findEmailByToken — 종류별 테이블 (0.21)', () => {
+  it('EMAIL_VERIFICATION 은 인증 토큰 모델만 조회한다', async () => {
+    const mockPrisma = createMockPrisma();
+    const repo = new PrismaEmailTokenRepository(mockPrisma);
+    mockPrisma.emailVerificationToken.findFirst.mockResolvedValue({ email: 'v@b.com' });
+    await expect(repo.findEmailByToken('hashed', 'EMAIL_VERIFICATION' as any)).resolves.toBe('v@b.com');
+    expect(mockPrisma.emailVerificationToken.findFirst).toHaveBeenCalledWith({ where: { token: 'hashed' }, select: { email: true } });
+    expect(mockPrisma.passwordResetToken.findFirst).not.toHaveBeenCalled();
+  });
+});

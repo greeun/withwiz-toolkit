@@ -632,7 +632,8 @@ describe('Auth Handlers', () => {
       });
 
       await handler(req);
-      expect(onAfterRegister).toHaveBeenCalledWith({ id: 'u1', email: 'test@example.com', name: 'Test' });
+      // 0.21: 두 번째 인자로 요청 맥락(ctx)을 받는다
+      expect(onAfterRegister).toHaveBeenCalledWith({ id: 'u1', email: 'test@example.com', name: 'Test' }, expect.objectContaining({ body: expect.any(Object), request: expect.anything() }));
     });
 
     it('should return AuthError status when RegisterService throws AuthError', async () => {

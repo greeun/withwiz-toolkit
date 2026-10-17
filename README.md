@@ -125,6 +125,32 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 **Constraint**: The OAuth callback is a redirect response, so it always delivers the token via cookie regardless of the mode. Apps that use OAuth should use `'cookie'` or `'hybrid'`.
 
+### Auth contract (0.21)
+
+`createAuthHandlers` now also returns `signup` (sign up + auto login) and takes these options:
+
+```typescript
+createAuthHandlers({
+  ...options,
+  errorFormat: 'standard',      // 'legacy' (0.21 default) | 'standard' (0.22 default)
+  passwordPolicy: { requireUppercase: true },     // or (password, { purpose, locale }) => ({ ok } | { ok: false, message })
+  signup: { autoLogin: true },  // default true
+});
+```
+
+- **Error envelope.** `'standard'` responds with `{ success: false, error: { code, key, message, userMessage, details? } }`.
+  Branch on `key`; show `userMessage.description`; field errors are in `details.fieldErrors`.
+  The legacy string `code` becomes the standard `key`, so branching strings do not change.
+- **Adapters.** `buildErrorResponse(key, opts)` builds a standard error, `withStandardErrors(handler)`
+  rewrites string-form failures of a route (e.g. an auth dispatch route) into the standard shape,
+  and `readApiError(body)` (`core/error`) reads either shape on the client.
+- **Password policy** applies to register, signup and reset-password. The 72-byte limit always applies;
+  without a policy the minimum is 8 characters, as before.
+- **Token-only links.** When the email token repository implements the optional
+  `findEmailByToken(hashedToken, type)` (the bundled Prisma and SQL adapters do), reset-password and
+  verify-email accept a token without `email`.
+- **Register hooks** receive a second `ctx` argument (`{ body, request }`) with the raw request body.
+
 ## Module reference
 
 Since 0.7, every subpath is split into tiers based on its framework dependencies
@@ -178,9 +204,9 @@ Every subpath outside `next/*` can be imported from plain Node.js ESM without Ne
 | Subpath | Description |
 |---|---|
 | `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
-| `/next/auth-handlers` | Route handlers (login / refresh / oauth callback / me) |
+| `/next/auth-handlers` | Route handlers (login / signup / register / refresh / oauth callback / me / reset / verify) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
-| `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
+| `/next/error` | `error-handler` (NextResponse), `buildErrorResponse`, `withStandardErrors`, `LocaleDetector`, `ErrorBoundary` |
 | `/next/oapi` | `createApiKeyAuth` (x-api-key auth middleware), OpenAPI 3.0.3 spec builder, pagination helpers |
 | `/next/utils` | `api-helpers`, `cors`, `csv-export`, `error-processor` |
 

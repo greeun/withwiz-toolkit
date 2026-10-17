@@ -194,6 +194,22 @@ interface EmailTokenRepository {
 - **핸들러**: 각 핸들러의 오류 경로를 `errorFormat` 두 값으로 검증. signup 의 세 갈래(자동 로그인·인증 필요·autoLogin false).
 - **계약 테스트(신규)**: auth-ui 레포에 실제 toolkit 핸들러와 폼을 연결하는 테스트를 둔다. 양쪽 단위 테스트가 각자 통과해도 둘 사이의 계약 불일치는 잡히지 않는다.
 
+## 구현 메모 (2026-10-18, 0.21.0)
+
+설계와 달라졌거나 구현하면서 정한 사항이다.
+
+- **standard 의 key**: `ERROR_CODES` 에 맞는 항목이 있으면 그 key, 서비스의 `AuthError` 는 그 `code`(예: `TOKEN_INVALID`), 맞는 항목이 없으면 원인을 구분하는 고유 key(예: `EMAIL_NOT_ALLOWED`, `OAUTH_STATE_INVALID`)를 쓴다. 결과적으로 legacy 의 문자열 `code` 값은 모두 standard 의 `key` 와 같다 — 0.22 전환 뒤에도 분기 문자열이 바뀌지 않는다.
+- **HTTP 상태**: standard 도 legacy 와 같은 상태로 응답한다(숫자 code 의 앞 세 자리와 다를 수 있다).
+- **미들웨어·errorToResponse**: 공용 빌더로 다시 쓰지 않고 `key`(와 각각 `details.fieldErrors`, `userMessage`)만 추가했다. 기존 필드(`metadata` 등)를 바꾸지 않기 위해서다. `errorToResponse` 는 로케일을 위해 선택 인자 `request` 를 받는다.
+- **signup 의 세션 발급 실패**: 가입은 이미 끝났으므로 실패로 응답하지 않고 세션 없는 가입 성공(201)으로 폴백하며 오류를 로그에 남긴다. 실패로 알리면 재시도가 "이미 가입된 이메일" 로 끝난다.
+- **세션 발급 공유**: login 의 세션 발급부를 `session.ts` 로 분리해 signup 과 함께 쓴다.
+- **메일 링크 토큰 오류**: 핸들러가 토큰을 찾지 못한 경우와 서비스가 `TOKEN_INVALID` 를 던진 경우 모두 key `TOKEN_INVALID`, 숫자 코드는 새 사전 항목 `LINK_INVALID`(40008)다. `TOKEN_INVALID` 의 일반 매핑(40102)은 로그인 세션 문구라 메일 링크에 맞지 않는다(결정 2 "빠진 키만 추가"에 따른 추가).
+- **key 도출 통일**: `AuthError` 는 인증 핸들러·`errorToResponse`·미들웨어·`withStandardErrors` 모두에서 자기 `code` 를 key 로 쓴다.
+- **서버 진입점**: `next/auth-handlers` 는 `next/error` 묶음(index)을 거치지 않는다. 묶음에 클라이언트 컴포넌트(ErrorBoundary)가 있어 서버 라우트 번들이 깨지기 때문이다. `__tests__/build/server-entry-graph.test.ts` 가 dist 의 import 그래프로 이를 검사한다.
+- **훅 ctx**: `ctx.body` 에서 `password` 를 뺀다(훅이 로그를 남겨도 평문 비밀번호가 새지 않게).
+- **정책이 있을 때 최소 길이**: 스키마의 `min(8)` 은 정책이 없을 때만 적용하고, 정책이 있으면 최소 길이도 정책이 정한다.
+- **legacy 의 정책 위반 응답**: `error` 문자열에 사유를, `code` 에 `PASSWORD_TOO_WEAK` 를, `details.fieldErrors.password` 에 사유를 싣는다 — 문자열 `error` 만 읽는 클라이언트도 사유를 표시할 수 있다.
+
 ## 결정 사항
 
 1. **`ACCOUNT_LOCKED` 의 HTTP 상태**: 403(40309)을 유지한다. 숫자 코드로 분기하는 소비자를 깨지 않고, `code/100 = status` 체계도 지킨다. 재시도 시점을 알려야 하는 소비자는 `buildErrorResponse` 의 `headers` 로 `retry-after` 를 지정한다. 요청 빈도 제한 성격의 거부는 기존 `RATE_LIMIT_EXCEEDED`(429)를 쓴다.

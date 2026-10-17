@@ -87,6 +87,12 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.BAD_REQUEST,
     message: "Password is too weak.",
   },
+  LINK_INVALID: {
+    code: 40008,
+    key: "LINK_INVALID",
+    status: HTTP_STATUS.BAD_REQUEST,
+    message: "The link is invalid or has expired.",
+  },
 
   // ============================================
   // Authentication Related (401xx)

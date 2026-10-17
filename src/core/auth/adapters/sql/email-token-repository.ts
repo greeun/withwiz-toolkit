@@ -129,4 +129,14 @@ export class SqlEmailTokenRepository implements EmailTokenRepository {
     const sql = `UPDATE ${this.dialect.quoteId(this.config.tables.magicLink)} SET ${this.dialect.quoteId(c.used)} = ${pb.add(true)} WHERE ${this.dialect.quoteId(c.id)} = ${pb.add(id)}`;
     await this.exec.query(sql, pb.params);
   }
+
+  /** 해시된 토큰으로 발급 대상 email 을 찾는다. 토큰 종류는 테이블로 구분된다. */
+  async findEmailByToken(hashedToken: string, type: TokenType): Promise<string | null> {
+    const c = this.cols;
+    const pb = new ParamBuilder(this.dialect);
+    const sql = `SELECT ${this.dialect.quoteId(c.email)} FROM ${this.quotedTable(type)} WHERE ${this.dialect.quoteId(c.token)} = ${pb.add(hashedToken)}`;
+    const rows = await this.exec.query(sql, pb.params);
+    const email = rows[0]?.[c.email];
+    return typeof email === 'string' ? email : null;
+  }
 }

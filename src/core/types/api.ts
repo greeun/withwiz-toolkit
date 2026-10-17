@@ -52,6 +52,13 @@ export interface IApiResponse<T = any> {
     code: number;
 
     /**
+     * 기계 분기용 키 (0.21+)
+     * - ERROR_CODES 의 key ("EMAIL_NOT_VERIFIED") 또는 소비자가 정한 고유 문자열
+     * - 분기는 숫자 code 가 아니라 이 값으로 한다
+     */
+    key?: string;
+
+    /**
      * 내부 개발용 상세 메시지
      */
     message: string;
