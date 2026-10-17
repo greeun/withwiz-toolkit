@@ -1,7 +1,7 @@
 # 인증 계약 표준화 설계 (오류 응답 · signup · 비밀번호 정책 · 토큰 email 보완)
 
 **날짜**: 2026-10-17
-**상태**: 초안 (검토 대기)
+**상태**: 확정 (구현 대기)
 **대상 버전**: toolkit 0.21 (minor — 추가만, 기본 동작 유지) → 0.22 (기본값 전환) / auth-ui 0.7
 **관련 패키지**: `@withwiz/auth-ui` (같은 계약의 소비자 — 별도 설계서에서 상세화)
 
@@ -194,8 +194,8 @@ interface EmailTokenRepository {
 - **핸들러**: 각 핸들러의 오류 경로를 `errorFormat` 두 값으로 검증. signup 의 세 갈래(자동 로그인·인증 필요·autoLogin false).
 - **계약 테스트(신규)**: auth-ui 레포에 실제 toolkit 핸들러와 폼을 연결하는 테스트를 둔다. 양쪽 단위 테스트가 각자 통과해도 둘 사이의 계약 불일치는 잡히지 않는다.
 
-## 열린 질문
+## 결정 사항
 
-1. `ACCOUNT_LOCKED` 의 HTTP 상태: 지금은 403(40309)이다. 계정 잠금은 일시적 제한이라 429 + `retry-after` 가 의미상 맞다고 보지만, 코드 체계(`code/100 = status`)를 바꿔야 한다.
-2. `userMessage` 의 기본 문구: 미들웨어는 `getErrorMessage(code, locale)` 의 일반 문구를 채운다. 인증 핸들러도 같은 사전을 쓸지, 인증 전용 문구를 사전에 추가할지 정해야 한다.
-3. `errorToResponse`·`withErrorHandler` 를 미들웨어 래퍼로 일원화하고 폐기(deprecated)할지.
+1. **`ACCOUNT_LOCKED` 의 HTTP 상태**: 403(40309)을 유지한다. 숫자 코드로 분기하는 소비자를 깨지 않고, `code/100 = status` 체계도 지킨다. 재시도 시점을 알려야 하는 소비자는 `buildErrorResponse` 의 `headers` 로 `retry-after` 를 지정한다. 요청 빈도 제한 성격의 거부는 기존 `RATE_LIMIT_EXCEEDED`(429)를 쓴다.
+2. **`userMessage` 의 기본 문구**: 인증 핸들러도 미들웨어와 같은 `getErrorMessage(code, locale)` 사전을 쓴다. 사전을 둘로 나누면 같은 코드의 문구가 갈라진다. 인증 핸들러가 내는 키 중 사전에 빠진 항목만 구현 단계에서 추가한다.
+3. **`errorToResponse`·`withErrorHandler`**: 이번에는 폐기하지 않고, 출력 형태만 표준(`key`·`userMessage` 포함)에 맞춘다. 출력이 같아지면 폐기로 얻는 이득이 작다.
