@@ -124,22 +124,24 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 **제약**: OAuth callback 은 redirect 응답이라 모드와 무관하게 쿠키로만 토큰을 전달합니다. OAuth 를 쓰는 앱은 `'cookie'` 또는 `'hybrid'` 를 사용하세요.
 
-### 인증 계약 (0.21)
+### 인증 계약 (0.21, 0.22 부터 표준 오류 기본)
 
 `createAuthHandlers` 는 `signup`(가입 + 자동 로그인)도 돌려주고, 다음 옵션을 받는다.
 
 ```typescript
 createAuthHandlers({
   ...options,
-  errorFormat: 'standard',      // 'legacy'(0.21 기본) | 'standard'(0.22 기본)
+  errorFormat: 'standard',      // 0.22 부터 기본 | 'legacy'(0.21 기본, 1.0 에서 제거)
   passwordPolicy: { requireUppercase: true },     // 또는 (password, { purpose, locale }) => ({ ok } | { ok: false, message })
   signup: { autoLogin: true },  // 기본 true
 });
 ```
 
-- **오류 응답**: `'standard'` 는 `{ success: false, error: { code, key, message, userMessage, details? } }` 로 응답한다.
+- **오류 응답**: 0.22 부터는 `errorFormat` 을 지정하지 않으면 표준 형태로 응답한다.
+  `{ success: false, error: { code, key, message, userMessage: { title, description, action }, requestId?, details? } }`
   분기는 `key` 로 하고, 화면에는 `userMessage.description` 을 표시하며, 필드 오류는 `details.fieldErrors` 에 있다.
   legacy 의 문자열 `code` 값이 standard 의 `key` 가 되므로 분기 문자열은 바뀌지 않는다.
+  `errorFormat: 'legacy'` 를 명시하면 1.0 전까지 0.20 의 문자열형(`{ success: false, error: "…", code? }`)을 쓸 수 있다.
 - **어댑터**: `buildErrorResponse(key, opts)` 는 표준 오류를 만들고, `withStandardErrors(handler)` 는 라우트(인증
   디스패치 라우트 등)의 문자열형 실패 응답을 표준 형태로 다시 쓰며, `readApiError(body)`(`core/error`)는
   클라이언트에서 두 형태를 모두 읽는다.

@@ -4,7 +4,7 @@ import { RegisterService } from '@withwiz/toolkit/core/auth/services/register.se
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { BaseUser } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions, RegisterHookContext } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { passwordField, checkPasswordPolicy, passwordPolicyViolation } from '@withwiz/toolkit/next/auth-handlers/password-policy';
 
 export type RegisterOutcome =
@@ -34,7 +34,7 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
 
   return async (request: NextRequest): Promise<RegisterOutcome> => {
     try {
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const parsed = registerSchema.safeParse(body);
       if (!parsed.success) {
         return {

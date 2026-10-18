@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-10-18
+
+### Changed (breaking)
+- `next/auth-handlers`: `errorFormat` now defaults to `'standard'` (was `'legacy'`). Every auth handler —
+  login, register, signup, logout, refresh, me, forgot/reset-password, verify-email, OAuth authorize and
+  callback, and the `createAuthHandlers` bundle — answers failures with
+  `{ success: false, error: { code, key, message, userMessage: { title, description, action }, requestId?, details? } }`
+  unless `errorFormat` is set. The default is decided in one place (`DEFAULT_AUTH_ERROR_FORMAT`).
+- HTTP statuses do not change. Where a legacy body carried a string `code`, the same value is the standard
+  `error.key`. Validation failures carry `error.details.fieldErrors`.
+- The text a user sees can change: `error.userMessage.description` is the error dictionary message in the
+  request locale, while the legacy `error` string was the developer message (now `error.message`).
+  Password policy reasons are the same text in both shapes.
+
+### Fixed
+- `next/auth-handlers`: a request body that is missing or not JSON (e.g. `xx`) no longer becomes
+  `500 INTERNAL_SERVER_ERROR`. signup, register, login, reset-password, verify-email (POST) and OAuth
+  authorize now answer 400 `VALIDATION_ERROR`, the same response as their schema validation failure
+  (legacy: the same string `error` as before, e.g. `Invalid input`). forgot-password answered 200 for such
+  bodies and now answers its validation failure (400, legacy `Invalid email`), as it already did for an
+  invalid email. OAuth authorize also answers 400 `OAUTH_PROVIDER_INVALID` instead of 500 for a JSON body
+  that is not an object (e.g. `null`). The body is read by one shared helper (`readJsonBody`).
+- `next/auth-handlers`: OAuth authorize / callback accept only providers that are own keys of the `oauth`
+  option. Names such as `__proto__` or `constructor` used to pass the check through the prototype chain
+  and end in 500; they now answer 400 `OAUTH_PROVIDER_INVALID` / `OAUTH_CALLBACK_INVALID`.
+
+### Unchanged
+- `errorFormat: 'legacy'` still returns the 0.20 bodies byte for byte (`{ success: false, error: "…", code? }`).
+  It is planned for removal in 1.0.
+- With a `passwordPolicy`, a password over 72 bytes is still 400 `PASSWORD_TOO_WEAK` with a message in the
+  request locale (0.21.1).
+
+### Migration
+Clients that read auth failures as a string — `body.error` used as display text, `body.code` used for
+branching, or `body.details.fieldErrors` — receive an object in `body.error` after upgrading. Choose one:
+
+1. **Keep the old shape for now.** Set it explicitly where the handlers are created:
+   ```ts
+   createAuthHandlers({ ...options, errorFormat: 'legacy' });
+   ```
+2. **Read both shapes.** Use `readApiError` from `@withwiz/toolkit/core/error` on the client; it accepts the
+   standard and the legacy body, so it can ship before or after the server switch:
+   ```ts
+   const { key, text, fieldErrors } = readApiError(await res.json());
+   if (key === 'EMAIL_NOT_VERIFIED') { /* … */ }
+   showError(text); // userMessage.description, else the legacy string
+   ```
+3. **Read the standard shape directly.** Branch on `body.error.key` instead of `body.code`, display
+   `body.error.userMessage.description` instead of `body.error`, and read field errors from
+   `body.error.details.fieldErrors`.
+
+Tests that assert legacy bodies from these handlers need `errorFormat: 'legacy'` or standard assertions.
+Projects whose dependency range already admits 0.22 (for example `latest`) get the new default on install.
+
 ## [0.21.1]
 
 ### Fixed
