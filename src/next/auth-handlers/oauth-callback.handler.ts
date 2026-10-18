@@ -37,7 +37,8 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
       const code = url.searchParams.get('code');
       const provider = url.searchParams.get('provider') ?? url.pathname.split('/').pop();
 
-      if (!code || !provider || !oauth?.[provider]) {
+      // 자기 속성만 인정한다 — `__proto__`·`constructor` 같은 이름이 프로토타입을 통해 통과하지 않게.
+      if (!code || !provider || !oauth || !Object.prototype.hasOwnProperty.call(oauth, provider)) {
         return respond.error(request, { status: 400, key: 'OAUTH_CALLBACK_INVALID', message: 'Invalid callback' });
       }
 

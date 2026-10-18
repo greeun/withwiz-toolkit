@@ -125,22 +125,24 @@ createAuthHandlers({ ...options, tokenDelivery: 'header' });
 
 **Constraint**: The OAuth callback is a redirect response, so it always delivers the token via cookie regardless of the mode. Apps that use OAuth should use `'cookie'` or `'hybrid'`.
 
-### Auth contract (0.21)
+### Auth contract (0.21, standard errors by default since 0.22)
 
 `createAuthHandlers` now also returns `signup` (sign up + auto login) and takes these options:
 
 ```typescript
 createAuthHandlers({
   ...options,
-  errorFormat: 'standard',      // 'legacy' (0.21 default) | 'standard' (0.22 default)
+  errorFormat: 'standard',      // default since 0.22 | 'legacy' (0.21 default, removed in 1.0)
   passwordPolicy: { requireUppercase: true },     // or (password, { purpose, locale }) => ({ ok } | { ok: false, message })
   signup: { autoLogin: true },  // default true
 });
 ```
 
-- **Error envelope.** `'standard'` responds with `{ success: false, error: { code, key, message, userMessage, details? } }`.
+- **Error envelope.** Since 0.22 failures use the standard shape unless `errorFormat` is set:
+  `{ success: false, error: { code, key, message, userMessage: { title, description, action }, requestId?, details? } }`.
   Branch on `key`; show `userMessage.description`; field errors are in `details.fieldErrors`.
   The legacy string `code` becomes the standard `key`, so branching strings do not change.
+  `errorFormat: 'legacy'` keeps the 0.20 string form (`{ success: false, error: "…", code? }`) until 1.0.
 - **Adapters.** `buildErrorResponse(key, opts)` builds a standard error, `withStandardErrors(handler)`
   rewrites string-form failures of a route (e.g. an auth dispatch route) into the standard shape,
   and `readApiError(body)` (`core/error`) reads either shape on the client.

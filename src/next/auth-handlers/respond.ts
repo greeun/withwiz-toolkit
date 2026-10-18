@@ -22,12 +22,15 @@ export interface AuthErrorSpec {
   code?: number;
 }
 
+/** `errorFormat` 미지정 시의 기본값 (0.22+ 'standard', 0.21 은 'legacy') */
+export const DEFAULT_AUTH_ERROR_FORMAT = 'standard' satisfies NonNullable<AuthHandlerOptions['errorFormat']>;
+
 /**
- * 인증 핸들러의 실패 응답을 `errorFormat` 에 맞춰 만든다.
+ * 인증 핸들러의 실패 응답을 `errorFormat` 에 맞춰 만든다. 미지정이면 `DEFAULT_AUTH_ERROR_FORMAT` 이다.
  * legacy 는 0.20 의 본문과 바이트 단위로 같아야 한다 — 기존 소비자가 문자열을 비교한다.
  */
 export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorFormat'>) {
-  const standard = options.errorFormat === 'standard';
+  const standard = (options.errorFormat ?? DEFAULT_AUTH_ERROR_FORMAT) === 'standard';
 
   function error(request: Request | undefined, spec: AuthErrorSpec): NextResponse {
     if (!standard) {
@@ -64,6 +67,18 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
   }
 
   return { error, fromAuthError };
+}
+
+/**
+ * 요청 본문을 JSON 으로 읽는다. 본문이 없거나 JSON 이 아니면 `undefined` 를 돌려준다(JSON 은 undefined 를 표현할 수 없다).
+ * 파싱 예외가 핸들러의 catch 로 가면 500 이 되므로, 호출부는 결과를 스키마 검증에 넘겨 기존 검증 실패(400)로 응답한다.
+ */
+export async function readJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
 }
 
 /** zod 실패를 standard 의 fieldErrors 로 바꾼다 */

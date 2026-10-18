@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { PasswordResetService } from '@withwiz/toolkit/core/auth/services/password-reset.service';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 const schema = z.object({ email: z.string().email() });
 
@@ -13,7 +13,7 @@ export function createForgotPasswordHandler(options: AuthHandlerOptions) {
 
   return async (request: NextRequest): Promise<Response> => {
     try {
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
         return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid email', fieldErrors: zodFieldErrors(parsed.error) });

@@ -100,8 +100,11 @@ import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
 // Helpers
 // ============================================================================
 
+// 이 파일은 0.20 의 문자열형 오류 본문(legacy)을 바이트 단위로 고정하는 회귀 스위트다.
+// 0.22 부터 기본값이 'standard' 이므로 legacy 를 명시한다. standard·기본값 검증은 auth-contract-021.test.ts 에 있다.
 function createMockOptions(overrides: Partial<AuthHandlerOptions> = {}): AuthHandlerOptions {
   return {
+    errorFormat: 'legacy',
     dependencies: {
       userRepository: {
         findById: vi.fn(),

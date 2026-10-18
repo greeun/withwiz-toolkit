@@ -1,7 +1,7 @@
 # 인증 계약 표준화 설계 (오류 응답 · signup · 비밀번호 정책 · 토큰 email 보완)
 
 **날짜**: 2026-10-17
-**상태**: 확정 (구현 대기)
+**상태**: 구현 완료 (0.21.0 · 0.21.1 · 0.22.0)
 **대상 버전**: toolkit 0.21 (minor — 추가만, 기본 동작 유지) → 0.22 (기본값 전환) / auth-ui 0.7
 **관련 패키지**: `@withwiz/auth-ui` (같은 계약의 소비자 — 별도 설계서에서 상세화)
 
@@ -194,9 +194,11 @@ interface EmailTokenRepository {
 - **핸들러**: 각 핸들러의 오류 경로를 `errorFormat` 두 값으로 검증. signup 의 세 갈래(자동 로그인·인증 필요·autoLogin false).
 - **계약 테스트(신규)**: auth-ui 레포에 실제 toolkit 핸들러와 폼을 연결하는 테스트를 둔다. 양쪽 단위 테스트가 각자 통과해도 둘 사이의 계약 불일치는 잡히지 않는다.
 
-## 구현 메모 (2026-10-18, 0.21.0)
+## 구현 메모
 
 설계와 달라졌거나 구현하면서 정한 사항이다.
+
+### 0.21.0 (2026-10-18)
 
 - **standard 의 key**: `ERROR_CODES` 에 맞는 항목이 있으면 그 key, 서비스의 `AuthError` 는 그 `code`(예: `TOKEN_INVALID`), 맞는 항목이 없으면 원인을 구분하는 고유 key(예: `EMAIL_NOT_ALLOWED`, `OAUTH_STATE_INVALID`)를 쓴다. 결과적으로 legacy 의 문자열 `code` 값은 모두 standard 의 `key` 와 같다 — 0.22 전환 뒤에도 분기 문자열이 바뀌지 않는다.
 - **HTTP 상태**: standard 도 legacy 와 같은 상태로 응답한다(숫자 code 의 앞 세 자리와 다를 수 있다).
@@ -209,6 +211,18 @@ interface EmailTokenRepository {
 - **훅 ctx**: `ctx.body` 에서 `password` 를 뺀다(훅이 로그를 남겨도 평문 비밀번호가 새지 않게).
 - **정책이 있을 때 최소 길이**: 스키마의 `min(8)` 은 정책이 없을 때만 적용하고, 정책이 있으면 최소 길이도 정책이 정한다.
 - **legacy 의 정책 위반 응답**: `error` 문자열에 사유를, `code` 에 `PASSWORD_TOO_WEAK` 를, `details.fieldErrors.password` 에 사유를 싣는다 — 문자열 `error` 만 읽는 클라이언트도 사유를 표시할 수 있다.
+
+### 0.21.1 (2026-10-18)
+
+- **정책이 있을 때 72바이트 초과**: 스키마가 아니라 정책 뒤에서 판정해 400 `PASSWORD_TOO_WEAK` 와 요청 로케일(ko/en/ja) 문구로 응답한다. 소비자 정책이 길이 상한을 직접 판정하면 그 문구가 우선한다. 정책이 없으면 0.21.0 과 같다(스키마 실패).
+
+### 0.22.0 (2026-10-18)
+
+- **기본값 전환**: `errorFormat` 미지정 시 `'standard'` 로 응답한다. 기본값은 `next/auth-handlers/respond.ts` 의 `DEFAULT_AUTH_ERROR_FORMAT` 한 곳에서 정하고, 모든 인증 핸들러(signup·디스패치 묶음 포함)가 `createAuthResponder` 를 거치므로 핸들러별 기본값은 없다.
+- **legacy 유지**: `errorFormat: 'legacy'` 를 명시하면 0.20 본문을 바이트 단위로 그대로 낸다. 제거는 1.0 이다.
+- **HTTP 상태·key 불변**: 전환으로 바뀌는 것은 본문 형태뿐이다. 상태 코드와 분기 문자열(legacy `code` = standard `key`)은 같다. 화면 문구는 달라질 수 있다 — standard 의 `userMessage.description` 은 오류 사전의 요청 로케일 문구이고, legacy 의 `error` 는 개발자용 영문 메시지(standard 의 `message`)다. 정책 위반 사유는 두 형태 모두 같은 문구다.
+- **JSON 이 아닌 본문**: 본문 판독을 `respond.ts` 의 `readJsonBody` 한 곳으로 모았다. 파싱 실패는 `undefined` 로 돌려 각 핸들러의 기존 스키마 검증 실패(400 `VALIDATION_ERROR`, legacy 는 기존 문자열)로 응답한다. 이전에는 파싱 예외가 catch 로 가서 500 이 됐다(forgot-password 는 200). OAuth authorize 는 스키마가 없어 파싱 실패를 직접 400 `VALIDATION_ERROR` 로 낸다. refresh 는 토큰 전달 전략이 이미 파싱 실패를 삼킨다(토큰 없음 401).
+- **테스트**: 0.20 본문을 고정하는 회귀 스위트는 `errorFormat: 'legacy'` 를 명시하고, 기본값이 standard 임을 별도 테스트로 고정한다.
 
 ## 결정 사항
 
