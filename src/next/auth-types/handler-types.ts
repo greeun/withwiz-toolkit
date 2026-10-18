@@ -86,9 +86,9 @@ export interface AuthHandlerOptions {
    */
   refreshTokenStore?: IRefreshTokenStore;
   /**
-   * 오류 응답 형태 (0.21+).
-   * - 'legacy'(0.21 기본): `{ success: false, error: "문자열", code? }` — 0.20 과 같다
-   * - 'standard'(0.22 기본 예정): `{ success: false, error: { code, key, message, userMessage, details? } }`
+   * 오류 응답 형태 (0.21+). 기본값 'standard'(0.22+, 0.21 은 'legacy').
+   * - 'standard'(0.22 기본): `{ success: false, error: { code, key, message, userMessage, requestId?, details? } }`
+   * - 'legacy': `{ success: false, error: "문자열", code? }` — 0.20 과 같다. 명시해야 쓸 수 있고 1.0 에서 제거 예정
    * legacy 의 `code` 값은 standard 의 `key` 로 그대로 옮겨지므로 분기 문자열은 바뀌지 않는다.
    */
   errorFormat?: 'legacy' | 'standard';

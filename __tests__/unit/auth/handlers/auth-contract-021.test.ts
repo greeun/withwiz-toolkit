@@ -189,13 +189,42 @@ beforeEach(() => {
 });
 
 describe('errorFormat', () => {
-  it('기본(legacy)은 0.20 과 같은 문자열형 본문이다', async () => {
-    const options = createMockOptions({ features: { emailVerificationRequired: true } });
+  it('legacy 를 명시하면 0.20 과 같은 문자열형 본문이다', async () => {
+    const options = createMockOptions({ errorFormat: 'legacy', features: { emailVerificationRequired: true } });
     (options.dependencies.userRepository.findByEmail as any).mockResolvedValue({ ...verifiedUser, emailVerified: null, password: 'h' });
     mockCompare.mockResolvedValue(true);
     const res = await createLoginHandler(options)(makePostRequest('http://localhost/api/auth/login', { email: 'test@example.com', password: 'pw' }));
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ success: false, error: 'Email not verified', code: 'EMAIL_NOT_VERIFIED' });
+  });
+
+  it('기본값(미지정)은 standard(0.22+) — 명시한 standard 와 같은 본문이다', async () => {
+    const login = async (overrides: Partial<AuthHandlerOptions>) => {
+      const options = createMockOptions({ features: { emailVerificationRequired: true }, ...overrides });
+      (options.dependencies.userRepository.findByEmail as any).mockResolvedValue({ ...verifiedUser, emailVerified: null, password: 'h' });
+      mockCompare.mockResolvedValue(true);
+      return createLoginHandler(options)(makePostRequest('http://localhost/api/auth/login', { email: 'test@example.com', password: 'pw' }));
+    };
+    const res = await login({});
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(typeof json.error).toBe('object');
+    expect(json).not.toHaveProperty('code');
+    expect(json.error).toEqual(expect.objectContaining({ key: 'EMAIL_NOT_VERIFIED', code: 40305, message: 'Email not verified' }));
+    expect(json.error.userMessage).toEqual(expect.objectContaining({ title: expect.any(String), description: expect.any(String) }));
+    const { requestId: _a, ...defaultError } = json.error;
+    const { requestId: _b, ...standardError } = (await (await login({ errorFormat: 'standard' })).json()).error;
+    expect(defaultError).toEqual(standardError);
+  });
+
+  it('createAuthHandlers 로 묶은 핸들러도 기본값이 standard 다(검증 실패에 fieldErrors)', async () => {
+    const res = await createAuthHandlers(createMockOptions()).login(
+      makePostRequest('http://localhost/api/auth/login', { email: 'not-an-email', password: 'x' }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.key).toBe('VALIDATION_ERROR');
+    expect(json.error.details.fieldErrors.email).toEqual([expect.any(String)]);
   });
 
   it('standard 는 key·code·userMessage 를 싣고, legacy 의 code 값이 key 가 된다', async () => {
@@ -239,15 +268,15 @@ describe('errorFormat', () => {
 });
 
 describe('passwordPolicy', () => {
-  it('정책이 없으면 0.20 처럼 8자 미만을 Invalid input 으로 거부한다', async () => {
-    const res = await createRegisterHandler(createMockOptions())(makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'short' }));
+  it('정책이 없으면 0.20 처럼 8자 미만을 Invalid input 으로 거부한다(legacy)', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'legacy' }))(makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'short' }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe('Invalid input');
     expect(mockRegister).not.toHaveBeenCalled();
   });
 
   it('설정형 정책 위반은 PASSWORD_TOO_WEAK — legacy 도 사유를 error·details 에 싣는다', async () => {
-    const res = await createRegisterHandler(createMockOptions({ passwordPolicy: { requireUppercase: true } }))(
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'legacy', passwordPolicy: { requireUppercase: true } }))(
       makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'lowercase1' }),
     );
     expect(res.status).toBe(400);
@@ -302,11 +331,14 @@ describe('passwordPolicy', () => {
     const res = await createRegisterHandler(
       createMockOptions({ passwordPolicy: (pw: string) => (pw.length > 20 ? { ok: false, message: '앱 문구' } : { ok: true }) }),
     )(makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: '가'.repeat(25) }));
-    expect((await res.json()).error).toBe('앱 문구');
+    const json = await res.json();
+    expect(json.error.key).toBe('PASSWORD_TOO_WEAK');
+    expect(json.error.userMessage.description).toBe('앱 문구');
+    expect(json.error.details.fieldErrors).toEqual({ password: ['앱 문구'] });
   });
 
-  it('정책이 없으면 0.21.0 처럼 72바이트 초과는 스키마에서 Invalid input', async () => {
-    const res = await createRegisterHandler(createMockOptions())(
+  it('정책이 없으면 0.21.0 처럼 72바이트 초과는 스키마에서 Invalid input(legacy)', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'legacy' }))(
       makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: '가'.repeat(25) }),
     );
     expect(res.status).toBe(400);
@@ -348,8 +380,8 @@ describe('findEmailByToken', () => {
     expect((await res.json()).error.key).toBe('TOKEN_INVALID');
   });
 
-  it('저장소가 조회를 지원하지 않으면 0.20 처럼 email 이 필수다', async () => {
-    const res = await createResetPasswordHandler(createMockOptions())(
+  it('저장소가 조회를 지원하지 않으면 0.20 처럼 email 이 필수다(legacy)', async () => {
+    const res = await createResetPasswordHandler(createMockOptions({ errorFormat: 'legacy' }))(
       makePostRequest('http://localhost/api/auth/reset-password', { token: 'plain', password: 'password123' }),
     );
     expect(res.status).toBe(400);
@@ -420,11 +452,21 @@ describe('signup', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 
-  it('가입 실패는 register 와 같은 응답이다', async () => {
+  it.each(['legacy', 'standard'] as const)('가입 실패는 register 와 같은 응답이다(%s)', async (errorFormat) => {
     mockRegister.mockRejectedValue(new AuthError('Email already in use', 'EMAIL_ALREADY_EXISTS', 409));
-    const res = await createSignupHandler(createMockOptions())(signupReq());
+    const body = { email: 'test@example.com', password: 'password123', name: 'Test' };
+    const res = await createSignupHandler(createMockOptions({ errorFormat }))(signupReq());
+    const reg = await createRegisterHandler(createMockOptions({ errorFormat }))(makePostRequest('http://localhost/api/auth/register', body));
     expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ success: false, error: 'Email already in use', code: 'EMAIL_ALREADY_EXISTS' });
+    expect(reg.status).toBe(409);
+    const strip = (j: any) => (typeof j.error === 'object' ? { ...j, error: { ...j.error, requestId: undefined } } : j);
+    const json = await res.json();
+    expect(strip(json)).toEqual(strip(await reg.json()));
+    if (errorFormat === 'legacy') {
+      expect(json).toEqual({ success: false, error: 'Email already in use', code: 'EMAIL_ALREADY_EXISTS' });
+    } else {
+      expect(json.error).toEqual(expect.objectContaining({ key: 'EMAIL_ALREADY_EXISTS', message: 'Email already in use' }));
+    }
   });
 });
 
@@ -450,14 +492,14 @@ describe('리뷰 반영 (0.21)', () => {
     return options;
   };
 
-  it('verify-email(POST): 조회를 지원하지 않는 저장소에서 email 이 없으면 0.20 처럼 Invalid input', async () => {
-    const res = await createVerifyEmailHandler(createMockOptions())(makePostRequest('http://localhost/api/auth/verify-email', { token: 'plain' }));
+  it('verify-email(POST): 조회를 지원하지 않는 저장소에서 email 이 없으면 0.20 처럼 Invalid input(legacy)', async () => {
+    const res = await createVerifyEmailHandler(createMockOptions({ errorFormat: 'legacy' }))(makePostRequest('http://localhost/api/auth/verify-email', { token: 'plain' }));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ success: false, error: 'Invalid input' });
   });
 
-  it('verify-email(GET): 같은 경우 0.20 처럼 Missing email or token', async () => {
-    const res = await createVerifyEmailHandler(createMockOptions())(makeRequest('http://localhost/api/auth/verify-email?token=plain'));
+  it('verify-email(GET): 같은 경우 0.20 처럼 Missing email or token(legacy)', async () => {
+    const res = await createVerifyEmailHandler(createMockOptions({ errorFormat: 'legacy' }))(makeRequest('http://localhost/api/auth/verify-email?token=plain'));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ success: false, error: 'Missing email or token' });
   });
@@ -478,7 +520,7 @@ describe('리뷰 반영 (0.21)', () => {
     const deps = { ...createMockOptions().dependencies, emailSender: {} as any };
     const std = await createResetPasswordHandler(createMockOptions({ dependencies: deps, errorFormat: 'standard' }))(makePostRequest('http://localhost/x', body));
     expect((await std.json()).error).toEqual(expect.objectContaining({ key: 'TOKEN_INVALID', code: 40008 }));
-    const legacy = await createResetPasswordHandler(createMockOptions({ dependencies: deps }))(makePostRequest('http://localhost/x', body));
+    const legacy = await createResetPasswordHandler(createMockOptions({ dependencies: deps, errorFormat: 'legacy' }))(makePostRequest('http://localhost/x', body));
     expect(legacy.status).toBe(400);
     expect(await legacy.json()).toEqual({ success: false, error: 'Invalid or expired token' });
   });
@@ -510,7 +552,9 @@ describe('리뷰 반영 (0.21)', () => {
     const res = await createRegisterHandler(createMockOptions({ passwordPolicy: () => ({ ok: false }) as any }))(
       makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'abc' }),
     );
-    expect((await res.json()).error).toBe('Password does not meet the policy');
+    const json = await res.json();
+    expect(json.error.message).toBe('Password does not meet the policy');
+    expect(json.error.userMessage.description).toBe('Password does not meet the policy');
   });
 
   it('훅 ctx.body 에는 평문 비밀번호가 없다', async () => {

@@ -3,7 +3,7 @@
  *
  * 클라이언트가 실패 응답 본문을 한 형태로 읽게 한다. 두 형태를 모두 받는다.
  * - 표준: `{ error: { code, key, message, userMessage: { description }, requestId, details: { fieldErrors } } }`
- * - 문자열형(0.21 이전 인증 핸들러): `{ error: "…", code?: "…", details?: { fieldErrors } }`
+ * - 문자열형(`errorFormat: 'legacy'` 인증 핸들러 — 0.21 이하의 기본): `{ error: "…", code?: "…", details?: { fieldErrors } }`
  */
 
 export interface IReadApiError {

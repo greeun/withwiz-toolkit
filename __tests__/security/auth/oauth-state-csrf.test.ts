@@ -92,7 +92,7 @@ describe('O-1 callback: state validation (always strict)', () => {
     const res = await handler(req);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('Invalid OAuth state');
+    expect(body.error).toEqual(expect.objectContaining({ key: 'OAUTH_STATE_INVALID', message: 'Invalid OAuth state' }));
     expect(mockExchangeCodeForToken).not.toHaveBeenCalled();
   });
 
@@ -105,7 +105,7 @@ describe('O-1 callback: state validation (always strict)', () => {
     const res = await handler(req);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('Invalid OAuth state');
+    expect(body.error).toEqual(expect.objectContaining({ key: 'OAUTH_STATE_INVALID', message: 'Invalid OAuth state' }));
     expect(mockExchangeCodeForToken).not.toHaveBeenCalled();
   });
 

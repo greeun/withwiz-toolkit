@@ -22,12 +22,15 @@ export interface AuthErrorSpec {
   code?: number;
 }
 
+/** `errorFormat` 미지정 시의 기본값 (0.22+ 'standard', 0.21 은 'legacy') */
+export const DEFAULT_AUTH_ERROR_FORMAT = 'standard' satisfies NonNullable<AuthHandlerOptions['errorFormat']>;
+
 /**
- * 인증 핸들러의 실패 응답을 `errorFormat` 에 맞춰 만든다.
+ * 인증 핸들러의 실패 응답을 `errorFormat` 에 맞춰 만든다. 미지정이면 `DEFAULT_AUTH_ERROR_FORMAT` 이다.
  * legacy 는 0.20 의 본문과 바이트 단위로 같아야 한다 — 기존 소비자가 문자열을 비교한다.
  */
 export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorFormat'>) {
-  const standard = options.errorFormat === 'standard';
+  const standard = (options.errorFormat ?? DEFAULT_AUTH_ERROR_FORMAT) === 'standard';
 
   function error(request: Request | undefined, spec: AuthErrorSpec): NextResponse {
     if (!standard) {
