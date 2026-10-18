@@ -614,3 +614,23 @@ describe('JSON 이 아닌 본문 (0.22)', () => {
     expect((await res.json()).error.key).toBe('OAUTH_PROVIDER_INVALID');
   });
 });
+
+describe('0.22 — OAuth provider 는 설정의 자기 속성만 인정한다', () => {
+  const oauth = { google: { clientId: 'id', clientSecret: 'secret', redirectUri: 'http://localhost:3000/cb' } };
+
+  it.each(['__proto__', 'constructor', 'toString'])('oauth-authorize: provider=%s 는 400 OAUTH_PROVIDER_INVALID', async (provider) => {
+    const res = await createOAuthAuthorizeHandler(createMockOptions({ oauth }))(
+      makeRequest('http://localhost:3000/api/auth/oauth', { method: 'POST', body: JSON.stringify({ provider }) }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.key).toBe('OAUTH_PROVIDER_INVALID');
+  });
+
+  it.each(['__proto__', 'constructor'])('oauth-callback: provider=%s 는 400 OAUTH_CALLBACK_INVALID', async (provider) => {
+    const res = await createOAuthCallbackHandler(createMockOptions({ oauth }))(
+      makeRequest(`http://localhost:3000/api/auth/callback?code=c&state=s&provider=${provider}`),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.key).toBe('OAUTH_CALLBACK_INVALID');
+  });
+});

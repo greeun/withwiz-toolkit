@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bodies and now answers its validation failure (400, legacy `Invalid email`), as it already did for an
   invalid email. OAuth authorize also answers 400 `OAUTH_PROVIDER_INVALID` instead of 500 for a JSON body
   that is not an object (e.g. `null`). The body is read by one shared helper (`readJsonBody`).
+- `next/auth-handlers`: OAuth authorize / callback accept only providers that are own keys of the `oauth`
+  option. Names such as `__proto__` or `constructor` used to pass the check through the prototype chain
+  and end in 500; they now answer 400 `OAUTH_PROVIDER_INVALID` / `OAUTH_CALLBACK_INVALID`.
 
 ### Unchanged
 - `errorFormat: 'legacy'` still returns the 0.20 bodies byte for byte (`{ success: false, error: "…", code? }`).
