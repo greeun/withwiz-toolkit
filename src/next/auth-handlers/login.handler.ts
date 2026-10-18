@@ -29,7 +29,7 @@ export function createLoginHandler(options: AuthHandlerOptions) {
       const body = await readJsonBody(request);
       const parsed = loginSchema.safeParse(body);
       if (!parsed.success) {
-        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors: zodFieldErrors(parsed.error) });
+        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors: zodFieldErrors(parsed.error, request) });
       }
 
       const { email, password } = parsed.data;

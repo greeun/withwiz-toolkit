@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1] - 2026-10-19
+
+### Fixed
+- `core/auth/oauth` GitHub: `emailVerified` was `!!data.email`, i.e. "the public profile has an email",
+  which says nothing about verification, and users with a private email got `email: null`. `getUserInfo`
+  now reads `GET /user/emails` (the `user:email` scope it already requests) and returns the primary
+  email with its `verified` flag. If the list cannot be read, it keeps the profile email and reports
+  `emailVerified: false`, so the OAuth callback does not link it to an existing local account.
+  The returned email can now differ from before (primary instead of public email); accounts are still
+  matched by provider account id first.
+- `next/auth-handlers`: in the standard body, `details.fieldErrors` carried the English zod text
+  ("Invalid email", "String must contain at least 8 character(s)", "Required") even for ko/ja requests.
+  The reasons now use the request locale (cookie, then Accept-Language), the same rule as
+  `userMessage`. This covers the schema failures of login, register, signup, forgot/reset-password and
+  verify-email, the "email required" reason when a token cannot supply it, and the 72-byte password
+  limit without a `passwordPolicy`.
+
+### Unchanged
+- en requests get the same `fieldErrors` text as 0.22.0. The legacy body (`errorFormat: 'legacy'`),
+  including register's `details`, is byte for byte the same.
+
+### Removed
+- devDependency `@types/bcryptjs` (a stub; `bcryptjs` 3 ships its own types).
+
 ## [0.22.0] - 2026-10-18
 
 ### Changed (breaking)

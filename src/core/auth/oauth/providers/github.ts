@@ -60,13 +60,34 @@ export class GitHubOAuthProvider implements IOAuthProviderAdapter {
     }
 
     const data = await response.json();
+    // /user 의 email 은 공개 프로필 값이라 인증 여부가 없고, 비공개 설정이면 null 이다 → 주 이메일과 그 인증 여부를 쓴다
+    const primary = await this.getPrimaryEmail(accessToken);
 
     return {
       id: data.id.toString(),
-      email: data.email,
+      email: primary ? primary.email : data.email,
       name: data.name || null,
       image: data.avatar_url || null,
-      emailVerified: !!data.email,
+      emailVerified: primary?.verified === true,
     };
+  }
+
+  /** `user:email` 범위로 주 이메일을 조회한다. 조회하지 못하면 null(그때 이메일은 미인증으로 본다) */
+  private async getPrimaryEmail(accessToken: string): Promise<{ email: string; verified: boolean } | null> {
+    try {
+      const response = await fetch('https://api.github.com/user/emails', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'User-Agent': 'Auth-Module',
+        },
+      });
+      if (!response.ok) return null;
+      const emails: unknown = await response.json();
+      if (!Array.isArray(emails)) return null;
+      const primary = emails.find((e) => e?.primary === true && typeof e.email === 'string');
+      return primary ? { email: primary.email, verified: primary.verified === true } : null;
+    } catch {
+      return null;
+    }
   }
 }

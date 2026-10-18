@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import type { ZodError } from 'zod';
+import { LocaleDetector } from '@withwiz/toolkit/next/error/locale-detector';
+import { localizeFieldIssue } from '@withwiz/toolkit/next/auth-handlers/field-messages';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 import { buildErrorBody } from '@withwiz/toolkit/next/error/build-error-response';
@@ -81,10 +84,11 @@ export async function readJsonBody(request: Request): Promise<unknown> {
   }
 }
 
-/** zod 실패를 standard 의 fieldErrors 로 바꾼다 */
-export function zodFieldErrors(error: { flatten(): { fieldErrors: Record<string, string[] | undefined> } }): Record<string, string[]> {
+/** zod 실패를 standard 의 fieldErrors 로 바꾼다. 사유는 요청 로케일 문구다(en 은 zod 문구) */
+export function zodFieldErrors(error: ZodError, request: NextRequest): Record<string, string[]> {
+  const locale = LocaleDetector.detectServer(request);
   const out: Record<string, string[]> = {};
-  for (const [field, reasons] of Object.entries(error.flatten().fieldErrors)) {
+  for (const [field, reasons] of Object.entries(error.flatten((issue) => localizeFieldIssue(issue, locale)).fieldErrors)) {
     if (reasons && reasons.length) out[field] = reasons;
   }
   return out;

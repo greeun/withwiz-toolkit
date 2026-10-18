@@ -5,26 +5,22 @@ import type { NextRequest } from 'next/server';
 import type { PasswordPolicy, PasswordPolicyResult } from '@withwiz/toolkit/next/auth-types/handler-types';
 import type { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
+import { BYTE_LIMIT_MESSAGES, BYTE_LIMIT_REASON } from '@withwiz/toolkit/next/auth-handlers/field-messages';
 
 // bcrypt 는 72바이트 초과분을 조용히 절단하므로 검증 단계에서 거부 (바이트 수 기준)
 const withinBcryptByteLimit = (value: string): boolean => new TextEncoder().encode(value).length <= 72;
-
-/** 72바이트 초과 사유 — 정책이 있을 때는 화면에 그대로 표시되므로 요청 로케일 문구로 낸다 */
-const BYTE_LIMIT_MESSAGES: Record<TLocale, string> = {
-  ko: '비밀번호가 너무 깁니다. 영문 기준 72자, 한글 기준 24자 이하로 입력해 주세요.',
-  en: 'Password is too long. Use at most 72 bytes (72 Latin letters or 24 CJK characters).',
-  ja: 'パスワードが長すぎます。半角英数字で72文字、全角文字で24文字以内にしてください。',
-};
 
 /**
  * 비밀번호 필드 스키마. 정책이 없으면 0.20 과 같은 `min(8)` + 72바이트 제한(zod 실패 = `Invalid input`).
  * 정책이 있으면 최소 길이는 정책이 정하고, 72바이트 제한은 `checkPasswordPolicy` 가 요청 로케일 문구로 판정한다
  * — 스키마에서 거부하면 사유가 영어 zod 문구로 필드 오류에 실려 화면에 그대로 나간다(0.21.0 결함).
+ * 정책이 없을 때의 refine 사유는 `params.reason` 으로 표시해 standard 의 fieldErrors 에서 로케일 문구로 바뀐다.
  */
 export function passwordField(policy: PasswordPolicy | undefined) {
   if (policy) return z.string().min(1);
   return z.string().min(8).refine(withinBcryptByteLimit, {
     message: 'Password cannot exceed 72 bytes',
+    params: { reason: BYTE_LIMIT_REASON },
   });
 }
 
