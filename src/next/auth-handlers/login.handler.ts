@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { compare } from 'bcryptjs';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { createSessionIssuer } from '@withwiz/toolkit/next/auth-handlers/session';
 
 const loginSchema = z.object({
@@ -26,7 +26,7 @@ export function createLoginHandler(options: AuthHandlerOptions) {
 
   return async (request: NextRequest): Promise<Response> => {
     try {
-      const body = await request.json();
+      const body = await readJsonBody(request);
       const parsed = loginSchema.safeParse(body);
       if (!parsed.success) {
         return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors: zodFieldErrors(parsed.error) });

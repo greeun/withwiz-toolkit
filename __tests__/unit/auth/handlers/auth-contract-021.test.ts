@@ -567,3 +567,50 @@ describe('리뷰 반영 (0.21)', () => {
     expect(ctx.body).toEqual({ email: 'a@b.com', consent: true });
   });
 });
+
+describe('JSON 이 아닌 본문 (0.22)', () => {
+  const rawPost = (body?: string) =>
+    new Request('http://localhost/api/auth/x', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }) as any;
+
+  // [이름, 핸들러 생성자, legacy 의 기존 검증 실패 문구]
+  const cases = [
+    ['signup', createSignupHandler, 'Invalid input'],
+    ['register', createRegisterHandler, 'Invalid input'],
+    ['login', createLoginHandler, 'Invalid input'],
+    ['forgot-password', createForgotPasswordHandler, 'Invalid email'],
+    ['reset-password', createResetPasswordHandler, 'Invalid input'],
+    ['verify-email(POST)', createVerifyEmailHandler, 'Invalid input'],
+    ['oauth-authorize', createOAuthAuthorizeHandler, 'Invalid input'],
+  ] as const;
+
+  it.each(cases)('%s: 파싱할 수 없는 본문은 500 이 아니라 400 VALIDATION_ERROR(기본 standard)', async (_name, create) => {
+    const options = createMockOptions({ dependencies: { ...createMockOptions().dependencies, emailSender: {} as any } });
+    for (const body of ['xx', '{"email":', undefined]) {
+      const res = await (create as any)(options)(rawPost(body));
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error).toEqual(expect.objectContaining({ key: 'VALIDATION_ERROR' }));
+    }
+    expect(mockRegister).not.toHaveBeenCalled();
+    expect(mockRequestReset).not.toHaveBeenCalled();
+    expect(mockResetPassword).not.toHaveBeenCalled();
+    expect(mockVerifyEmail).not.toHaveBeenCalled();
+    expect(mockGetLoginUrl).not.toHaveBeenCalled();
+  });
+
+  it.each(cases)('%s: legacy 는 기존 검증 실패와 같은 문자열형 400 이다', async (_name, create, message) => {
+    const options = createMockOptions({ errorFormat: 'legacy', dependencies: { ...createMockOptions().dependencies, emailSender: {} as any } });
+    const res = await (create as any)(options)(rawPost('xx'));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+    expect(json.error).toBe(message);
+  });
+
+  it('oauth-authorize: JSON 이지만 객체가 아닌 본문(null)은 400 OAUTH_PROVIDER_INVALID', async () => {
+    const res = await createOAuthAuthorizeHandler(createMockOptions())(rawPost('null'));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.key).toBe('OAUTH_PROVIDER_INVALID');
+  });
+});

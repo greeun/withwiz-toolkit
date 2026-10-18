@@ -221,6 +221,7 @@ interface EmailTokenRepository {
 - **기본값 전환**: `errorFormat` 미지정 시 `'standard'` 로 응답한다. 기본값은 `next/auth-handlers/respond.ts` 의 `DEFAULT_AUTH_ERROR_FORMAT` 한 곳에서 정하고, 모든 인증 핸들러(signup·디스패치 묶음 포함)가 `createAuthResponder` 를 거치므로 핸들러별 기본값은 없다.
 - **legacy 유지**: `errorFormat: 'legacy'` 를 명시하면 0.20 본문을 바이트 단위로 그대로 낸다. 제거는 1.0 이다.
 - **HTTP 상태·key 불변**: 전환으로 바뀌는 것은 본문 형태뿐이다. 상태 코드와 분기 문자열(legacy `code` = standard `key`)은 같다. 화면 문구는 달라질 수 있다 — standard 의 `userMessage.description` 은 오류 사전의 요청 로케일 문구이고, legacy 의 `error` 는 개발자용 영문 메시지(standard 의 `message`)다. 정책 위반 사유는 두 형태 모두 같은 문구다.
+- **JSON 이 아닌 본문**: 본문 판독을 `respond.ts` 의 `readJsonBody` 한 곳으로 모았다. 파싱 실패는 `undefined` 로 돌려 각 핸들러의 기존 스키마 검증 실패(400 `VALIDATION_ERROR`, legacy 는 기존 문자열)로 응답한다. 이전에는 파싱 예외가 catch 로 가서 500 이 됐다(forgot-password 는 200). OAuth authorize 는 스키마가 없어 파싱 실패를 직접 400 `VALIDATION_ERROR` 로 낸다. refresh 는 토큰 전달 전략이 이미 파싱 실패를 삼킨다(토큰 없음 401).
 - **테스트**: 0.20 본문을 고정하는 회귀 스위트는 `errorFormat: 'legacy'` 를 명시하고, 기본값이 standard 임을 별도 테스트로 고정한다.
 
 ## 결정 사항

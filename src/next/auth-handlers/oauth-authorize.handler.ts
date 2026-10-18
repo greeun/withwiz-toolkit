@@ -8,7 +8,7 @@ import {
   setOAuthStateCookie,
 } from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder, readJsonBody } from '@withwiz/toolkit/next/auth-handlers/respond';
 
 export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);
@@ -16,8 +16,14 @@ export function createOAuthAuthorizeHandler(options: AuthHandlerOptions) {
 
   return async (request: NextRequest): Promise<Response> => {
     try {
-      const body = await request.json();
-      const provider = body.provider as string;
+      const body = await readJsonBody(request);
+      if (body === undefined) {
+        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input' });
+      }
+      const provider =
+        body && typeof body === 'object' && typeof (body as { provider?: unknown }).provider === 'string'
+          ? (body as { provider: string }).provider
+          : undefined;
 
       if (!provider || !oauth?.[provider]) {
         return respond.error(request, { status: 400, key: 'OAUTH_PROVIDER_INVALID', message: 'Invalid provider' });

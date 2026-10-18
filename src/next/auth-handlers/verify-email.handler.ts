@@ -5,7 +5,7 @@ import { EmailVerificationService } from '@withwiz/toolkit/core/auth/services/em
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { TokenType } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
-import { createAuthResponder, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
+import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { resolveTokenEmail, linkTokenError, isLinkTokenError } from '@withwiz/toolkit/next/auth-handlers/token-email';
 
 // email 은 0.21 부터 선택 항목 — 없으면 토큰으로 찾는다(저장소가 findEmailByToken 을 구현한 경우)
@@ -30,7 +30,7 @@ export function createVerifyEmailHandler(options: AuthHandlerOptions) {
         email = url.searchParams.get('email') || undefined;
         token = url.searchParams.get('token') ?? '';
       } else {
-        const body = await request.json();
+        const body = await readJsonBody(request);
         const parsed = schema.safeParse(body);
         if (!parsed.success) {
           return respond.error(request, {

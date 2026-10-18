@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request locale, while the legacy `error` string was the developer message (now `error.message`).
   Password policy reasons are the same text in both shapes.
 
+### Fixed
+- `next/auth-handlers`: a request body that is missing or not JSON (e.g. `xx`) no longer becomes
+  `500 INTERNAL_SERVER_ERROR`. signup, register, login, reset-password, verify-email (POST) and OAuth
+  authorize now answer 400 `VALIDATION_ERROR`, the same response as their schema validation failure
+  (legacy: the same string `error` as before, e.g. `Invalid input`). forgot-password answered 200 for such
+  bodies and now answers its validation failure (400, legacy `Invalid email`), as it already did for an
+  invalid email. OAuth authorize also answers 400 `OAUTH_PROVIDER_INVALID` instead of 500 for a JSON body
+  that is not an object (e.g. `null`). The body is read by one shared helper (`readJsonBody`).
+
 ### Unchanged
 - `errorFormat: 'legacy'` still returns the 0.20 bodies byte for byte (`{ success: false, error: "…", code? }`).
   It is planned for removal in 1.0.

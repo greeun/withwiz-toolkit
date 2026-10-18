@@ -69,6 +69,18 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
   return { error, fromAuthError };
 }
 
+/**
+ * 요청 본문을 JSON 으로 읽는다. 본문이 없거나 JSON 이 아니면 `undefined` 를 돌려준다(JSON 은 undefined 를 표현할 수 없다).
+ * 파싱 예외가 핸들러의 catch 로 가면 500 이 되므로, 호출부는 결과를 스키마 검증에 넘겨 기존 검증 실패(400)로 응답한다.
+ */
+export async function readJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
+}
+
 /** zod 실패를 standard 의 fieldErrors 로 바꾼다 */
 export function zodFieldErrors(error: { flatten(): { fieldErrors: Record<string, string[] | undefined> } }): Record<string, string[]> {
   const out: Record<string, string[]> = {};
