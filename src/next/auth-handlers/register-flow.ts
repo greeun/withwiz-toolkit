@@ -43,7 +43,7 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
             key: 'VALIDATION_ERROR',
             message: 'Invalid input',
             legacyDetails: parsed.error.flatten(),
-            fieldErrors: zodFieldErrors(parsed.error),
+            fieldErrors: zodFieldErrors(parsed.error, request),
           }),
         };
       }
