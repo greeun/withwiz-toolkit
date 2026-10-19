@@ -634,3 +634,67 @@ describe('0.22 — OAuth provider 는 설정의 자기 속성만 인정한다', 
     expect((await res.json()).error.key).toBe('OAUTH_CALLBACK_INVALID');
   });
 });
+
+describe('fieldErrors 로케일 (0.22.1)', () => {
+  const post = (url: string, body: unknown, lang: string): any =>
+    new Request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'accept-language': lang },
+      body: JSON.stringify(body),
+    });
+
+  it('ko 요청의 스키마 검증 사유는 한국어 문구다', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'standard' }))(
+      post('http://localhost/api/auth/register', { email: 'not-an-email', password: 'short' }, 'ko-KR,ko;q=0.9'),
+    );
+    expect(res.status).toBe(400);
+    const { fieldErrors } = (await res.json()).error.details;
+    expect(fieldErrors).toEqual({
+      email: ['올바른 이메일 주소를 입력해 주세요.'],
+      password: ['8자 이상 입력해 주세요.'],
+    });
+  });
+
+  it('값이 없는 필드는 필수 문구, ja 요청은 일본어 문구다', async () => {
+    const res = await createLoginHandler(createMockOptions({ errorFormat: 'standard' }))(
+      post('http://localhost/api/auth/login', { password: '' }, 'ja'),
+    );
+    const { fieldErrors } = (await res.json()).error.details;
+    expect(fieldErrors).toEqual({ email: ['必須項目です。'], password: ['必須項目です。'] });
+  });
+
+  it('정책이 없을 때 72바이트 초과 사유도 요청 로케일 문구다', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'standard' }))(
+      post('http://localhost/api/auth/register', { email: 'a@b.com', password: '가'.repeat(25) }, 'ko'),
+    );
+    const { fieldErrors } = (await res.json()).error.details;
+    expect(fieldErrors.password[0]).toMatch(/^비밀번호가 너무 깁니다/);
+  });
+
+  it('en 요청은 zod 문구를 그대로 쓴다(0.22.0 과 같다)', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'standard' }))(
+      post('http://localhost/api/auth/register', { email: 'not-an-email', password: '가'.repeat(25) }, 'en-US'),
+    );
+    const { fieldErrors } = (await res.json()).error.details;
+    expect(fieldErrors).toEqual({ email: ['Invalid email'], password: ['Password cannot exceed 72 bytes'] });
+  });
+
+  it('토큰으로 email 을 보완할 수 없을 때의 필수 사유도 요청 로케일 문구다', async () => {
+    const res = await createVerifyEmailHandler(createMockOptions({ errorFormat: 'standard' }))(
+      post('http://localhost/api/auth/verify-email', { token: 'plain' }, 'ko'),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.details.fieldErrors).toEqual({ email: ['필수 입력 항목입니다.'] });
+  });
+
+  it('legacy 본문의 details 는 ko 요청에서도 zod 문구 그대로다', async () => {
+    const res = await createRegisterHandler(createMockOptions({ errorFormat: 'legacy' }))(
+      post('http://localhost/api/auth/register', { email: 'not-an-email', password: 'password123' }, 'ko'),
+    );
+    expect(await res.json()).toEqual({
+      success: false,
+      error: 'Invalid input',
+      details: { formErrors: [], fieldErrors: { email: ['Invalid email'] } },
+    });
+  });
+});

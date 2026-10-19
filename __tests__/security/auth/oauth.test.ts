@@ -497,10 +497,16 @@ describe("OAuth Module", () => {
             avatar_url: "https://github.com/avatar.jpg",
           };
 
-          global.fetch = vi.fn(() =>
+          // emailVerified 는 /user/emails 의 주 이메일 verified 로 판정한다(0.22.1)
+          global.fetch = vi.fn((url: string) =>
             Promise.resolve({
               ok: true,
-              json: () => Promise.resolve(mockUserData),
+              json: () =>
+                Promise.resolve(
+                  url === "https://api.github.com/user/emails"
+                    ? [{ email: "john@example.com", primary: true, verified: true }]
+                    : mockUserData,
+                ),
             } as Response),
           );
 

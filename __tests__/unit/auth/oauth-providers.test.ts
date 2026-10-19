@@ -206,6 +206,17 @@ describe('GoogleOAuthProvider', () => {
 // GitHub OAuth Provider
 // ============================================================================
 
+/** /user 와 /user/emails 에 각각 응답한다. emails 가 null 이면 목록 조회가 403(범위 없음)으로 실패한다 */
+function mockGitHubFetch(user: Record<string, unknown>, emails: Array<Record<string, unknown>> | null) {
+  global.fetch = vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(
+      url === 'https://api.github.com/user/emails'
+        ? (emails ? { ok: true, json: () => Promise.resolve(emails) } : { ok: false, status: 403 })
+        : { ok: true, json: () => Promise.resolve(user) },
+    ) as Promise<Response>,
+  );
+}
+
 describe('GitHubOAuthProvider', () => {
   const provider = new GitHubOAuthProvider();
 
@@ -325,10 +336,7 @@ describe('GitHubOAuthProvider', () => {
         avatar_url: 'https://avatars.githubusercontent.com/u/12345',
       };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockGitHubUser),
-      } as Response);
+      mockGitHubFetch(mockGitHubUser, [{ email: 'octocat@github.com', primary: true, verified: true }]);
 
       const userInfo = await provider.getUserInfo('gh-access-token');
 
@@ -379,32 +387,52 @@ describe('GitHubOAuthProvider', () => {
       expect(result.image).toBe('https://avatars.url/pic.png');
     });
 
-    it('email이 있으면 emailVerified가 true여야 한다 (!!data.email)', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          id: 1,
-          login: 'user',
-          email: 'user@example.com',
-        }),
-      } as Response);
+    it('주 이메일이 인증되어 있으면 그 이메일과 emailVerified true 를 반환한다', async () => {
+      mockGitHubFetch({ id: 1, login: 'user', email: null }, [
+        { email: 'other@example.com', primary: false, verified: true },
+        { email: 'private@example.com', primary: true, verified: true },
+      ]);
 
       const result = await provider.getUserInfo('token');
 
+      expect(result.email).toBe('private@example.com');
       expect(result.emailVerified).toBe(true);
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.github.com/user/emails',
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token' }) }),
+      );
     });
 
-    it('email이 없으면 emailVerified가 false여야 한다', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          id: 1,
-          login: 'user',
-        }),
-      } as Response);
+    it('공개 프로필 email 이 있어도 주 이메일이 미인증이면 emailVerified 는 false 다', async () => {
+      mockGitHubFetch({ id: 1, login: 'user', email: 'user@example.com' }, [
+        { email: 'user@example.com', primary: true, verified: false },
+      ]);
 
       const result = await provider.getUserInfo('token');
 
+      expect(result.email).toBe('user@example.com');
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('이메일 목록을 조회하지 못하면 프로필 email 을 쓰고 emailVerified 는 false 다', async () => {
+      mockGitHubFetch({ id: 1, login: 'user', email: 'user@example.com' }, null);
+
+      const result = await provider.getUserInfo('token');
+
+      expect(result.email).toBe('user@example.com');
+      expect(result.emailVerified).toBe(false);
+    });
+
+    it('이메일 목록 조회가 예외를 던져도 사용자 정보는 반환한다', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) =>
+        url === 'https://api.github.com/user/emails'
+          ? Promise.reject(new Error('network'))
+          : Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 1, login: 'user' }) } as Response),
+      );
+
+      const result = await provider.getUserInfo('token');
+
+      expect(result.id).toBe('1');
       expect(result.emailVerified).toBe(false);
     });
 
