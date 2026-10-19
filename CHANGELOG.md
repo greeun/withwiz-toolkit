@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `core/security` (new): `isNonPublicIP`/`isNonPublicIPv4`/`isNonPublicIPv6`; string-based SSRF check
+  `isSSRFSafe(url, { locale })` and `isInternalIP(hostname)` (decimal/hex/octal-encoded IPv4,
+  IPv4-mapped IPv6, unicode dots, DNS rebinding domains, cloud metadata hostnames, null byte,
+  protocol-relative URLs); `isDangerousUrlScheme` for redirect targets; block reason codes
+  (`TSsrfBlockCode`) with ko/en/ja messages via `getSsrfBlockMessage`. `isSSRFSafe` returns
+  `{ safe, code?, reason? }`; `reason` uses the given locale (default `ko`).
+- `core/security/safe-fetch`: `safeFetch(url, init, { locale, maxRedirects })` resolves the host with
+  `node:dns` and rejects any resolved non-public address, and follows redirects manually, re-checking
+  every hop. Throws `SSRFBlockedError` with `code`. Node.js only; not re-exported from `core/security`.
+- `core/logger/log-sanitizer`: `maskEmail`, `maskIpAddress`, `maskString`, `isSensitiveKey`,
+  `sanitizeLogData`, `toSafeLogString`, `sanitizeLogMessage`, `createSafeLogMeta`. Opt-in; the
+  logger's own request-body masking is unchanged.
+- `core/rate-limit/in-memory-rate-limit-store`: `InMemoryRateLimitStore` (fixed window, entry cap with
+  earliest-expiry eviction, periodic cleanup, metrics).
+- `next/middleware/in-memory-rate-limiter`: `createInMemoryRateLimiter({ limit, windowMs, keyPrefix, store })`
+  returns an `IRateLimiter` that can be passed to `setRateLimitAdapter`.
+
+### Changed
+- `core/utils/ip-utils` `isPrivateIP` now uses the same classification as `core/security`. Newly
+  treated as private: 100.64.0.0/10 (CGNAT), all of 224.0.0.0/4 and 240.0.0.0/4 (previously only
+  addresses starting with `224.`/`240.`), the full fe80::/10 and fc00::/7 ranges (previously only
+  `fe80:`/`fc00:`/`fd00:` prefixes), `::`, and IPv4-mapped IPv6 of private IPv4. Malformed IPv4
+  strings such as `10.abc` are no longer reported as private.
+
 ## [0.22.1] - 2026-10-19
 
 ### Fixed

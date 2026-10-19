@@ -193,6 +193,10 @@ Every subpath outside `next/*` can be imported from plain Node.js ESM without Ne
 | `/core/error` | `AppError`, error codes, i18n messages, `extractErrorInfo` |
 | `/core/geolocation` | GeoIP lookup, batch processor, provider factory |
 | `/core/logger/logger` | Winston-based structured logger |
+| `/core/logger/log-sanitizer` | Mask emails, IPs, tokens and secrets before logging (`sanitizeLogData`, `maskEmail`, ...) |
+| `/core/rate-limit/in-memory-rate-limit-store` | In-memory fixed-window rate limit store (single instance / fallback) |
+| `/core/security` | Non-public IP classification, string-based SSRF check (`isSSRFSafe`, `isInternalIP`), dangerous URL scheme check, block reason codes with ko/en/ja messages |
+| `/core/security/safe-fetch` | Server-side `fetch` that re-checks resolved IPs and every redirect hop (Node.js only, `node:dns`) |
 | `/core/storage` | Cloudflare R2 / S3-compatible storage |
 | `/core/system` | Health check, system monitoring |
 | `/core/types/{api,database,env,geoip,i18n,qr-code,user}` | Shared TypeScript types |
@@ -206,6 +210,7 @@ Every subpath outside `next/*` can be imported from plain Node.js ESM without Ne
 | Subpath | Description |
 |---|---|
 | `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
+| `/next/middleware/in-memory-rate-limiter` | `createInMemoryRateLimiter` — an `IRateLimiter` for `setRateLimitAdapter` |
 | `/next/auth-handlers` | Route handlers (login / signup / register / refresh / oauth callback / me / reset / verify) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
 | `/next/error` | `error-handler` (NextResponse), `buildErrorResponse`, `withStandardErrors`, `LocaleDetector`, `ErrorBoundary` |

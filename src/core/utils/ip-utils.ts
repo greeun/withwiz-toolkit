@@ -1,41 +1,14 @@
 // IP 주소 관련 유틸리티 함수들
 // /shared/ 내부에서 독립적으로 사용
 
-// Private IP 주소 체크
+import { isNonPublicIP } from '@withwiz/toolkit/core/security/ip-classification';
+
+/**
+ * 비공인(사설·루프백·링크 로컬·CGNAT·멀티캐스트·예약) IP 주소인지 확인한다.
+ * 판정 기준은 `core/security/ip-classification` 의 `isNonPublicIP` 와 같다.
+ */
 export function isPrivateIP(ip: string): boolean {
-  if (!ip) return false;
-  
-  // IPv4 private ranges
-  const privateRanges = [
-    /^10\./,                    // 10.0.0.0/8
-    /^172\.(1[6-9]|2[0-9]|3[01])\./, // 172.16.0.0/12
-    /^192\.168\./,              // 192.168.0.0/16
-    /^127\./,                   // 127.0.0.0/8 (localhost)
-    /^169\.254\./,              // 169.254.0.0/16 (link-local)
-    /^0\./,                     // 0.0.0.0/8
-    /^224\./,                   // 224.0.0.0/4 (multicast)
-    /^240\./,                   // 240.0.0.0/4 (reserved)
-  ];
-  
-  // IPv6 private ranges
-  const ipv6PrivateRanges = [
-    /^::1$/,                    // localhost
-    /^fe80:/,                   // link-local
-    /^fc00:/,                   // unique local
-    /^fd00:/,                   // unique local
-  ];
-  
-  // IPv4 체크
-  if (ip.includes('.')) {
-    return privateRanges.some(range => range.test(ip));
-  }
-  
-  // IPv6 체크
-  if (ip.includes(':')) {
-    return ipv6PrivateRanges.some(range => range.test(ip));
-  }
-  
-  return false;
+  return isNonPublicIP(ip);
 }
 
 // IPv6 주소 체크
