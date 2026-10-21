@@ -43,13 +43,17 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
   } catch (error) {
     // AppError인 경우
     if (error instanceof AppError) {
-      return createErrorResponse(
+      const response = createErrorResponse(
         error.code,
         error.message,
         context.locale,
         context.requestId,
         error.details
       );
+      if (response.status === 429) {
+        applyRateLimitHeaders(response, error.details, context.metadata.rateLimit);
+      }
+      return response;
     }
 
     // ZodError인 경우 (validation failure -> 400)
@@ -169,6 +173,43 @@ function createErrorResponse(
       'Content-Type': 'application/json',
     },
   });
+}
+
+/**
+ * 429 응답에 Retry-After 와 X-RateLimit-* 헤더를 싣는다.
+ *
+ * 성공 응답의 X-RateLimit-* 는 responseLoggerMiddleware 가 붙이지만, 한도 초과는 예외로
+ * 빠져나오므로 그 단계를 거치지 않는다. 남은 시간(초)은 details.resetIn(rate limit 미들웨어),
+ * details.retryAfter(AppError.rateLimit), metadata.rateLimit.reset 순서로 찾는다.
+ * 찾지 못하면 Retry-After 를 싣지 않는다.
+ */
+function applyRateLimitHeaders(
+  response: NextResponse,
+  details: Record<string, unknown> | undefined,
+  rateLimit: unknown
+): void {
+  const meta = isRateLimitMeta(rateLimit) ? rateLimit : undefined;
+  const seconds = [details?.resetIn, details?.retryAfter, meta?.reset].find(isFiniteNumber);
+
+  if (seconds !== undefined) {
+    // 0 은 "바로 재시도" 로 읽혀 재시도 루프를 만들 수 있으므로 최소 1초로 둔다
+    response.headers.set('Retry-After', String(Math.max(1, Math.ceil(seconds))));
+  }
+  if (meta) {
+    response.headers.set('X-RateLimit-Limit', String(meta.limit));
+    response.headers.set('X-RateLimit-Remaining', String(meta.remaining));
+    response.headers.set('X-RateLimit-Reset', String(meta.reset));
+  }
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isRateLimitMeta(value: unknown): value is { limit: number; remaining: number; reset: number } {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return isFiniteNumber(v.limit) && isFiniteNumber(v.remaining) && isFiniteNumber(v.reset);
 }
 
 /** zod issues(`{ path, message }`)를 `fieldErrors`(필드별 사유 배열)로 바꾼다. issues 가 없으면 undefined */
