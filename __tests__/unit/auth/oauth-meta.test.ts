@@ -151,7 +151,8 @@ describe('MetaOAuthProvider', () => {
         email: 'user@example.com',
         name: 'Test User',
         image: 'https://platform-lookaside.fbsbx.com/abc.jpg',
-        emailVerified: true,
+        // Graph API 는 검증 신호가 없다 — 이메일이 있어도 미검증으로 본다(0.23.2).
+        emailVerified: false,
       });
 
       const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
