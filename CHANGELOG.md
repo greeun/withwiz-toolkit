@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.2] - 2026-10-22
+
+### Fixed
+- `core/auth/oauth` Meta: `emailVerified` was `!!data.email`. The Graph API `/me` response has no
+  verification signal, so a Meta account that claims someone else's address was linked by the OAuth
+  callback to the existing local account with that email. `getUserInfo` now always returns
+  `emailVerified: false`, the same rule GitHub got in 0.22.1 when no verified primary email is known.
+  As a result, for the `meta` provider:
+  - linking to an existing local account with the same email is rejected with 403
+    `OAUTH_EMAIL_NOT_VERIFIED` (matching by provider account id is unchanged, so accounts already
+    linked keep signing in);
+  - a new user is created with `emailVerified: null` and goes through the app's own email
+    verification.
+
 ## [0.23.1] - 2026-10-22
 
 ### Fixed
