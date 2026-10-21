@@ -347,10 +347,10 @@ const userInfo = await oauth.getUserInfo('google', accessToken);
 | Provider | Scope (고정) | 비고 |
 |---|---|---|
 | `google` | `openid email profile` | `picture` → `image`, `verified_email` → `emailVerified` |
-| `github` | `read:user user:email` | primary email 추출 |
+| `github` | `read:user user:email` | `/user/emails` 의 primary email 과 그 `verified` → `emailVerified` (목록을 못 읽으면 false) |
 | `kakao` | `profile_nickname profile_image account_email` | `emailVerified`는 `is_email_valid && is_email_verified` 두 플래그가 모두 true일 때만 |
 | `microsoft` | `openid profile email` | common 테넌트, **id_token 디코딩 방식** (아래 주의 사항 참조) |
-| `meta` | `email,public_profile` | Graph API v25.0, GET token exchange |
+| `meta` | `email,public_profile` | Graph API v25.0, GET token exchange. 검증 신호가 없어 `emailVerified` 는 항상 false — 같은 이메일의 기존 로컬 계정에 연결되지 않는다 |
 
 ### Microsoft OAuth 어댑터 주의
 
