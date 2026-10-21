@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.1] - 2026-10-22
+
+### Fixed
+- `next/middleware/error-handler`: 429 responses carried no `Retry-After` and no `X-RateLimit-*` headers.
+  The rate limit middleware throws `AppError(42901, …, { resetIn })`, so the response never passes
+  `responseLoggerMiddleware`, which is the only place that set `X-RateLimit-*`. The error handler now sets
+  `Retry-After` (whole seconds, rounded up, at least 1) from `details.resetIn`, then `details.retryAfter`
+  (`AppError.rateLimit`), then `metadata.rateLimit.reset`, and omits it when none is a finite number.
+  `X-RateLimit-Limit`/`-Remaining`/`-Reset` are set from `metadata.rateLimit` when present. Other
+  statuses and the JSON envelope are unchanged.
+
 ## [0.23.0] - 2026-10-19
 
 ### Added
