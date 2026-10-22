@@ -13,7 +13,7 @@ export type RegisterOutcome =
 
 /**
  * 가입 흐름 — register 와 signup 이 공유한다.
- * 본문 검증 → 이메일 허용 → 비밀번호 정책 → onBeforeRegister → 가입 → onAfterRegister.
+ * 본문 검증 → 이메일 허용 → 비밀번호 정책 → onBeforeRegister → extendRegisterData → 가입 → onAfterRegister.
  * 실패는 응답(`{ response }`)으로, 성공은 가입 결과로 돌려준다.
  */
 export function createRegisterFlow(options: AuthHandlerOptions) {
@@ -66,7 +66,11 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
         if (hookResult instanceof Response) return { response: hookResult };
       }
 
-      const result = await registerService.register(parsed.data);
+      const extra = hooks?.extendRegisterData
+        ? await hooks.extendRegisterData({ email: parsed.data.email, name: parsed.data.name }, ctx)
+        : undefined;
+
+      const result = await registerService.register(extra ? { ...parsed.data, extra } : parsed.data);
 
       if (hooks?.onAfterRegister) await hooks.onAfterRegister(result.user, ctx);
 

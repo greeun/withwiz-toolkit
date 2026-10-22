@@ -88,6 +88,16 @@ describe('RegisterService', () => {
     expect(storedToken).not.toBe(emailedToken);
   });
 
+  it('extra 는 저장소 create 의 data.extra 로 그대로 넘긴다 (0.24)', async () => {
+    await service.register({ email: 'new@test.com', password: 'MyPassword123', extra: { username: 'neo' } });
+    expect((mockUserRepo.create as any).mock.calls[0][0].extra).toEqual({ username: 'neo' });
+  });
+
+  it('extra 가 없으면 create 에 extra 키가 없다', async () => {
+    await service.register({ email: 'new@test.com', password: 'MyPassword123' });
+    expect('extra' in (mockUserRepo.create as any).mock.calls[0][0]).toBe(false);
+  });
+
   it('should hash password before storing', async () => {
     await service.register({ email: 'new@test.com', password: 'MyPassword123' });
 

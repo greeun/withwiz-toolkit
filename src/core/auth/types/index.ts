@@ -205,6 +205,11 @@ export interface CreateUserData {
   role?: string;
   emailVerified?: Date | null;
   image?: string | null;
+  /**
+   * 저장소 고유 필드 (0.24+). 가입 핸들러의 `hooks.extendRegisterData` 결과가 담긴다(예: `username`).
+   * Prisma 어댑터는 그대로 함께 저장하고(위 필드가 우선), 다른 저장소는 필요한 키만 읽는다.
+   */
+  extra?: Record<string, unknown>;
 }
 
 export interface UpdateUserData {

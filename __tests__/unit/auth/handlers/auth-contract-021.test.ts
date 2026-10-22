@@ -485,6 +485,46 @@ describe('가입 훅 ctx', () => {
   });
 });
 
+describe('extendRegisterData (0.24)', () => {
+  it('onBeforeRegister 다음에 (data, ctx) 로 호출되고, 결과가 가입 입력의 extra 로 넘어간다', async () => {
+    const order: string[] = [];
+    const onBeforeRegister = vi.fn(async () => { order.push('before'); });
+    const extendRegisterData = vi.fn(async (_data: unknown, ctx: { body: Record<string, unknown> }) => {
+      order.push('extend');
+      return { username: ctx.body.username };
+    });
+    mockRegister.mockResolvedValue({ user: verifiedUser, verificationSent: false });
+
+    await createRegisterHandler(createMockOptions({ hooks: { onBeforeRegister, extendRegisterData } }))(
+      makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'password123', username: 'neo' }),
+    );
+
+    expect(order).toEqual(['before', 'extend']);
+    expect(extendRegisterData).toHaveBeenCalledWith(
+      { email: 'a@b.com', name: undefined },
+      expect.objectContaining({ body: { email: 'a@b.com', username: 'neo' }, request: expect.anything() }),
+    );
+    expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ email: 'a@b.com', extra: { username: 'neo' } }));
+  });
+
+  it('onBeforeRegister 가 가입을 막으면 호출되지 않는다', async () => {
+    const extendRegisterData = vi.fn();
+    await createSignupHandler(createMockOptions({
+      hooks: { onBeforeRegister: async () => new Response('{}', { status: 409 }), extendRegisterData },
+    }))(makePostRequest('http://localhost/api/auth/signup', { email: 'a@b.com', password: 'password123' }));
+    expect(extendRegisterData).not.toHaveBeenCalled();
+    expect(mockRegister).not.toHaveBeenCalled();
+  });
+
+  it('훅이 없으면 가입 입력에 extra 가 없다', async () => {
+    mockRegister.mockResolvedValue({ user: verifiedUser, verificationSent: false });
+    await createRegisterHandler(createMockOptions())(
+      makePostRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'password123' }),
+    );
+    expect(mockRegister.mock.calls[0][0]).not.toHaveProperty('extra');
+  });
+});
+
 describe('리뷰 반영 (0.21)', () => {
   const withLookup = (email: string | null, extra: Partial<AuthHandlerOptions> = {}) => {
     const options = createMockOptions({ dependencies: { ...createMockOptions().dependencies, emailSender: {} as any }, ...extra });

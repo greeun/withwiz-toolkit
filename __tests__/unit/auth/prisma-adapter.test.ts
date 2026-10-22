@@ -250,6 +250,46 @@ describe('PrismaUserRepository', () => {
       expect(createCall.data.name).toBeNull();
     });
 
+    it('extra 의 고유 필드를 함께 저장하되 id·표준 필드·isActive 는 받지 않는다 (0.24)', async () => {
+      mockPrisma.user.create.mockResolvedValue({ id: 'u1', email: 'x@example.com', role: 'USER', isActive: true });
+
+      await repo.create({
+        email: 'x@example.com',
+        password: 'hashed',
+        extra: {
+          username: 'neo',
+          termsAgreedAt: 'now',
+          id: 'forged',
+          email: 'other@example.com',
+          role: 'ADMIN',
+          password: 'plain',
+          emailVerified: new Date(),
+          isActive: false,
+        },
+      });
+
+      const data = mockPrisma.user.create.mock.calls[0][0].data;
+      expect(data.username).toBe('neo');
+      expect(data.termsAgreedAt).toBe('now');
+      expect(data.id).toBeUndefined();
+      expect(data.email).toBe('x@example.com');
+      expect(data.role).toBeUndefined();
+      expect(data.password).toBe('hashed');
+      expect(data.emailVerified).toBeNull();
+      expect(data.isActive).toBeUndefined();
+    });
+
+    it('커스텀 userFields 의 컬럼명도 extra 에서 받지 않는다', async () => {
+      const customRepo = new PrismaUserRepository(mockPrisma, { userFields: { role: 'userRole' } });
+      mockPrisma.user.create.mockResolvedValue({ id: 'u2', email: 'y@example.com' });
+
+      await customRepo.create({ email: 'y@example.com', extra: { userRole: 'ADMIN', nickname: 'y' } });
+
+      const data = mockPrisma.user.create.mock.calls[0][0].data;
+      expect(data.userRole).toBeUndefined();
+      expect(data.nickname).toBe('y');
+    });
+
     it('role이 지정되면 해당 role을 사용해야 한다', async () => {
       const mockCreated = {
         id: 'admin-user',
