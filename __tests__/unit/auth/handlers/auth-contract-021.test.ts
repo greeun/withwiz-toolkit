@@ -434,6 +434,13 @@ describe('signup', () => {
     expect(mockCreateTokenPair).not.toHaveBeenCalled();
   });
 
+  it('인증 메일을 요구하지 않으면 미인증 계정도 세션을 발급한다 (0.25)', async () => {
+    mockRegister.mockResolvedValue({ user: { ...verifiedUser, emailVerified: null }, verificationSent: false });
+    const res = await createSignupHandler(createMockOptions({ features: { emailVerificationRequired: false } }))(signupReq());
+    expect(res.status).toBe(201);
+    expect(mockCreateTokenPair).toHaveBeenCalled();
+  });
+
   it('signup.autoLogin false 면 세션을 발급하지 않는다', async () => {
     mockRegister.mockResolvedValue({ user: verifiedUser, verificationSent: false });
     const res = await createSignupHandler(createMockOptions({ signup: { autoLogin: false } }))(signupReq());
@@ -482,6 +489,43 @@ describe('가입 훅 ctx', () => {
       expect.objectContaining({ body: expect.objectContaining({ consent: true }), request: expect.anything() }),
     );
     expect(mockRegister).not.toHaveBeenCalled();
+  });
+});
+
+describe('locale 옵션 (0.25)', () => {
+  const koRequest = (url: string, body: unknown) =>
+    new Request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': 'ko-KR,ko;q=0.9' },
+      body: JSON.stringify(body),
+    }) as any;
+
+  it('미지정이면 이전처럼 요청 로케일(Accept-Language)을 따른다', async () => {
+    const res = await createLoginHandler(createMockOptions())(koRequest('http://localhost/api/auth/login', { email: 'x' }));
+    const json = await res.json();
+    expect(json.error.details.fieldErrors.email[0]).toMatch(/[가-힣]/);
+  });
+
+  it('고정값이면 요청 언어와 무관하게 그 로케일 문구를 쓴다(사용자 문구·필드 오류)', async () => {
+    const options = createMockOptions({ locale: 'en' });
+    (options.dependencies.userRepository.findByEmail as any).mockResolvedValue(null);
+    const res = await createLoginHandler(options)(koRequest('http://localhost/api/auth/login', { email: 'a@b.com', password: 'whatever1' }));
+    expect(res.status).toBe(401);
+    expect((await res.json()).error.userMessage.description).not.toMatch(/[가-힣]/);
+
+    const invalid = await createLoginHandler(options)(koRequest('http://localhost/api/auth/login', { email: 'x' }));
+    expect((await invalid.json()).error.details.fieldErrors.email[0]).not.toMatch(/[가-힣]/);
+  });
+
+  it('함수면 요청마다 정하고, 비밀번호 정책 함수에도 같은 로케일이 간다', async () => {
+    const passwordPolicy = vi.fn().mockReturnValue({ ok: false, message: 'weak' });
+    const locale = vi.fn().mockReturnValue('ja');
+    const res = await createRegisterHandler(createMockOptions({ locale, passwordPolicy }))(
+      koRequest('http://localhost/api/auth/register', { email: 'a@b.com', password: 'password123' }),
+    );
+    expect(res.status).toBe(400);
+    expect(locale).toHaveBeenCalled();
+    expect(passwordPolicy).toHaveBeenCalledWith('password123', expect.objectContaining({ locale: 'ja' }));
   });
 });
 

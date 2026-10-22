@@ -102,6 +102,12 @@ export interface AuthHandlerOptions {
   errorFormat?: 'legacy' | 'standard';
   /** 비밀번호 정책 (0.21+) */
   passwordPolicy?: PasswordPolicy;
+  /**
+   * 오류 사용자 문구·필드 오류 사유·비밀번호 정책에 쓰는 로케일 (0.25+).
+   * 고정값이면 요청과 무관하게 그 로케일을 쓰고, 함수면 요청마다 정한다.
+   * 미지정이면 요청의 `locale`·`NEXT_LOCALE` 쿠키 → Accept-Language → 'ko' 순(이전과 같다).
+   */
+  locale?: TLocale | ((request: Request) => TLocale);
   /** signup 핸들러 옵션 (0.21+) */
   signup?: {
     /** 가입 직후 로그인이 가능하면 세션을 발급한다. 기본 true */

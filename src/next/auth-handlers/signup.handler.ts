@@ -18,13 +18,15 @@ export function createSignupHandler(options: AuthHandlerOptions) {
   const register = createRegisterFlow(options);
   const issueSession = createSessionIssuer(options);
   const autoLogin = options.signup?.autoLogin ?? true;
+  // 인증 메일을 요구하지 않으면 미인증 계정도 바로 로그인할 수 있다(login 핸들러와 같은 판단, 0.25)
+  const verificationRequired = options.features?.emailVerificationRequired ?? true;
 
   return async (request: NextRequest): Promise<Response> => {
     const outcome = await register(request);
     if ('response' in outcome) return outcome.response;
 
     const { user, verificationSent } = outcome;
-    if (autoLogin && user.emailVerified) {
+    if (autoLogin && (user.emailVerified || !verificationRequired)) {
       try {
         return await issueSession(user, request, { verificationSent: false }, 201);
       } catch (error) {

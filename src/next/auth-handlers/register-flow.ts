@@ -43,7 +43,7 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
             key: 'VALIDATION_ERROR',
             message: 'Invalid input',
             legacyDetails: parsed.error.flatten(),
-            fieldErrors: zodFieldErrors(parsed.error, request),
+            fieldErrors: zodFieldErrors(parsed.error, request, respond.locale(request)),
           }),
         };
       }
@@ -53,7 +53,7 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
         if (!allowed) return { response: respond.error(request, { status: 403, key: 'EMAIL_NOT_ALLOWED', message: 'Email not allowed' }) };
       }
 
-      const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'register', request);
+      const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'register', request, respond.locale(request));
       if (!policy.ok) return { response: passwordPolicyViolation(respond, request, policy.message) };
 
       // 훅이 ctx 를 로그에 남겨도 평문 비밀번호가 새지 않도록 본문에서 password 를 뺀다
