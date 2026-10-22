@@ -7,7 +7,6 @@ import { TokenType } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { requiredFieldMessage } from '@withwiz/toolkit/next/auth-handlers/field-messages';
-import { LocaleDetector } from '@withwiz/toolkit/next/error/locale-detector';
 import { passwordField, checkPasswordPolicy, passwordPolicyViolation } from '@withwiz/toolkit/next/auth-handlers/password-policy';
 import { resolveTokenEmail, linkTokenError, isLinkTokenError } from '@withwiz/toolkit/next/auth-handlers/token-email';
 
@@ -27,15 +26,15 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
     try {
       const body = await readJsonBody(request);
       const parsed = schema.safeParse(body);
-      if (!parsed.success) return invalidInput(request, zodFieldErrors(parsed.error, request));
+      if (!parsed.success) return invalidInput(request, zodFieldErrors(parsed.error, request, respond.locale(request)));
 
-      const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'reset', request);
+      const policy = await checkPasswordPolicy(passwordPolicy, parsed.data.password, 'reset', request, respond.locale(request));
       if (!policy.ok) return passwordPolicyViolation(respond, request, policy.message);
 
       const account = await resolveTokenEmail(
         dependencies.emailTokenRepository, parsed.data.email, parsed.data.token, TokenType.PASSWORD_RESET,
       );
-      if ('unsupported' in account) return invalidInput(request, { email: [requiredFieldMessage(LocaleDetector.detectServer(request))] });
+      if ('unsupported' in account) return invalidInput(request, { email: [requiredFieldMessage(respond.locale(request))] });
       if ('notFound' in account) return linkTokenError(respond, request, 'Invalid or expired token');
 
       if (!dependencies.emailSender) {

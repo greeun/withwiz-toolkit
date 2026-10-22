@@ -95,6 +95,20 @@ export class OAuthCallbackService {
         );
       }
 
+      // 보안(0.25): 기존 계정 자체가 이메일 인증을 마치지 않았으면 연결하지 않는다. 그 계정은 이메일 소유를
+      // 증명하지 않은 누군가가 먼저 만든 것일 수 있다 — 연결하면 그 사람의 비밀번호로 피해자 계정에 들어온다.
+      if (!existingUser.emailVerified) {
+        this.logger.warn('Blocked OAuth account linking to an unverified local account', {
+          provider: input.provider,
+          userId: existingUser.id,
+        });
+        throw new AuthError(
+          'The existing account has not verified its email; cannot link an OAuth account to it',
+          'OAUTH_ACCOUNT_NOT_VERIFIED',
+          403,
+        );
+      }
+
       // Link OAuth account to existing user
       await this.oauthRepo.create({
         userId: existingUser.id,
