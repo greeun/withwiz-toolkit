@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-10-23
+
+### Security
+- `core/auth/services/oauth-callback.service`: an OAuth sign-in is no longer linked to an existing account
+  whose own email is unverified (`emailVerified` null). Such an account may have been created by someone who
+  never proved ownership of the address; linking it let that person keep signing in with their password to
+  the account the victim now uses. The callback answers 403 `OAUTH_ACCOUNT_NOT_VERIFIED` (the provider-side
+  check `OAUTH_EMAIL_NOT_VERIFIED` is unchanged).
+
+### Changed
+- `core/auth/services/register.service`: sign-up always creates the account with `emailVerified: null`.
+  It used to record the current time when `emailVerificationRequired` was false, claiming a verification that
+  never happened. Apps that read `emailVerified` as "this address is confirmed" now see null for those sign-ups.
+- `next/auth-handlers` signup: with `features.emailVerificationRequired: false` the session is still issued
+  right after sign-up (the same rule login uses), even though the account is now unverified.
+
+### Added
+- `next/auth-handlers`: `locale` option — a fixed `TLocale` or `(request) => TLocale`. It decides the language
+  of standard error `userMessage`, `details.fieldErrors` reasons, the password-policy function's `ctx.locale`
+  and the required-field messages. Without it the locale is detected from the request as before
+  (`locale`/`NEXT_LOCALE` cookie, then Accept-Language). `resolveAuthLocale(options, request)` and the
+  responder's `locale(request)` expose the same decision; `zodFieldErrors` and `checkPasswordPolicy` take an
+  optional locale argument.
+
+### Migration
+- Existing rows keep their stored `emailVerified`; only new sign-ups change. Accounts created earlier with a
+  recorded time still link to OAuth as before.
+- An unverified account that wants to add OAuth sign-in has to verify its email first (or sign in with its
+  password). Map `OAUTH_ACCOUNT_NOT_VERIFIED` to a message in apps that redirect callback failures.
+
 ## [0.24.0] - 2026-10-22
 
 ### Added

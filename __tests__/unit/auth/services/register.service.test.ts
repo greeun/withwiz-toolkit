@@ -88,6 +88,19 @@ describe('RegisterService', () => {
     expect(storedToken).not.toBe(emailedToken);
   });
 
+  it('인증 메일을 요구하지 않아도 가입 계정은 미인증(emailVerified null)으로 만든다 (0.25)', async () => {
+    const noVerify = new RegisterService({
+      userRepository: mockUserRepo,
+      emailTokenRepository: mockTokenRepo,
+      emailSender: mockEmailSender,
+      emailVerificationRequired: false,
+    });
+    const result = await noVerify.register({ email: 'new@test.com', password: 'MyPassword123' });
+    expect((mockUserRepo.create as any).mock.calls[0][0].emailVerified).toBeNull();
+    expect(result.verificationSent).toBe(false);
+    expect(mockEmailSender.sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
   it('extra 는 저장소 create 의 data.extra 로 그대로 넘긴다 (0.24)', async () => {
     await service.register({ email: 'new@test.com', password: 'MyPassword123', extra: { username: 'neo' } });
     expect((mockUserRepo.create as any).mock.calls[0][0].extra).toEqual({ username: 'neo' });

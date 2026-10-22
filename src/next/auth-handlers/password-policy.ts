@@ -38,9 +38,10 @@ export async function checkPasswordPolicy(
   password: string,
   purpose: 'register' | 'reset',
   request: NextRequest,
+  /** 정책 문구 로케일 (0.25+, 핸들러의 `locale` 옵션). 미지정이면 요청에서 감지 */
+  locale: TLocale = LocaleDetector.detectServer(request),
 ): Promise<PasswordPolicyResult> {
   if (!policy) return { ok: true };
-  const locale = LocaleDetector.detectServer(request);
   const result = await runPolicy(policy, password, purpose, locale);
   if (!result.ok) return result;
   return withinBcryptByteLimit(password) ? { ok: true } : { ok: false, message: BYTE_LIMIT_MESSAGES[locale] ?? BYTE_LIMIT_MESSAGES.en };

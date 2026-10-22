@@ -16,7 +16,7 @@ export function createForgotPasswordHandler(options: AuthHandlerOptions) {
       const body = await readJsonBody(request);
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
-        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid email', fieldErrors: zodFieldErrors(parsed.error, request) });
+        return respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid email', fieldErrors: zodFieldErrors(parsed.error, request, respond.locale(request)) });
       }
 
       if (!dependencies.emailSender) {

@@ -6,6 +6,7 @@ import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
 import { buildErrorBody } from '@withwiz/toolkit/next/error/build-error-response';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
+import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
 
 export interface AuthErrorSpec {
   status: number;
@@ -25,6 +26,18 @@ export interface AuthErrorSpec {
   code?: number;
 }
 
+/**
+ * 인증 핸들러가 쓰는 로케일 — `options.locale`(0.25+)이 있으면 그것, 없으면 요청에서 감지한다.
+ * 요청이 없으면 buildErrorBody 의 기본값과 같은 'ko'.
+ */
+export function resolveAuthLocale(options: Pick<AuthHandlerOptions, 'locale'>, request: Request | undefined): TLocale {
+  const { locale } = options;
+  if (typeof locale === 'string') return locale;
+  if (!request) return 'ko';
+  if (typeof locale === 'function') return locale(request);
+  return LocaleDetector.detectServer(request as NextRequest);
+}
+
 /** `errorFormat` 미지정 시의 기본값 (0.22+ 'standard', 0.21 은 'legacy') */
 export const DEFAULT_AUTH_ERROR_FORMAT = 'standard' satisfies NonNullable<AuthHandlerOptions['errorFormat']>;
 
@@ -32,7 +45,7 @@ export const DEFAULT_AUTH_ERROR_FORMAT = 'standard' satisfies NonNullable<AuthHa
  * 인증 핸들러의 실패 응답을 `errorFormat` 에 맞춰 만든다. 미지정이면 `DEFAULT_AUTH_ERROR_FORMAT` 이다.
  * legacy 는 0.20 의 본문과 바이트 단위로 같아야 한다 — 기존 소비자가 문자열을 비교한다.
  */
-export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorFormat'>) {
+export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorFormat' | 'locale'>) {
   const standard = (options.errorFormat ?? DEFAULT_AUTH_ERROR_FORMAT) === 'standard';
 
   function error(request: Request | undefined, spec: AuthErrorSpec): NextResponse {
@@ -54,6 +67,7 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
       userMessage: spec.userMessage,
       fieldErrors: spec.fieldErrors,
       request,
+      locale: resolveAuthLocale(options, request),
     });
     return NextResponse.json(body, { status: spec.status });
   }
@@ -69,7 +83,10 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
     });
   }
 
-  return { error, fromAuthError };
+  /** 이 핸들러의 로케일(필드 오류 사유·비밀번호 정책 문구용) */
+  const locale = (request: Request | undefined): TLocale => resolveAuthLocale(options, request);
+
+  return { error, fromAuthError, locale };
 }
 
 /**
@@ -84,9 +101,12 @@ export async function readJsonBody(request: Request): Promise<unknown> {
   }
 }
 
-/** zod 실패를 standard 의 fieldErrors 로 바꾼다. 사유는 요청 로케일 문구다(en 은 zod 문구) */
-export function zodFieldErrors(error: ZodError, request: NextRequest): Record<string, string[]> {
-  const locale = LocaleDetector.detectServer(request);
+/** zod 실패를 standard 의 fieldErrors 로 바꾼다. 사유는 로케일 문구다(en 은 zod 문구). 로케일 미지정이면 요청에서 감지 */
+export function zodFieldErrors(
+  error: ZodError,
+  request: NextRequest,
+  locale: TLocale = LocaleDetector.detectServer(request),
+): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const [field, reasons] of Object.entries(error.flatten((issue) => localizeFieldIssue(issue, locale)).fieldErrors)) {
     if (reasons && reasons.length) out[field] = reasons;

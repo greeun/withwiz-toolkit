@@ -51,11 +51,13 @@ export class RegisterService {
 
     const hashedPassword = await hash(input.password, this.bcryptRounds);
 
+    // 가입만으로는 이메일 소유가 확인되지 않는다 — 인증 메일 요구 여부와 무관하게 미인증으로 만든다(0.25).
+    // 이전처럼 now 로 두면 남이 먼저 그 이메일로 가입한 계정에 피해자의 검증된 OAuth 가 연결될 수 있었다.
     const user = await this.userRepo.create({
       email: input.email,
       password: hashedPassword,
       name: input.name ?? null,
-      emailVerified: this.emailVerificationRequired ? null : new Date(),
+      emailVerified: null,
       ...(input.extra ? { extra: input.extra } : {}),
     });
 

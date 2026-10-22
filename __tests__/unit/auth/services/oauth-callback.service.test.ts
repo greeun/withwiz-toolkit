@@ -122,6 +122,24 @@ describe('OAuthCallbackService', () => {
     expect(mockOAuthRepo.create).not.toHaveBeenCalled();
   });
 
+  it('기존 계정이 이메일 인증을 마치지 않았으면 제공자가 검증했어도 연결하지 않는다 (0.25)', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'squatter', email: 'victim@test.com', role: 'USER', emailVerified: null, isActive: true });
+
+    await expect(
+      service.handleCallback({
+        provider: 'google',
+        providerAccountId: 'g-victim',
+        email: 'victim@test.com',
+        name: 'Victim',
+        image: null,
+        accessToken: 'tok',
+        emailVerified: true,
+      }),
+    ).rejects.toMatchObject({ code: 'OAUTH_ACCOUNT_NOT_VERIFIED', statusCode: 403 });
+    expect(mockOAuthRepo.create).not.toHaveBeenCalled();
+  });
+
   it('should throw for disabled user', async () => {
     (mockOAuthRepo.findByProvider as any).mockResolvedValue({ id: 'acc-1', userId: 'disabled-user' });
     (mockUserRepo.findById as any).mockResolvedValue({ id: 'disabled-user', email: 'test@test.com', isActive: false });
