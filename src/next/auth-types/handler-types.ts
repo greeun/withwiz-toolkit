@@ -43,7 +43,15 @@ export interface AuthHandlerHooks {
   onAfterOAuth?: (user: BaseUser, provider: string, isNewUser: boolean) => Promise<void>;
   onBeforeTokenRefresh?: (userId: string) => Promise<void | Response>;
   extendUserResponse?: (user: BaseUser) => Promise<Record<string, unknown>>;
-  extendRegisterData?: (data: { email: string; name?: string; password?: string }) => Promise<Record<string, unknown>>;
+  /**
+   * 가입 시 저장소에 함께 넘길 고유 필드를 만든다 (0.24 부터 실제로 호출된다).
+   * `onBeforeRegister` 다음에 호출되고, 결과는 `userRepository.create` 의 `data.extra` 로 전달된다.
+   * `ctx.body` 로 가입 폼의 추가 필드(예: `username`)를 읽는다. 평문 비밀번호는 넘기지 않는다.
+   */
+  extendRegisterData?: (
+    data: { email: string; name?: string },
+    ctx: RegisterHookContext,
+  ) => Promise<Record<string, unknown>>;
   allowEmail?: (email: string) => boolean | Promise<boolean>;
   isTokenBlacklisted?: (token: string) => Promise<boolean>;
 }
