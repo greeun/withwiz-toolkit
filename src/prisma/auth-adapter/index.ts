@@ -90,10 +90,15 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async create(data: CreateUserData): Promise<BaseUser> {
-    const createData: Record<string, unknown> = {
-      email: data.email,
-      name: data.name || null,
-    };
+    // 저장소 고유 필드(extra, 0.24+). id·email·name·isActive 와 설정된 표준 필드(password·role·emailVerified·image)는
+    // 받지 않는다 — 훅이 실수로 요청 본문을 그대로 넘겨도 권한·인증 상태를 바꾸지 못하게.
+    const reserved = new Set(['id', 'email', 'name', 'isActive', ...Object.values(this.config.userFields)]);
+    const createData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data.extra ?? {})) {
+      if (!reserved.has(key)) createData[key] = value;
+    }
+    createData.email = data.email;
+    createData.name = data.name || null;
     // Use configured field names for write operations
     createData[this.config.userFields.password] = data.password || null;
     if (data.role !== undefined && data.role !== null) {

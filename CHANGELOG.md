@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-10-22
+
+### Added
+- `next/auth-handlers`: `hooks.extendRegisterData(data, ctx)` is now called. It was declared on
+  `AuthHandlerHooks` but never invoked, so a sign-up could not store repository-specific fields such as
+  a required `username`. register and signup call it after `onBeforeRegister`, with the same
+  `ctx = { body, request }` (body without `password`), and pass the result to the repository.
+- `core/auth/types`: `CreateUserData.extra` — repository-specific fields for `userRepository.create`.
+  `RegisterService.register` accepts `extra` and forwards it.
+- `prisma/auth-adapter`: `PrismaUserRepository.create` stores the keys of `extra` along with the
+  standard fields. `id`, `email`, `name`, `isActive` and the configured `userFields` columns
+  (password, role, emailVerified, image) are ignored in `extra`, so a hook that forwards the request
+  body cannot set a role or a verification date. `SqlUserRepository` ignores `extra`.
+
+### Changed
+- `hooks.extendRegisterData` signature: `(data: { email, name? }, ctx) => Promise<Record<string, unknown>>`.
+  The unused `password` field of `data` was removed; the hook never ran before, so no caller depended on it.
+
 ## [0.23.2] - 2026-10-22
 
 ### Fixed

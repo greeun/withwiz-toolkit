@@ -17,6 +17,8 @@ export interface RegisterInput {
   email: string;
   password: string;
   name?: string;
+  /** 저장소에 그대로 넘길 고유 필드 (0.24+) — `CreateUserData.extra` */
+  extra?: Record<string, unknown>;
 }
 
 export interface RegisterResult {
@@ -54,6 +56,7 @@ export class RegisterService {
       password: hashedPassword,
       name: input.name ?? null,
       emailVerified: this.emailVerificationRequired ? null : new Date(),
+      ...(input.extra ? { extra: input.extra } : {}),
     });
 
     let verificationSent = false;
