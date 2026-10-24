@@ -66,10 +66,20 @@ export function isRedisGloballyDisabled(): boolean {
   return getGlobalRedisState().isDisabled;
 }
 
+// 이미 센 오류 객체. 한 번의 Redis 실패를 RedisCacheManager 와 HybridCacheManager 가 각각 알려도
+// 한 번만 세어, 전역 비활성 임계값이 실제 실패 횟수의 절반에서 도달하지 않게 한다.
+const countedRedisErrors = new WeakSet<Error>();
+
 /**
  * Redis 에러 발생 시 호출 (전역 상태 업데이트)
+ * - 같은 Error 객체는 한 번만 센다
  */
 export function notifyRedisError(error: Error, source: string): void {
+  if (countedRedisErrors.has(error)) {
+    return;
+  }
+  countedRedisErrors.add(error);
+
   const state = getGlobalRedisState();
   state.errorCount++;
   state.lastErrorTime = new Date();

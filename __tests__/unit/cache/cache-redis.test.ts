@@ -123,6 +123,17 @@ describe('Cache Redis - Global State Management', () => {
         expect.any(Object)
       );
     });
+
+    it('같은 오류 객체를 여러 계층이 알려도 한 번만 센다', async () => {
+      const { notifyRedisError, getRedisGlobalStatus } = await import('@withwiz/toolkit/core/cache/cache-redis');
+      const failure = new Error('redis down');
+
+      notifyRedisError(failure, 'CacheManager.get:p');
+      notifyRedisError(failure, 'HybridCacheManager.get:p');
+      notifyRedisError(new Error('redis down'), 'CacheManager.get:p');
+
+      expect(getRedisGlobalStatus().errorCount).toBe(2);
+    });
   });
 
   describe('resetRedisGlobalState', () => {

@@ -15,6 +15,19 @@ import {
   isRedisGloballyDisabled,
 } from "@withwiz/toolkit/core/cache/cache-redis";
 import type { IUnifiedCacheManager } from "@withwiz/toolkit/core/cache/cache-types";
+import { normalizeTtl } from "@withwiz/toolkit/core/cache/cache-defaults";
+
+/**
+ * get·exists 조회 옵션.
+ *
+ * throwOnError 가 true 이면 Redis 명령 오류와 클라이언트 부재를 null/false 로 바꾸지 않고 예외로 알린다.
+ * 기본값(false)은 기존과 같이 실패를 미스(null/false)로 돌려준다(fail-open). 어느 쪽이든 오류 메트릭·
+ * 연결 상태·전역 오류 알림은 갱신한다. 캐시가 꺼져 있거나(isCacheEnabled false) Redis 가 전역 비활성
+ * 상태이면 오류가 아니라 의도된 상태이므로 throwOnError 여도 미스로 돌려준다.
+ */
+export interface RedisReadOptions {
+  throwOnError?: boolean;
+}
 
 // ============================================================================
 // RedisCacheManager 클래스
@@ -172,7 +185,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
     return data;
   }
 
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(key: string, options: RedisReadOptions = {}): Promise<T | null> {
     const startTime = Date.now();
     const fullKey = `${this.prefix}:${key}`;
 
@@ -201,21 +214,24 @@ export class RedisCacheManager implements IUnifiedCacheManager {
       return null;
     }
 
-    try {
-      const redis = getRedisClient();
-      if (!redis) {
-        logger.warn(
-          `Cache retrieval failed due to Redis unavailability: ${fullKey}`,
-          {
-            prefix: this.prefix,
-            key,
-            fullKey,
-          },
-        );
-        this.metrics.errors++;
-        return null;
+    const redis = getRedisClient();
+    if (!redis) {
+      logger.warn(
+        `Cache retrieval failed due to Redis unavailability: ${fullKey}`,
+        {
+          prefix: this.prefix,
+          key,
+          fullKey,
+        },
+      );
+      this.metrics.errors++;
+      if (options.throwOnError) {
+        throw new Error(`get: Redis client is unavailable (${fullKey})`);
       }
+      return null;
+    }
 
+    try {
       logger.debug(`Cache retrieval started: ${fullKey}`, {
         prefix: this.prefix,
         key,
@@ -279,6 +295,9 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         stack: error instanceof Error ? error.stack : undefined,
       });
 
+      if (options.throwOnError) {
+        throw error;
+      }
       return null;
     }
   }
@@ -286,6 +305,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     const startTime = Date.now();
     const fullKey = `${this.prefix}:${key}`;
+    const ttlSeconds = normalizeTtl(ttl);
 
     if (value === undefined) {
       logger.warn(`[Cache:R] Attempted to set undefined value: ${fullKey}`);
@@ -319,7 +339,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
             fullKey,
             valueType: typeof value,
             valueSize: JSON.stringify(value)?.length || 0,
-            ttl: ttl ? `${ttl}s` : "기본값",
+            ttl: ttlSeconds ? `${ttlSeconds}s` : "기본값",
             timestamp: new Date().toISOString(),
           },
         );
@@ -332,12 +352,12 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         fullKey,
         valueType: typeof value,
         valueSize: JSON.stringify(value)?.length || 0,
-        ttl: ttl ? `${ttl}s` : "기본값",
+        ttl: ttlSeconds ? `${ttlSeconds}s` : "기본값",
         timestamp: new Date().toISOString(),
       });
 
-      if (ttl) {
-        await redis.set(fullKey, value, { ex: ttl });
+      if (ttlSeconds) {
+        await redis.set(fullKey, value, { ex: ttlSeconds });
       } else {
         await redis.set(fullKey, value);
       }
@@ -354,7 +374,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         key,
         fullKey,
         responseTime: `${responseTime}ms`,
-        ttl: ttl ? `${ttl}s` : "기본값",
+        ttl: ttlSeconds ? `${ttlSeconds}s` : "기본값",
       });
     } catch (error) {
       const responseTime = Date.now() - startTime;
@@ -378,7 +398,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         error: errorMessage,
         responseTime: `${responseTime}ms`,
         valueType: typeof value,
-        ttl,
+        ttl: ttlSeconds,
         stack: error instanceof Error ? error.stack : undefined,
       });
     }
@@ -402,6 +422,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
   async setIfNotExists<T>(key: string, value: T, ttl?: number): Promise<boolean> {
     const startTime = Date.now();
     const fullKey = `${this.prefix}:${key}`;
+    const ttlSeconds = normalizeTtl(ttl);
 
     if (value === undefined) {
       logger.warn(`[Cache:R] Attempted to setIfNotExists undefined value: ${fullKey}`);
@@ -434,8 +455,8 @@ export class RedisCacheManager implements IUnifiedCacheManager {
     }
 
     try {
-      const result = ttl
-        ? await redis.set(fullKey, value, { nx: true, ex: ttl })
+      const result = ttlSeconds
+        ? await redis.set(fullKey, value, { nx: true, ex: ttlSeconds })
         : await redis.set(fullKey, value, { nx: true });
       const responseTime = Date.now() - startTime;
       const stored = result === "OK";
@@ -450,7 +471,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         key,
         fullKey,
         responseTime: `${responseTime}ms`,
-        ttl: ttl ? `${ttl}s` : "기본값",
+        ttl: ttlSeconds ? `${ttlSeconds}s` : "기본값",
       });
 
       return stored;
@@ -476,7 +497,7 @@ export class RedisCacheManager implements IUnifiedCacheManager {
         fullKey,
         error: errorMessage,
         responseTime: `${responseTime}ms`,
-        ttl,
+        ttl: ttlSeconds,
         stack: error instanceof Error ? error.stack : undefined,
       });
 
@@ -573,21 +594,51 @@ export class RedisCacheManager implements IUnifiedCacheManager {
     }
   }
 
-  async exists(key: string): Promise<boolean> {
+  /**
+   * 키 존재 여부. 오류 처리 규칙은 get 과 같다(RedisReadOptions 참조).
+   */
+  async exists(key: string, options: RedisReadOptions = {}): Promise<boolean> {
+    const fullKey = this.getKey(key);
     const redis = getRedisClient();
     if (!redis) {
+      if (options.throwOnError && isCacheEnabled() && !isRedisGloballyDisabled()) {
+        this.metrics.errors++;
+        throw new Error(`exists: Redis client is unavailable (${fullKey})`);
+      }
       return false;
     }
 
     try {
-      const result = await redis.exists(this.getKey(key));
+      const result = await redis.exists(fullKey);
       // Redis 작업 성공 - 연결 상태 업데이트
       this.connectionStatus.isConnected = true;
       this.connectionStatus.lastPingTime = new Date();
       return result === 1;
     } catch (error) {
-      logger.error("Cache exists error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+
+      this.metrics.errors++;
       this.connectionStatus.connectionErrors++;
+      this.connectionStatus.lastConnectionError = errorMessage;
+      this.connectionStatus.lastConnectionErrorTime = new Date();
+
+      // 전역 Redis 에러 상태 업데이트 (get 과 같음)
+      notifyRedisError(
+        error instanceof Error ? error : new Error(errorMessage),
+        `CacheManager.exists:${this.prefix}`,
+      );
+
+      logger.error(`Cache exists failed: ${fullKey}`, {
+        prefix: this.prefix,
+        key,
+        fullKey,
+        error: errorMessage,
+      });
+
+      if (options.throwOnError) {
+        throw error;
+      }
       return false;
     }
   }
