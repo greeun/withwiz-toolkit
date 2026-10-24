@@ -271,7 +271,8 @@ describe('TC-I-002: 캐시 계층 실제 조합', () => {
       await expect(hybrid.get('abc')).resolves.toEqual(value);
 
       expect(redis.set).toHaveBeenCalledWith('abc', value, 60);
-      expect(redis.get).toHaveBeenCalledWith('abc');
+      // Hybrid 는 오류를 null 대신 예외로 받기 위해 throwOnError 를 요청한다
+      expect(redis.get).toHaveBeenCalledWith('abc', { throwOnError: true });
       expect(m.isRedisGloballyDisabled()).toBe(false);
     });
 
