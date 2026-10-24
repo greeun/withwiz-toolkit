@@ -16,6 +16,7 @@ import type {
   IUnifiedCacheManager,
 } from '@withwiz/toolkit/core/cache/cache-types';
 import { DEFAULT_INMEMORY_CONFIG } from '@withwiz/toolkit/core/cache/cache-types';
+import { normalizeTtl } from '@withwiz/toolkit/core/cache/cache-defaults';
 
 /**
  * 인메모리 캐시 매니저 클래스
@@ -135,7 +136,7 @@ export class InMemoryCacheManager implements IUnifiedCacheManager {
    */
   private storeEntry<T>(key: string, value: T, ttl?: number): void {
     const fullKey = this.getFullKey(key);
-    const actualTTL = ttl ?? this.config.defaultTTL;
+    const actualTTL = normalizeTtl(ttl) ?? this.config.defaultTTL;
     const size = this.estimateSize(value);
 
     // 단일 항목이 메모리 상한을 넘거나 maxSize 가 0 이하이면 어떤 eviction 으로도

@@ -219,3 +219,11 @@ describe('캐시 무효화 헬퍼', () => {
     expect(h.geoCache.deletePattern).toHaveBeenCalledWith('*');
   });
 });
+
+describe('withCache: ttl 정규화', () => {
+  it.each([0, -5, Number.NaN])('ttl %s 은 지정하지 않은 것으로 보고 설정 TTL 을 쓴다', async (ttl) => {
+    await withCache('community:norm', vi.fn().mockResolvedValue(1), { ttl });
+
+    expect(h.manager.set).toHaveBeenCalledWith('norm', 1, 600);
+  });
+});

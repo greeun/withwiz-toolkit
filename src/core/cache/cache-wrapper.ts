@@ -8,6 +8,7 @@ import { isCacheEnabled } from '@withwiz/toolkit/core/cache/cache-env';
 import { getCacheConfig, getCacheTTL, CacheOptions } from '@withwiz/toolkit/core/cache/cache-config';
 import { getCacheManager, getEffectiveCacheBackend } from '@withwiz/toolkit/core/cache/cache-factory';
 import { isCacheConfigInitialized } from '@withwiz/toolkit/core/cache/config';
+import { normalizeTtl } from '@withwiz/toolkit/core/cache/cache-defaults';
 
 // 캐시 백엔드 타입 약어 (R=Redis, M=Memory, H=Hybrid, N=Noop)
 export function getCacheBackendLabel(): string {
@@ -107,7 +108,7 @@ export async function withCache<T>(
 
   // 새로운 통일된 캐시 설정에서 TTL 가져오기
   const cacheConfig = getCacheConfig[prefix as keyof typeof getCacheConfig];
-  const finalTTL = ttl || (cacheConfig?.duration() || getCacheTTL.default());
+  const finalTTL = normalizeTtl(ttl) ?? (cacheConfig?.duration() || getCacheTTL.default());
 
   // 캐시가 비활성화된 경우 원본 함수만 실행
   if (cacheConfig && !cacheConfig.enabled()) {

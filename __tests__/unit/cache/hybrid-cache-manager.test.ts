@@ -1028,3 +1028,101 @@ describe('HybridCacheManager.setIfNotExists', () => {
     expect(redis.exists).not.toHaveBeenCalled();
   });
 });
+
+// ============================================================================
+// getInstance — Redis 없이 처음 만들어진 싱글턴이 이후 Redis 매니저를 받는 경우
+// ============================================================================
+describe('HybridCacheManager.getInstance Redis 매니저 연결', () => {
+  const base = {
+    backend: 'hybrid' as const,
+    fallbackOnRedisError: true,
+    writeToMemory: true,
+    redisErrorThreshold: 100,
+    redisReconnectInterval: 5000,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (globalThis as any).__hybridCacheInstances;
+    delete (globalThis as any).__inMemoryCacheInstances;
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    HybridCacheManager.destroyAll();
+  });
+
+  it('redisManager 없이 만들어진 인스턴스는 이후 호출에서 받은 Redis 매니저를 연결해 쓴다', async () => {
+    const first = HybridCacheManager.getInstance('attach', { ...base, redisManager: null });
+    expect(first.getConnectionStatus().redisConnected).toBe(false);
+
+    const redis = createMockRedisManager({ get: vi.fn().mockResolvedValue('from-redis') });
+    const second = HybridCacheManager.getInstance('attach', { ...base, redisManager: redis });
+
+    expect(second).toBe(first);
+    expect(second.getConnectionStatus().redisConnected).toBe(true);
+    await expect(second.get('k')).resolves.toBe('from-redis');
+  });
+
+  it('이미 연결된 Redis 매니저는 이후 호출의 설정으로 바꾸지 않는다', async () => {
+    const original = createMockRedisManager({ get: vi.fn().mockResolvedValue('original') });
+    const other = createMockRedisManager({ get: vi.fn().mockResolvedValue('other') });
+    HybridCacheManager.getInstance('keep', { ...base, redisManager: original });
+
+    const again = HybridCacheManager.getInstance('keep', { ...base, redisManager: other });
+
+    await expect(again.get('k')).resolves.toBe('original');
+    expect(other.get).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// get/exists — Redis 매니저에 오류를 던지도록 요청해 폴백·임계값 분기가 실제로 동작하게 한다
+// ============================================================================
+describe('HybridCacheManager get/exists 의 Redis 오류 감지', () => {
+  const managers: HybridCacheManager[] = [];
+  const make = (prefix: string, redisManager: ReturnType<typeof createMockRedisManager>) => {
+    const manager = new HybridCacheManager(prefix, {
+      backend: 'hybrid',
+      redisManager,
+      fallbackOnRedisError: true,
+      writeToMemory: true,
+      redisErrorThreshold: 100,
+      redisReconnectInterval: 5000,
+    });
+    managers.push(manager);
+    return manager;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (globalThis as any).__hybridCacheInstances;
+    delete (globalThis as any).__inMemoryCacheInstances;
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    managers.splice(0).forEach((m) => m.destroy());
+    HybridCacheManager.destroyAll();
+  });
+
+  it('get 은 Redis 매니저에 throwOnError 를 요청한다', async () => {
+    const redis = createMockRedisManager();
+    const manager = make('strict-get', redis);
+
+    await manager.get('k');
+
+    expect(redis.get).toHaveBeenCalledWith('k', { throwOnError: true });
+  });
+
+  it('exists 는 Redis 매니저에 throwOnError 를 요청하고, 오류이면 오류로 집계한 뒤 인메모리를 확인한다', async () => {
+    const redis = createMockRedisManager({ exists: vi.fn().mockRejectedValue(new Error('redis down')) });
+    const manager = make('strict-exists', redis);
+    await manager.set('k', 'v', 60);
+
+    await expect(manager.exists('k')).resolves.toBe(true);
+
+    expect(redis.exists).toHaveBeenCalledWith('k', { throwOnError: true });
+    expect(manager.getConnectionStatus().redisErrorCount).toBe(1);
+  });
+});
