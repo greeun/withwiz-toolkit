@@ -28,7 +28,11 @@ import type {
  * Redis 캐시 매니저 인터페이스 (RedisCacheManager와 호환)
  */
 interface IRedisCacheManager {
-  get<T>(key: string): Promise<T | null>;
+  /**
+   * options.throwOnError 를 지원하면 오류를 null 대신 예외로 알려야 한다(RedisCacheManager 는 지원).
+   * 지원하지 않는 사용자 정의 매니저는 인자를 무시해도 되며, 그 경우 오류는 미스로 보인다.
+   */
+  get<T>(key: string, options?: { throwOnError?: boolean }): Promise<T | null>;
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
   /**
    * (선택) 원자적 "없을 때만 저장". RedisCacheManager 는 구현한다.
@@ -38,7 +42,7 @@ interface IRedisCacheManager {
   setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   deletePattern(pattern: string): Promise<void>;
-  exists(key: string): Promise<boolean>;
+  exists(key: string, options?: { throwOnError?: boolean }): Promise<boolean>;
   increment(key: string, value?: number): Promise<number>;
   expire(key: string, ttl: number): Promise<void>;
   getMetrics(): object;
@@ -128,7 +132,8 @@ export class HybridCacheManager implements IUnifiedCacheManager {
     // redis 또는 hybrid 모드: Redis 먼저 시도
     if (this.redisManager && !this.isRedisTemporarilyDisabled) {
       try {
-        const result = await this.redisManager.get<T>(key);
+        // 오류를 null 로 받으면 아래 폴백·오류 집계 분기가 실행되지 않으므로 예외로 받는다
+        const result = await this.redisManager.get<T>(key, { throwOnError: true });
         if (result !== null) {
           this.resetRedisErrorState();
           return result;
@@ -319,7 +324,7 @@ export class HybridCacheManager implements IUnifiedCacheManager {
 
     if (this.redisManager && !this.isRedisTemporarilyDisabled) {
       try {
-        const exists = await this.redisManager.exists(key);
+        const exists = await this.redisManager.exists(key, { throwOnError: true });
         if (exists) {
           this.resetRedisErrorState();
           return true;
@@ -650,16 +655,27 @@ export class HybridCacheManager implements IUnifiedCacheManager {
 
   /**
    * 싱글톤 인스턴스 가져오기
+   *
+   * 처음 만들 때 Redis 매니저가 없었던(null) 인스턴스는, 이후 호출의 설정에 Redis 매니저가 있으면
+   * 그것을 연결한다. 그렇지 않으면 첫 호출 시점에 Redis 를 쓸 수 없었다는 이유만으로 그 prefix 가
+   * 프로세스가 끝날 때까지 인메모리 전용으로 고정된다. 이미 연결된 매니저는 바꾸지 않는다.
    */
   static getInstance(
     prefix: string,
     config: HybridCacheManagerConfig
   ): HybridCacheManager {
     const instances = HybridCacheManager.getGlobalInstances();
-    if (!instances.has(prefix)) {
-      instances.set(prefix, new HybridCacheManager(prefix, config));
+    const existing = instances.get(prefix);
+    if (!existing) {
+      const created = new HybridCacheManager(prefix, config);
+      instances.set(prefix, created);
+      return created;
     }
-    return instances.get(prefix)!;
+    if (!existing.redisManager && config.redisManager) {
+      existing.redisManager = config.redisManager;
+      logger.info(`[HybridCacheManager] Redis manager attached: prefix=${prefix}`);
+    }
+    return existing;
   }
 
   /**

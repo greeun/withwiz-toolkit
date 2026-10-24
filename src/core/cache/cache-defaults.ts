@@ -170,3 +170,23 @@ export const CACHE_ENV_VARS = {
   CACHE_REPORT_INVALIDATION_THRESHOLD: 'CACHE_REPORT_INVALIDATION_THRESHOLD',
   CACHE_REPORT_MIN_REQUESTS: 'CACHE_REPORT_MIN_REQUESTS',
 } as const;
+
+// ============================================================================
+// TTL 정규화
+// ============================================================================
+
+/**
+ * 캐시 매니저가 받는 ttl(초)을 정규화한다. 모든 백엔드가 같은 규칙을 쓰기 위한 내부 함수다.
+ *
+ * - 양의 유한수: 올림한 정수 초 (Redis `EX` 는 정수만 받는다)
+ * - undefined·0·음수·NaN·Infinity: undefined (ttl 미지정과 같음 — 각 백엔드의 기본값)
+ *
+ * 이전에는 ttl 0 이 Redis 에서는 만료 없음, 인메모리에서는 즉시 만료, withCache 에서는
+ * 기본 TTL 로 해석되어 hybrid 모드에서 백엔드마다 결과가 달랐다.
+ */
+export function normalizeTtl(ttl?: number): number | undefined {
+  if (typeof ttl !== 'number' || !Number.isFinite(ttl) || ttl <= 0) {
+    return undefined;
+  }
+  return Math.ceil(ttl);
+}

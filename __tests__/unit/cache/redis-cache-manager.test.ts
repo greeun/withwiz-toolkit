@@ -118,3 +118,98 @@ describe('RedisCacheManager.setIfNotExists', () => {
     expect(mockRedis.set).not.toHaveBeenCalled();
   });
 });
+
+describe('RedisCacheManager.get/exists 오류 정책', () => {
+  let manager: RedisCacheManager;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getRedisClient as ReturnType<typeof vi.fn>).mockReturnValue(mockRedis);
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    RedisCacheManager.clearInstances();
+    manager = RedisCacheManager.getInstance('errs');
+  });
+
+  it('get: 기본 동작은 Redis 오류를 null 로 돌려준다 (fail-open 유지)', async () => {
+    mockRedis.get.mockRejectedValueOnce(new Error('redis down'));
+
+    await expect(manager.get('k')).resolves.toBeNull();
+    expect(manager.getMetrics().errors).toBe(1);
+    expect(notifyRedisError).toHaveBeenCalledTimes(1);
+  });
+
+  it('get: throwOnError 이면 같은 오류를 다시 던지고 오류 메트릭·전역 알림을 갱신한다', async () => {
+    const failure = new Error('redis down');
+    mockRedis.get.mockRejectedValueOnce(failure);
+
+    await expect(manager.get('k', { throwOnError: true })).rejects.toBe(failure);
+    expect(manager.getMetrics().errors).toBe(1);
+    expect(notifyRedisError).toHaveBeenCalledWith(failure, 'CacheManager.get:errs');
+  });
+
+  it('get: throwOnError 이고 Redis 클라이언트가 없으면 미스로 꾸미지 않고 예외를 던진다', async () => {
+    (getRedisClient as ReturnType<typeof vi.fn>).mockReturnValue(null);
+
+    await expect(manager.get('k')).resolves.toBeNull();
+    await expect(manager.get('k', { throwOnError: true })).rejects.toThrow(/unavailable/);
+  });
+
+  it('get: throwOnError 여도 정상 미스는 null 이다', async () => {
+    mockRedis.get.mockResolvedValueOnce(null);
+
+    await expect(manager.get('k', { throwOnError: true })).resolves.toBeNull();
+  });
+
+  it('exists: 기본 동작은 false 를 돌려주되 오류 메트릭과 전역 알림은 get 과 같이 갱신한다', async () => {
+    const failure = new Error('redis down');
+    mockRedis.exists.mockRejectedValueOnce(failure);
+
+    await expect(manager.exists('k')).resolves.toBe(false);
+    expect(manager.getMetrics().errors).toBe(1);
+    expect(notifyRedisError).toHaveBeenCalledWith(failure, 'CacheManager.exists:errs');
+  });
+
+  it('exists: throwOnError 이면 오류와 클라이언트 부재를 예외로 알린다', async () => {
+    const failure = new Error('redis down');
+    mockRedis.exists.mockRejectedValueOnce(failure);
+
+    await expect(manager.exists('k', { throwOnError: true })).rejects.toBe(failure);
+
+    (getRedisClient as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    await expect(manager.exists('k')).resolves.toBe(false);
+    await expect(manager.exists('k', { throwOnError: true })).rejects.toThrow(/unavailable/);
+  });
+});
+
+describe('RedisCacheManager ttl 정규화', () => {
+  let manager: RedisCacheManager;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getRedisClient as ReturnType<typeof vi.fn>).mockReturnValue(mockRedis);
+    (isRedisGloballyDisabled as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    (isCacheEnabled as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    mockRedis.set.mockResolvedValue('OK');
+    RedisCacheManager.clearInstances();
+    manager = RedisCacheManager.getInstance('ttl');
+  });
+
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY])('set: ttl %s 은 ttl 미지정과 같게 만료 없이 저장한다', async (ttl) => {
+    await manager.set('k', 'v', ttl);
+
+    expect(mockRedis.set).toHaveBeenCalledWith('ttl:k', 'v');
+  });
+
+  it('set: 소수 ttl 은 올림한 정수 초로 보낸다', async () => {
+    await manager.set('k', 'v', 1.5);
+
+    expect(mockRedis.set).toHaveBeenCalledWith('ttl:k', 'v', { ex: 2 });
+  });
+
+  it('setIfNotExists: ttl 0 은 ttl 미지정과 같게 { nx: true } 만 보낸다', async () => {
+    await manager.setIfNotExists('k', 'v', 0);
+
+    expect(mockRedis.set).toHaveBeenCalledWith('ttl:k', 'v', { nx: true });
+  });
+});

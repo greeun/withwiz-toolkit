@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-10-25
+
+### Fixed
+- `core/cache/hybrid-cache-manager`: `HybridCacheManager.getInstance(prefix, config)` kept the Redis manager it
+  was first created with. When the first call for a prefix had no Redis manager (`getCacheManager` passes
+  `null` while Redis is not configured, e.g. before `initializeCache()` is called again with Redis settings),
+  that prefix stayed in-memory only for the life of the process, and the reconnect timer never ran. A later
+  call that passes a Redis manager now attaches it. An attached manager is never replaced.
+- `core/cache`: `ttl` is interpreted the same way by every backend. `0`, negative numbers, `NaN` and
+  `Infinity` mean "no ttl given" (the backend default: no expiry on Redis, `defaultTTL` in memory, the
+  configured duration in `withCache`); positive fractions are rounded up to whole seconds. Before, `ttl: 0`
+  stored a key without expiry on Redis but expired it immediately in memory, so a hybrid cache answered
+  differently depending on which backend served the read; negative values failed on Redis (`EX` must be a
+  positive integer) and were swallowed. `expire(key, ttl)` is unchanged.
+- `core/cache/hybrid-cache-manager`: Redis failures in `get`/`exists` now reach the hybrid fallback path. The
+  underlying `RedisCacheManager` returned `null`/`false` on errors, so the in-memory fallback counter, the
+  local error threshold and the temporary Redis disable for those operations never ran.
+- `core/cache/redis-cache-manager`: `exists` failures update `errors` in `getMetrics()` and the global Redis
+  error state, as `get` failures already did.
+- `core/cache/cache-redis`: `notifyRedisError` counts the same `Error` object once. A single failure reported by
+  both `RedisCacheManager` and `HybridCacheManager` (as `setIfNotExists` already did) no longer counts twice
+  toward the global disable threshold.
+
+### Added
+- `core/cache/redis-cache-manager`: `get(key, { throwOnError: true })` and `exists(key, { throwOnError: true })`
+  throw on Redis command errors and when no Redis client is available, instead of returning `null`/`false`.
+  A disabled cache or a globally disabled Redis is still reported as a miss. Without the option the behavior is
+  unchanged (fail-open). Type `RedisReadOptions` is exported. `HybridCacheManager` uses the option internally;
+  a custom Redis manager passed to it may ignore the extra argument.
+
 ## [0.25.0] - 2026-10-23
 
 ### Security

@@ -127,3 +127,40 @@ describe('InMemoryCacheManager.setIfNotExists', () => {
     await expect(b.setIfNotExists('k', 1, 60)).resolves.toBe(true);
   });
 });
+
+describe('InMemoryCacheManager ttl 정규화', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    InMemoryCacheManager.destroyAll();
+  });
+
+  it.each([0, -5, Number.NaN])('ttl %s 은 즉시 만료시키지 않고 ttl 미지정과 같게 defaultTTL 을 쓴다', async (ttl) => {
+    vi.useFakeTimers();
+    const cache = new InMemoryCacheManager('ttl-norm', { ...baseConfig, maxSize: 100, maxMemoryMB: 10, defaultTTL: 60 });
+
+    await cache.set('k', 'v', ttl);
+    vi.advanceTimersByTime(59_000);
+    expect(await cache.get('k')).toBe('v');
+
+    vi.advanceTimersByTime(2_000);
+    expect(await cache.get('k')).toBeNull();
+  });
+
+  it('setIfNotExists 도 ttl 0 을 defaultTTL 로 다룬다', async () => {
+    vi.useFakeTimers();
+    const cache = new InMemoryCacheManager('ttl-norm-nx', { ...baseConfig, maxSize: 100, maxMemoryMB: 10, defaultTTL: 60 });
+
+    await expect(cache.setIfNotExists('k', 'v', 0)).resolves.toBe(true);
+    vi.advanceTimersByTime(1_000);
+    await expect(cache.setIfNotExists('k', 'v', 0)).resolves.toBe(false);
+  });
+
+  it('소수 ttl 은 올림한 정수 초로 만료한다', async () => {
+    vi.useFakeTimers();
+    const cache = new InMemoryCacheManager('ttl-ceil', { ...baseConfig, maxSize: 100, maxMemoryMB: 10 });
+
+    await cache.set('k', 'v', 1.5);
+    vi.advanceTimersByTime(1_900);
+    expect(await cache.get('k')).toBe('v');
+  });
+});

@@ -63,6 +63,7 @@ export {
 // Cache Managers
 // ============================================================================
 export { RedisCacheManager } from '@withwiz/toolkit/core/cache/redis-cache-manager';
+export type { RedisReadOptions } from '@withwiz/toolkit/core/cache/redis-cache-manager';
 export { NoopCacheManager } from '@withwiz/toolkit/core/cache/noop-cache-manager';
 
 // ============================================================================
