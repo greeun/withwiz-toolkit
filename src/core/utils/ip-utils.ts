@@ -42,6 +42,14 @@ export interface ExtractClientIpOptions {
    * 없는 홉을 신뢰하면 클라이언트가 직접 써 넣은 값을 읽게 된다.
    */
   trustedProxyHops?: number;
+  /**
+   * CF-Connecting-IP·True-Client-IP 를 신뢰할지 여부. 기본 true(기존 동작).
+   *
+   * Cloudflare 뒤가 아닌 배포에서는 클라이언트가 이 헤더를 직접 써 넣어 rate limit 과 IP 허용 목록을
+   * 우회할 수 있으므로 false 로 지정한다. Cloudflare 뒤에서 false 로 지정하면 X-Forwarded-For 를 읽으므로
+   * `trustedProxyHops` 를 배포 구성에 맞춰야 한다.
+   */
+  trustCloudflare?: boolean;
 }
 
 /** 홉 수를 0 이상의 정수로 보정한다(음수·소수·비수치는 0). */
@@ -66,13 +74,15 @@ function normalizeTrustedProxyHops(value: number | undefined): number {
  * - Cloudflare Proxy 환경에서는 CF-Connecting-IP가 항상 설정되므로 폴백에 도달하지 않음
  */
 export function extractClientIp(headers: Headers, options: ExtractClientIpOptions = {}): string | null {
-  // 1. Cloudflare 헤더 (가장 신뢰할 수 있음 — Cloudflare가 강제 덮어씀)
-  const cf = headers.get('cf-connecting-ip');
-  if (cf && isValidIP(cf.trim())) return cf.trim();
+  if (options.trustCloudflare !== false) {
+    // 1. Cloudflare 헤더 (Cloudflare 뒤에서는 Cloudflare가 강제 덮어씀)
+    const cf = headers.get('cf-connecting-ip');
+    if (cf && isValidIP(cf.trim())) return cf.trim();
 
-  // 2. Cloudflare Enterprise True-Client-IP
-  const trueClientIp = headers.get('true-client-ip');
-  if (trueClientIp && isValidIP(trueClientIp.trim())) return trueClientIp.trim();
+    // 2. Cloudflare Enterprise True-Client-IP
+    const trueClientIp = headers.get('true-client-ip');
+    if (trueClientIp && isValidIP(trueClientIp.trim())) return trueClientIp.trim();
+  }
 
   // 3. X-Forwarded-For (뒤에서 신뢰 홉 수만큼 건너뛴 값)
   const xff = headers.get('x-forwarded-for');

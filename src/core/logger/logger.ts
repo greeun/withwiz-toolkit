@@ -220,18 +220,51 @@ export function logError(message: string, meta?: any) {
 }
 
 // 공통 유틸리티 함수들을 상단으로 이동
-const MASK_KEYS = ['password', 'token', 'secret', 'accessToken', 'refreshToken'] as const;
+// 키 이름을 소문자로 정확히 비교한다. 부분 일치는 `author` 같은 일반 필드까지 가리므로 쓰지 않는다.
+const MASK_KEYS = new Set([
+  'password',
+  'newpassword',
+  'currentpassword',
+  'oldpassword',
+  'confirmpassword',
+  'passwordconfirm',
+  'token',
+  'secret',
+  'accesstoken',
+  'refreshtoken',
+  'idtoken',
+  'access_token',
+  'refresh_token',
+  'id_token',
+  'client_secret',
+  'clientsecret',
+  'api_key',
+  'apikey',
+]);
+const MASK_HEADERS = new Set(['set-cookie', 'cookie', 'authorization', 'proxy-authorization', 'x-api-key']);
+const MAX_MASK_DEPTH = 10;
 const MAX_BODY_LENGTH = 1024;
 
 // 민감 정보 마스킹 함수
-function maskSensitiveData(obj: any): any {
+function maskSensitiveData(obj: any, depth: number = 0): any {
   if (typeof obj !== 'object' || obj === null) return obj;
-  
-  const masked = { ...obj };
-  for (const key of MASK_KEYS) {
-    if (key in masked) {
-      masked[key] = '[MASKED]';
-    }
+  if (depth >= MAX_MASK_DEPTH) return '[MASKED]';
+  if (Array.isArray(obj)) return obj.map((item) => maskSensitiveData(item, depth + 1));
+
+  const masked: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    masked[key] = MASK_KEYS.has(key.toLowerCase())
+      ? '[MASKED]'
+      : maskSensitiveData(value, depth + 1);
+  }
+  return masked;
+}
+
+// 응답 헤더 마스킹 함수
+function maskHeaders(headers: Headers): Record<string, string> {
+  const masked: Record<string, string> = {};
+  for (const [name, value] of headers.entries()) {
+    masked[name] = MASK_HEADERS.has(name.toLowerCase()) ? '[MASKED]' : value;
   }
   return masked;
 }
@@ -315,7 +348,7 @@ export function logApiResponse(request: Request, response: Response, extra?: Rec
     method: request.method,
     url: request.url,
     status: response.status,
-    headers: Object.fromEntries(response.headers.entries()),
+    headers: maskHeaders(response.headers),
     ...extra,
   };
   
