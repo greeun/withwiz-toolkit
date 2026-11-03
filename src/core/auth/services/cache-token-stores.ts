@@ -25,7 +25,7 @@ import type {
 export interface TokenStoreCache {
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
   delete(key: string): Promise<void>;
-  exists(key: string): Promise<boolean>;
+  exists(key: string, options?: { throwOnError?: boolean }): Promise<boolean>;
   /**
    * (선택) 키가 없을 때만 저장하는 원자 연산. 저장했으면 true, 이미 있으면 false.
    * 제공하면 refresh store 의 markUsedIfUnused 가 이 연산을 사용하므로 여러 서버
@@ -47,12 +47,33 @@ export interface CacheAccessTokenBlacklist {
   revokeAccessToken(token: string, ttlSec: number): Promise<void>;
 }
 
-export interface CacheBlacklistOptions {
+export interface CacheBlacklistOptions extends CacheStoreFailureOptions {
   /** 키 네임스페이스 프리픽스. 기본 'revoked:at:' */
   prefix?: string;
   /** 토큰 → 키 식별자 변형. 기본 sha256 hex (원문 키 저장 지양). */
   deriveId?: (token: string) => string;
 }
+
+/**
+ * 폐기 확인에 `throwOnError` 를 전달해 캐시 장애를 호출자에게 전파할지 여부를 정하는 공통 옵션.
+ *
+ * 기본 false(기존 동작)는 장애 시 "폐기되지 않음"으로 처리하므로 가용성을 우선한다. true 는 폐기된
+ * 토큰이 장애 중에 통과하지 않지만, 장애 동안 해당 토큰 검증이 실패한다.
+ *
+ * RedisCacheManager 만 이 옵션으로 예외를 던진다. HybridCacheManager 는 Redis 오류를 자체 처리해
+ * 인메모리로 넘어가고, InMemory·Noop 은 Redis 를 쓰지 않으므로 켜도 동작이 같다.
+ */
+export interface CacheStoreFailureOptions {
+  failClosed?: boolean;
+}
+
+const existsCheckFor = (
+  cache: TokenStoreCache,
+  failClosed: boolean | undefined,
+): ((key: string) => Promise<boolean>) =>
+  failClosed
+    ? (key) => cache.exists(key, { throwOnError: true })
+    : (key) => cache.exists(key);
 
 const sha256Hex = (value: string): string =>
   createHash('sha256').update(value).digest('hex');
@@ -74,18 +95,19 @@ export function createCacheBlacklistChecker(
   const prefix = opts.prefix ?? 'revoked:at:';
   const deriveId = opts.deriveId ?? sha256Hex;
   const keyFor = (token: string): string => `${prefix}${deriveId(token)}`;
+  const exists = existsCheckFor(cache, opts.failClosed);
 
   return {
     async revokeAccessToken(token, ttlSec) {
       await cache.set(keyFor(token), 1, normalizeTtl(ttlSec, 1));
     },
     async isAccessTokenRevoked(token) {
-      return cache.exists(keyFor(token));
+      return exists(keyFor(token));
     },
   };
 }
 
-export interface CacheRefreshStoreOptions {
+export interface CacheRefreshStoreOptions extends CacheStoreFailureOptions {
   /** used jti 키 프리픽스. 기본 'rt:used:' */
   usedPrefix?: string;
   /** family revoke 키 프리픽스. 기본 'rt:famrevoked:' */
@@ -119,6 +141,7 @@ export function createCacheRefreshTokenStore(
   const usedPrefix = opts.usedPrefix ?? 'rt:used:';
   const familyPrefix = opts.familyPrefix ?? 'rt:famrevoked:';
   const defaultTtl = opts.defaultTtlSec ?? THIRTY_DAYS_SEC;
+  const exists = existsCheckFor(cache, opts.failClosed);
 
   const ttlFrom = (expiresAt?: Date): number => {
     if (!expiresAt) return defaultTtl;
@@ -130,7 +153,7 @@ export function createCacheRefreshTokenStore(
   const claimSerially = (key: string, ttl: number): Promise<boolean> => {
     const previous = pendingClaims.get(key) ?? Promise.resolve();
     const claim = previous.then(async () => {
-      if (await cache.exists(key)) return false;
+      if (await exists(key)) return false;
       await cache.set(key, 1, ttl);
       return true;
     });
@@ -144,7 +167,7 @@ export function createCacheRefreshTokenStore(
 
   return {
     async isUsed(jti) {
-      return cache.exists(`${usedPrefix}${jti}`);
+      return exists(`${usedPrefix}${jti}`);
     },
     async markUsed(jti, meta) {
       await cache.set(`${usedPrefix}${jti}`, 1, ttlFrom(meta?.expiresAt));
@@ -158,7 +181,7 @@ export function createCacheRefreshTokenStore(
       return claimSerially(key, ttl);
     },
     async isFamilyRevoked(familyId) {
-      return cache.exists(`${familyPrefix}${familyId}`);
+      return exists(`${familyPrefix}${familyId}`);
     },
     async revokeFamily(familyId) {
       await cache.set(`${familyPrefix}${familyId}`, 1, defaultTtl);
