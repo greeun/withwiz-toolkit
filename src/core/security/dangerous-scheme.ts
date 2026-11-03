@@ -19,7 +19,12 @@ const SCHEME_REGEX = /^([a-zA-Z][a-zA-Z0-9+.-]*):/;
  */
 export function isDangerousUrlScheme(url: string): boolean {
   if (!url) return false;
-  const match = url.trim().match(SCHEME_REGEX);
+  // 브라우저처럼 탭·개행과 앞쪽 C0 제어 문자를 제거하고 판정한다 (`java\tscript:` 우회 방지).
+  const normalized = url
+    .replace(/[\t\n\r]/g, '')
+    .replace(/^[\u0000-\u0020]+/, '')
+    .trim();
+  const match = normalized.match(SCHEME_REGEX);
   if (!match) return false;
   return DANGEROUS_SCHEMES.has(match[1].toLowerCase());
 }

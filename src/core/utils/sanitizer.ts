@@ -92,7 +92,13 @@ export function sanitizeUrl(url: string): string {
     return '';
   }
 
-  const trimmedUrl = url.trim().toLowerCase();
+  // 브라우저는 URL 파싱 전에 탭·개행을 모두 제거하고 앞쪽 C0 제어 문자·공백을 잘라낸다.
+  // 판정만 같은 기준으로 하고, 반환값은 기존처럼 원본을 trim 한 값을 유지한다.
+  const trimmedUrl = url
+    .replace(/[\t\n\r]/g, '')
+    .replace(/^[\u0000-\u0020]+/, '')
+    .trim()
+    .toLowerCase();
 
   // 위험한 프로토콜 체크
   const dangerousProtocols = [
