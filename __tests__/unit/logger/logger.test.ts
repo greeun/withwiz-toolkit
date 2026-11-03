@@ -293,6 +293,71 @@ describe("Logger Module", () => {
   });
 
   describe("Sensitive Data Masking", () => {
+    it("should mask credentials in logged response headers", () => {
+      const request = new Request("https://api.example.com/auth/login");
+      const response = new Response(null, {
+        status: 204,
+        headers: {
+          "Set-Cookie": "access_token=real-cookie-token; HttpOnly",
+          Authorization: "Bearer real-bearer-token",
+          "X-Request-Id": "req-1",
+        },
+      });
+
+      logApiResponse(request, response);
+
+      const call = mockDebug.mock.calls[0][0];
+      expect(call).not.toContain("real-cookie-token");
+      expect(call).not.toContain("real-bearer-token");
+      expect(call).toContain("[MASKED]");
+      expect(call).toContain("req-1");
+    });
+
+    it("should mask tokens nested in a response body", async () => {
+      const request = new Request("https://api.example.com/auth/login");
+      const response = new Response(
+        JSON.stringify({
+          data: {
+            user: { email: "user@example.com" },
+            tokens: { accessToken: "nested-access", refreshToken: "nested-refresh" },
+            list: [{ token: "in-array" }],
+          },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
+
+      logApiResponse(request, response);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const call = mockDebug.mock.calls[0][0];
+      expect(call).not.toContain("nested-access");
+      expect(call).not.toContain("nested-refresh");
+      expect(call).not.toContain("in-array");
+      expect(call).toContain("user@example.com");
+    });
+
+    it("should mask password variants in a request body", async () => {
+      const request = new Request("https://api.example.com/auth/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newPassword: "new-secret-value",
+          currentPassword: "current-secret-value",
+          confirmPassword: "confirm-secret-value",
+          displayName: "visible-name",
+        }),
+      });
+
+      logApiRequest(request);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const call = mockDebug.mock.calls[0][0];
+      expect(call).not.toContain("new-secret-value");
+      expect(call).not.toContain("current-secret-value");
+      expect(call).not.toContain("confirm-secret-value");
+      expect(call).toContain("visible-name");
+    });
+
     it("should mask password in request body", async () => {
       const request = new Request("https://api.example.com/register", {
         method: "POST",
