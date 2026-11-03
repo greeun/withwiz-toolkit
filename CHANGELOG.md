@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-11-04
+
+### Added
+- `core/utils/ip-utils`: `extractClientIp` accepts `trustCloudflare`. Set it to `false` when the app is not
+  behind Cloudflare, because a client can then send `CF-Connecting-IP` or `True-Client-IP` itself and bypass
+  rate limits and IP allow lists. The default keeps the current behaviour.
+- `core/auth/services/cache-token-stores`: `createCacheBlacklistChecker` and `createCacheRefreshTokenStore`
+  accept `failClosed`, which passes `throwOnError` to revocation checks so a cache failure reaches the caller.
+  The default keeps the current behaviour. Only `RedisCacheManager` throws: `HybridCacheManager` still falls
+  back to memory on a Redis error.
+
+### Fixed
+- `core/utils/sanitizer`, `core/security/dangerous-scheme`: `sanitizeUrl` and `isDangerousUrlScheme` now ignore
+  tabs, line breaks and leading control characters when reading the scheme, as browsers do, so
+  `java\tscript:` is no longer treated as safe. Safe URLs are returned unchanged.
+- `core/logger`: `logApiResponse` masks credential headers such as `Set-Cookie` and `Authorization`, and body
+  masking now covers nested objects, arrays and password variants such as `newPassword`.
+
 ## [0.26.0] - 2026-10-25
 
 ### Fixed
