@@ -62,6 +62,12 @@ import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
 // createMeHandler / createOAuthAuthorizeHandler / createOAuthCallbackHandler ...
 ```
 
+Set `cookieHostPrefix: true` when other subdomains of the same registrable domain are not trusted. The access,
+refresh and OAuth state cookies then use `__Host-` names, which stops another subdomain from planting a cookie that
+logs the user into an attacker's account. It requires `cookieSecure: true` (initialization fails otherwise), moves the
+refresh cookie to `Path=/`, and ends existing sessions when turned on. `createAuthProxy` does not read the auth config,
+so pass `` `${HOST_COOKIE_PREFIX}${ACCESS_TOKEN_COOKIE}` `` as `cookieName`.
+
 Cookies are set/cleared with `setTokenCookies` / `clearTokenCookies`
 (`@withwiz/toolkit/core/auth/jwt/cookie`); token extraction uses the hybrid strategy
 by default.

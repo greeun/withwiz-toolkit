@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `core/auth/config`: `initializeAuth` accepts `cookieHostPrefix`. When on, the access, refresh and OAuth state cookies
+  use `__Host-` names with `Secure`, `Path=/` and no `Domain`, and only those names are read, so a cookie planted by
+  another subdomain is ignored. It requires `cookieSecure: true`, moves the refresh cookie from `/api/auth` to `/`, and
+  ends existing sessions when turned on. The default keeps the current behaviour.
+- `core/auth/config`: `authCookieName`, `isCookieHostPrefixEnabled`. `core/auth/cookie-names`: `HOST_COOKIE_PREFIX`.
+  `core/auth/oauth`: `oauthStateCookieName`.
+
 ## [0.28.0] - 2026-11-05
 
 ### Changed

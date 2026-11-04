@@ -4,7 +4,7 @@ import { OAuthManager } from '@withwiz/toolkit/core/auth/oauth';
 // state-cookie 는 서브모듈 경로에서 import — handlers.test.ts 가 oauth
 // 인덱스를 OAuthManager 만으로 mock 하므로 인덱스 경유 시 가려진다.
 import {
-  OAUTH_STATE_COOKIE,
+  oauthStateCookieName,
   validateOAuthState,
   clearOAuthStateCookie,
 } from '@withwiz/toolkit/core/auth/oauth/state-cookie';
@@ -44,7 +44,7 @@ export function createOAuthCallbackHandler(options: AuthHandlerOptions) {
 
       // O-1: 코드 교환 이전에 state(query) 와 쿠키를 strict 검증.
       const stateParam = url.searchParams.get('state');
-      const stateCookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
+      const stateCookie = request.cookies.get(oauthStateCookieName())?.value;
       if (!validateOAuthState(stateCookie, stateParam)) {
         const res = respond.error(request, { status: 400, key: 'OAUTH_STATE_INVALID', message: 'Invalid OAuth state' });
         return clearOAuthStateCookie(res, stateCookieOpts);

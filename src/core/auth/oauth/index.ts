@@ -20,6 +20,7 @@ export { OAUTH_PROVIDERS };
 // Re-export OAuth state-cookie (CSRF) 유틸 — 소비자 커스텀 흐름 재사용
 export {
   OAUTH_STATE_COOKIE,
+  oauthStateCookieName,
   generateOAuthState,
   setOAuthStateCookie,
   clearOAuthStateCookie,
