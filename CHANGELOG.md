@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-11-05
+
+### Changed
+- zod 를 3 에서 4(`^4.6.7`)로 올렸다. 보안 권고(`<4.6.6`, 크기 제한이 걸린 큰 컬렉션을 검증할 때의 메모리 고갈)를 해소한다.
+- 인증 핸들러의 en 검증 문구는 종전 문구(`Required`, `Invalid email` 등)로 고정해 응답을 바꾸지 않았다. 잘못된 형식의 en 문구만 `Invalid input` 으로 통일된다.
+
+### Fixed
+- zod 실패 판정을 `instanceof` 에서 `isZodError` 로 바꿨다. 소비 앱이 toolkit 과 다른 zod 사본(3·4 혼재 포함)을 써도 검증 실패가 500 이 아니라 400 으로 나간다.
+
 ## [0.27.0] - 2026-11-04
 
 ### Added

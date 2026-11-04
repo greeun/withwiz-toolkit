@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { isZodError, zodPathText } from '../../core/error/is-zod-error';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
 import { ERROR_CODES, formatErrorMessage, getHttpStatus, classifyError, getErrorByCode } from '@withwiz/toolkit/core/constants/error-codes';
 import { getErrorMessage } from '@withwiz/toolkit/core/error/messages';
@@ -118,8 +118,8 @@ export function processError(error: unknown): { code: number; message: string; s
   }
 
   // 2. Zod 검증 에러
-  if (error instanceof z.ZodError) {
-    const issues = error.errors.map(e => ({ path: e.path.join('.'), message: e.message }));
+  if (isZodError(error)) {
+    const issues = error.issues.map(e => ({ path: zodPathText(e.path), message: e.message }));
     return {
       code: ERROR_CODES.VALIDATION_ERROR.code,
       message: formatErrorMessage(ERROR_CODES.VALIDATION_ERROR.code, issues[0]?.message),

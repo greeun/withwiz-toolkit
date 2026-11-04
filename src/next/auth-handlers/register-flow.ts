@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { localizeFieldIssue } from './field-messages';
 import type { NextRequest } from 'next/server';
 import { RegisterService } from '@withwiz/toolkit/core/auth/services/register.service';
 import { AuthError } from '@withwiz/toolkit/core/auth/errors';
@@ -42,7 +43,8 @@ export function createRegisterFlow(options: AuthHandlerOptions) {
             status: 400,
             key: 'VALIDATION_ERROR',
             message: 'Invalid input',
-            legacyDetails: parsed.error.flatten(),
+            // legacy 본문은 로케일과 무관하게 en 문구로 고정한다(zod 4 기본 문구로 바뀌지 않게).
+            legacyDetails: parsed.error.flatten((issue) => localizeFieldIssue(issue, 'en')),
             fieldErrors: zodFieldErrors(parsed.error, request, respond.locale(request)),
           }),
         };
