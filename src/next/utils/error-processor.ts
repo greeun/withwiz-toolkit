@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { isZodError, zodPathText, type ZodLikeError } from '../../core/error/is-zod-error';
 import { logger } from '@withwiz/toolkit/core/logger/logger';
 import { logApiRequest, logApiResponse } from '@withwiz/toolkit/core/logger/logger';
 import { ERROR_CODES, formatErrorMessage, getHttpStatus } from '@withwiz/toolkit/core/constants/error-codes';
@@ -117,7 +117,7 @@ export class ErrorProcessor {
     }
 
     // 2. Zod 검증 에러
-    if (error instanceof z.ZodError) {
+    if (isZodError(error)) {
       return this.handleZodError(error);
     }
 
@@ -188,9 +188,9 @@ export class ErrorProcessor {
   /**
    * Zod 검증 에러 처리
    */
-  private static handleZodError(error: z.ZodError): ProcessedError {
-    const issues = error.errors.map((err) => ({
-      path: err.path.join('.'),
+  private static handleZodError(error: ZodLikeError): ProcessedError {
+    const issues = error.issues.map((err) => ({
+      path: zodPathText(err.path),
       message: err.message,
       code: err.code,
     }));
@@ -313,10 +313,10 @@ export function withErrorHandling<T extends unknown[], TRequest extends NextRequ
       // 에러 타입별 처리
       let response: NextResponse;
 
-      if (error instanceof z.ZodError) {
+      if (isZodError(error)) {
         // Zod 검증 에러
-        const issues = error.errors.map((err) => ({
-          path: err.path.join('.'),
+        const issues = error.issues.map((err) => ({
+          path: zodPathText(err.path),
           message: err.message,
           code: err.code,
         }));
