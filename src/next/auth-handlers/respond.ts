@@ -108,7 +108,8 @@ export function zodFieldErrors(
   locale: TLocale = LocaleDetector.detectServer(request),
 ): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const [field, reasons] of Object.entries(error.flatten((issue) => localizeFieldIssue(issue, locale)).fieldErrors)) {
+  const { fieldErrors } = error.flatten((issue) => localizeFieldIssue(issue, locale));
+  for (const [field, reasons] of Object.entries(fieldErrors as Record<string, string[] | undefined>)) {
     if (reasons && reasons.length) out[field] = reasons;
   }
   return out;

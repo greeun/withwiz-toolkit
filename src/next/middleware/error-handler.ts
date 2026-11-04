@@ -8,7 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { isZodError, zodPathText } from '../../core/error/is-zod-error';
 import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
 import { AppError } from '@withwiz/toolkit/core/error/app-error';
 import { AUTH_ERROR_CODE_MAP } from '@withwiz/toolkit/next/error/error-handler';
@@ -57,9 +57,9 @@ export const errorHandlerMiddleware: TApiMiddleware = async (
     }
 
     // ZodError인 경우 (validation failure -> 400)
-    if (error instanceof z.ZodError) {
-      const issues = error.errors.map((e) => ({
-        path: e.path.join('.'),
+    if (isZodError(error)) {
+      const issues = error.issues.map((e) => ({
+        path: zodPathText(e.path),
         message: e.message,
         code: e.code,
       }));
