@@ -9,7 +9,11 @@
  * 일치시킨다. 미초기화 시 JWT_DEFAULTS, 명시 override는 CookieOptions로 가능.
  */
 import type { TokenPair } from '@withwiz/toolkit/core/auth/types';
-import { getAuthConfig } from '@withwiz/toolkit/core/auth/config';
+import {
+  authCookieName,
+  getAuthConfig,
+  isCookieHostPrefixEnabled,
+} from '@withwiz/toolkit/core/auth/config';
 import { configWarn } from '@withwiz/toolkit/core/config/warn';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 import { durationToSeconds } from '@withwiz/toolkit/core/auth/duration';
@@ -86,6 +90,19 @@ function resolveMaxAge(): { access: number; refresh: number } {
   return { access: durationToSeconds(access), refresh: durationToSeconds(refresh) };
 }
 
+/** 쿠키 공통 속성. `__Host-` 쿠키는 Secure·Path=/·Domain 없음이어야 브라우저가 받으므로 호출자 옵션보다 우선한다. */
+function cookieAttributes(opts: CookieOptions, path: string, maxAge: number): Record<string, unknown> {
+  const hostPrefix = isCookieHostPrefixEnabled();
+  return {
+    httpOnly: true,
+    secure: hostPrefix ? true : opts.secure,
+    sameSite: opts.sameSite,
+    path: hostPrefix ? '/' : path,
+    ...(opts.domain && !hostPrefix ? { domain: opts.domain } : {}),
+    maxAge,
+  };
+}
+
 export function setTokenCookies<T extends CookieSettableResponse>(
   response: T,
   tokenPair: TokenPair,
@@ -94,23 +111,17 @@ export function setTokenCookies<T extends CookieSettableResponse>(
   const opts = { ...getDefaultOptions(), ...options };
   const maxAge = resolveMaxAge();
 
-  response.cookies.set(ACCESS_TOKEN_COOKIE, tokenPair.accessToken, {
-    httpOnly: true,
-    secure: opts.secure,
-    sameSite: opts.sameSite,
-    path: '/',
-    ...(opts.domain ? { domain: opts.domain } : {}),
-    maxAge: opts.accessTokenMaxAge ?? maxAge.access,
-  });
+  response.cookies.set(
+    authCookieName(ACCESS_TOKEN_COOKIE),
+    tokenPair.accessToken,
+    cookieAttributes(opts, '/', opts.accessTokenMaxAge ?? maxAge.access),
+  );
 
-  response.cookies.set(REFRESH_TOKEN_COOKIE, tokenPair.refreshToken, {
-    httpOnly: true,
-    secure: opts.secure,
-    sameSite: opts.sameSite,
-    path: opts.refreshTokenPath ?? '/api/auth',
-    ...(opts.domain ? { domain: opts.domain } : {}),
-    maxAge: opts.refreshTokenMaxAge ?? maxAge.refresh,
-  });
+  response.cookies.set(
+    authCookieName(REFRESH_TOKEN_COOKIE),
+    tokenPair.refreshToken,
+    cookieAttributes(opts, opts.refreshTokenPath ?? '/api/auth', opts.refreshTokenMaxAge ?? maxAge.refresh),
+  );
 
   return response;
 }
@@ -121,23 +132,13 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
 ): T {
   const opts = { ...getDefaultOptions(), ...options };
 
-  response.cookies.set(ACCESS_TOKEN_COOKIE, '', {
-    httpOnly: true,
-    secure: opts.secure,
-    sameSite: opts.sameSite,
-    path: '/',
-    ...(opts.domain ? { domain: opts.domain } : {}),
-    maxAge: 0,
-  });
+  response.cookies.set(authCookieName(ACCESS_TOKEN_COOKIE), '', cookieAttributes(opts, '/', 0));
 
-  response.cookies.set(REFRESH_TOKEN_COOKIE, '', {
-    httpOnly: true,
-    secure: opts.secure,
-    sameSite: opts.sameSite,
-    path: opts.refreshTokenPath ?? '/api/auth',
-    ...(opts.domain ? { domain: opts.domain } : {}),
-    maxAge: 0,
-  });
+  response.cookies.set(
+    authCookieName(REFRESH_TOKEN_COOKIE),
+    '',
+    cookieAttributes(opts, opts.refreshTokenPath ?? '/api/auth', 0),
+  );
 
   return response;
 }

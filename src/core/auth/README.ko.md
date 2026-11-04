@@ -63,6 +63,11 @@ import { createAuthHandlers } from '@withwiz/toolkit/next/auth-handlers';
 쿠키는 `setTokenCookies` / `clearTokenCookies`(`@withwiz/toolkit/core/auth/jwt/cookie`)로
 설정/삭제하고, 토큰 추출은 기본 hybrid 전략을 사용합니다.
 
+같은 등록 도메인의 다른 서브도메인이 믿을 수 없다면 `cookieHostPrefix: true`를 지정합니다. access·refresh·OAuth state
+쿠키가 `__Host-` 이름으로 바뀌어, 다른 서브도메인이 심은 쿠키로 공격자 계정에 로그인시키는 공격을 막습니다.
+`cookieSecure: true`가 필요하고(없으면 초기화 실패), refresh 쿠키도 `Path=/`가 되며, 켜는 시점에 기존 세션은 끊깁니다.
+`createAuthProxy`는 인증 설정을 읽지 않으므로 `cookieName`에 `` `${HOST_COOKIE_PREFIX}${ACCESS_TOKEN_COOKIE}` ``를 명시합니다.
+
 ### 3. revoke + rotation — cache 기반 store 주입 (배터리 포함)
 
 ```typescript
