@@ -29,8 +29,11 @@ export interface MfaAttemptStore {
   recordPendingFailure(jti: string, ttlSec: number): Promise<number>;
   /** 사용자 실패를 기록하고 누적 횟수를 반환한다. 창은 첫 실패 시각부터 고정. */
   recordUserFailure(userId: string, windowSec: number): Promise<number>;
-  /** 사용자를 ttlSec 동안 잠근다. */
-  lock(userId: string, ttlSec: number): Promise<void>;
+  /**
+   * 사용자를 ttlSec 동안 잠근다. 이번 호출이 잠금을 새로 만들었으면 true,
+   * 만료되지 않은 잠금이 이미 있었으면 false(기존 잠금의 남은 시간은 그대로 둔다).
+   */
+  lock(userId: string, ttlSec: number): Promise<boolean>;
   /** 잠금 남은 초. 잠기지 않았으면 0. */
   lockedFor(userId: string): Promise<number>;
   /** 사용자 실패 횟수와 잠금을 지운다. */

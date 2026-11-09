@@ -5,6 +5,7 @@ import {
 } from '@withwiz/toolkit/core/auth/mfa/attempt-store';
 import type { MfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/types';
 import { MFA_LIMITS } from '@withwiz/toolkit/core/auth/mfa/types';
+import { fakeAtomicCache } from './fakes';
 
 /** Map 기반 가짜 캐시 — TTL(초)을 가짜 시계 기준으로 적용한다. */
 function fakeCache(now: () => number, withSetIfNotExists = true): MfaAttemptCache {
@@ -47,6 +48,7 @@ describe.each([
   ['인메모리', () => createInMemoryMfaAttemptStore({ now })],
   ['캐시', () => createCacheMfaAttemptStore(fakeCache(now), { now })],
   ['캐시(setIfNotExists 없음)', () => createCacheMfaAttemptStore(fakeCache(now, false), { now })],
+  ['캐시(원자 increment)', () => createCacheMfaAttemptStore(fakeAtomicCache(now), { now })],
 ])('MfaAttemptStore - %s', (_name, make) => {
   let s: MfaAttemptStore;
   beforeEach(() => {
@@ -84,6 +86,17 @@ describe.each([
     expect(await s.lockedFor('u')).toBe(0);
   });
 
+  it('lock 은 새로 잠갔을 때만 true, 만료 뒤에는 다시 true', async () => {
+    expect(await s.lock('u', 900)).toBe(true);
+    expect(await s.lock('u', 900)).toBe(false);
+    // 다시 잠가도 남은 시간은 처음 잠금 기준이다
+    clock += 100_000;
+    expect(await s.lockedFor('u')).toBe(800);
+    clock += 800_000;
+    expect(await s.lock('u', 900)).toBe(true);
+    expect(await s.lockedFor('u')).toBe(900);
+  });
+
   it('잠금은 만료되면 0', async () => {
     await s.lock('u', 900);
     clock += 900_000;
@@ -100,6 +113,42 @@ describe.each([
     expect(await s.recordPendingFailure('j', 300)).toBe(1);
     expect(await s.recordPendingFailure('j', 300)).toBe(2);
     expect(await s.recordPendingFailure('k', 300)).toBe(1);
+  });
+});
+
+describe('캐시 저장소 — 원자 increment 경로', () => {
+  beforeEach(() => {
+    clock = 1_000_000;
+  });
+
+  it('병렬 실패도 모두 센다', async () => {
+    const s = createCacheMfaAttemptStore(fakeAtomicCache(now), { now });
+    const counts = await Promise.all(Array.from({ length: 30 }, () => s.recordUserFailure('u', 900)));
+    expect([...counts].sort((a, b) => a - b)).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
+  });
+
+  it('첫 실패에서만 창 길이로 expire 한다', async () => {
+    const cache = fakeAtomicCache(now);
+    const s = createCacheMfaAttemptStore(cache, { now });
+    await s.recordUserFailure('u', 900);
+    await s.recordUserFailure('u', 900);
+    await s.recordPendingFailure('j', 300);
+    expect(cache.expireCalls).toEqual([
+      ['mfa:user:fail:u', 900],
+      ['mfa:pending:fail:j', 300],
+    ]);
+  });
+
+  it('병렬 lock 은 한 번만 true', async () => {
+    const s = createCacheMfaAttemptStore(fakeAtomicCache(now), { now });
+    const created = await Promise.all(Array.from({ length: 10 }, () => s.lock('u', 900)));
+    expect(created.filter(Boolean)).toHaveLength(1);
+  });
+
+  it.each([0, -1])('increment 가 %s(오류 센티널)를 돌려주면 실패로 막는다', async (r) => {
+    const s = createCacheMfaAttemptStore(fakeAtomicCache(now, { incrementResult: r }), { now });
+    await expect(s.recordUserFailure('u', 900)).rejects.toThrow();
+    await expect(s.recordPendingFailure('j', 300)).rejects.toThrow();
   });
 });
 

@@ -3,8 +3,8 @@
  *
  * 캐시 구현은 core/cache 를 재사용하도록 최소 형태(MfaAttemptCache)만 요구하며
  * cache 는 주입받는다(DI). ttl 은 초 단위(cache-token-stores 와 같은 규약).
- * 캐시 TTL 만으로는 남은 시간을 알 수 없어, 만료 시각을 값에 함께 저장하고
- * 주입된 now()(ms) 로 남은 초와 고정 창을 계산한다. 저장 값은 JSON 직렬화 가능하다.
+ * 잠금은 캐시 TTL 만으로는 남은 시간을 알 수 없어, 만료 시각을 값에 함께 저장하고
+ * 주입된 now()(ms) 로 남은 초를 계산한다. 저장 값은 JSON 직렬화 가능하다.
  */
 import type { MfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/types';
 
@@ -15,6 +15,14 @@ export interface MfaAttemptCache {
   delete(key: string): Promise<void>;
   /** (선택) 키가 없을 때만 저장하는 원자 연산. 저장했으면 true. */
   setIfNotExists?<T>(key: string, value: T, ttl?: number): Promise<boolean>;
+  /**
+   * (선택) 숫자 값을 원자적으로 더하고 결과를 돌려준다(Redis INCRBY). 키가 없으면 0 에서 시작한다.
+   * toolkit 캐시 매니저는 오류 때 0 을 돌려주므로, 1 미만의 결과는 오류로 본다.
+   * expire 와 함께 있어야 쓰인다.
+   */
+  increment?(key: string, value?: number): Promise<number>;
+  /** (선택) 키의 TTL(초)을 지정한다. increment 와 함께 있어야 쓰인다. */
+  expire?(key: string, ttl: number): Promise<void>;
 }
 
 export interface MfaAttemptStoreOptions {
@@ -40,9 +48,14 @@ const ceilTtl = (ms: number): number => Math.max(1, Math.ceil(ms / 1000));
 /**
  * 캐시 기반 구현.
  *
- * 주의: 실패 횟수는 get→set 이라 원자적이지 않다. 동시 요청이 겹치면 일부 실패가
- * 덜 집계될 수 있다(여러 인스턴스 사이에서 특히). 대기 토큰 소비(consumePending)는
- * cache.setIfNotExists 가 있으면 그 원자 연산을 쓰고, 없으면 get→set 으로 대체한다.
+ * - 실패 횟수: cache.increment·expire 가 있으면 원자 증가를 쓰고, 첫 실패(결과 1)에서
+ *   창 길이로 expire 해 창을 첫 실패부터 고정한다. 결과가 1 미만이면 캐시 오류로 보고
+ *   예외를 던진다(실패를 세지 못한 채 통과시키지 않는다). 둘 중 하나라도 없으면
+ *   get→set 으로 대체하는데, 이 경로는 원자적이지 않아 동시 요청이 겹치면 실패가
+ *   덜 집계되고 한도·잠금이 사실상 무력해질 수 있다. 여러 인스턴스 배포에서는
+ *   increment·expire·setIfNotExists 를 갖춘 캐시(toolkit Redis·Hybrid 매니저)를 주입한다.
+ * - 대기 토큰 소비(consumePending)와 잠금(lock)은 cache.setIfNotExists 가 있으면 그 원자
+ *   연산을 쓰고, 없으면 get→set 으로 대체한다(원자적이지 않음).
  */
 export function createCacheMfaAttemptStore(
   cache: MfaAttemptCache,
@@ -55,8 +68,20 @@ export function createCacheMfaAttemptStore(
   const userFailKey = (id: string) => `${prefix}user:fail:${id}`;
   const lockKey = (id: string) => `${prefix}user:lock:${id}`;
 
+  const increment = cache.increment?.bind(cache);
+  const expire = cache.expire?.bind(cache);
+
   /** 만료 시각이 고정된 카운터를 1 올린다. */
   const bump = async (key: string, windowSec: number): Promise<number> => {
+    if (increment && expire) {
+      const n = await increment(key, 1);
+      if (!(n >= 1)) {
+        throw new Error(`MFA attempt counter unavailable (increment returned ${n})`);
+      }
+      // 첫 실패에서만 창을 연다 — 이후 증가는 TTL 을 유지하므로 창이 첫 실패부터 고정된다.
+      if (n === 1) await expire(key, Math.max(1, Math.ceil(windowSec)));
+      return n;
+    }
     const t = now();
     const cur = await cache.get<CountRecord>(key);
     if (cur && cur.expiresAt > t) {
@@ -86,8 +111,16 @@ export function createCacheMfaAttemptStore(
     recordPendingFailure: (jti, ttlSec) => bump(pendingFailKey(jti), ttlSec),
     recordUserFailure: (userId, windowSec) => bump(userFailKey(userId), windowSec),
     async lock(userId, ttlSec) {
+      const key = lockKey(userId);
       const rec: LockRecord = { until: now() + ttlSec * 1000 };
-      await cache.set(lockKey(userId), rec, Math.max(1, Math.ceil(ttlSec)));
+      const ttl = Math.max(1, Math.ceil(ttlSec));
+      if (typeof cache.setIfNotExists === 'function') {
+        return cache.setIfNotExists(key, rec, ttl);
+      }
+      const cur = await cache.get<LockRecord>(key);
+      if (cur && cur.until > now()) return false;
+      await cache.set(key, rec, ttl);
+      return true;
     },
     async lockedFor(userId) {
       const rec = await cache.get<LockRecord>(lockKey(userId));
@@ -177,7 +210,11 @@ export function createInMemoryMfaAttemptStore(
     },
     async lock(userId, ttlSec) {
       sweepIfDue();
-      locks.set(userId, now() + ttlSec * 1000);
+      const t = now();
+      const cur = locks.get(userId);
+      if (cur !== undefined && cur > t) return false;
+      locks.set(userId, t + ttlSec * 1000);
+      return true;
     },
     async lockedFor(userId) {
       const until = locks.get(userId);

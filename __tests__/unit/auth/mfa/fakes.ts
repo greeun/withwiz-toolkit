@@ -55,3 +55,54 @@ export class InMemoryMfaRepository implements MfaRepository {
     return (this.codes.get(userId) ?? []).filter((c) => !c.used).length;
   }
 }
+
+/**
+ * 원자 연산(increment·expire·setIfNotExists)을 갖춘 가짜 캐시 — Redis 처럼 동작한다.
+ * TTL(초)은 주입한 시계 기준이고, increment 는 기존 TTL 을 유지한다(INCRBY 와 같음).
+ * `incrementResult` 를 지정하면 increment 가 그 값을 돌려준다(오류 센티널 재현용).
+ */
+export function fakeAtomicCache(now: () => number, opts: { incrementResult?: number } = {}) {
+  const m = new Map<string, { v: unknown; exp: number | null }>();
+  const live = (k: string) => {
+    const e = m.get(k);
+    if (!e) return undefined;
+    if (e.exp !== null && e.exp <= now()) {
+      m.delete(k);
+      return undefined;
+    }
+    return e;
+  };
+  const expireCalls: Array<[string, number]> = [];
+  return {
+    store: m,
+    expireCalls,
+    peek: (k: string) => live(k)?.v,
+    async get<T>(k: string): Promise<T | null> {
+      const e = live(k);
+      return e ? (structuredClone(e.v) as T) : null;
+    },
+    async set<T>(k: string, v: T, ttl?: number): Promise<void> {
+      m.set(k, { v: structuredClone(v), exp: ttl ? now() + ttl * 1000 : null });
+    },
+    async delete(k: string): Promise<void> {
+      m.delete(k);
+    },
+    async setIfNotExists<T>(k: string, v: T, ttl?: number): Promise<boolean> {
+      if (live(k)) return false;
+      m.set(k, { v: structuredClone(v), exp: ttl ? now() + ttl * 1000 : null });
+      return true;
+    },
+    async increment(k: string, by = 1): Promise<number> {
+      if (opts.incrementResult !== undefined) return opts.incrementResult;
+      const e = live(k);
+      const next = (typeof e?.v === 'number' ? e.v : 0) + by;
+      m.set(k, { v: next, exp: e ? e.exp : null });
+      return next;
+    },
+    async expire(k: string, ttlSec: number): Promise<void> {
+      expireCalls.push([k, ttlSec]);
+      const e = live(k);
+      if (e) e.exp = now() + ttlSec * 1000;
+    },
+  };
+}

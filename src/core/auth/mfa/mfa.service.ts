@@ -8,10 +8,12 @@
  *   4. 실패 처리: 사용자 실패 → 잠금, 대기 토큰 실패 → 폐기, 그 밖은 MFA_INVALID_CODE
  * 로그인 검증과 관리 메서드(enable·disable·regenerate)의 실패는 사용자 한도에 합산된다.
  *
- * 동시성: 실패 횟수와 잠금은 최선 노력(best-effort)이다. 병렬 요청이 모두 잠금 확인을
- * 통과한 뒤 실패를 기록하면 한도를 넘는 시도가 일부 검증될 수 있다. 잠금 훅은 한도에
- * 정확히 닿은 요청에서만 부르고, 증명이 맞아도 성공 직전에 잠금을 다시 확인해 거부한다.
- * 소비자는 `/mfa/*` 경로에 요청 단위 rate limit 을 유지해야 한다.
+ * 동시성: 병렬 요청이 모두 잠금 확인을 통과한 뒤 실패를 기록하면 한도를 넘는 시도가
+ * 일부 검증될 수 있다. 실패 횟수가 한도에 닿거나 넘은 요청은 모두 잠금을 시도하고,
+ * 저장소가 잠금을 새로 만들었다고 답한 요청(lock → true)만 잠금 훅을 부른다(잠기는 순간 한 번).
+ * 증명이 맞아도 성공 직전에 잠금을 다시 확인해 거부한다. 실패 집계의 원자성은 저장소에
+ * 달려 있으므로(createCacheMfaAttemptStore 참고) 소비자는 `/mfa/*` 경로에 요청 단위
+ * rate limit 을 유지해야 한다.
  */
 import { AuthError, MfaLockedError } from '@withwiz/toolkit/core/auth/errors';
 import { generateRecoveryCodes, hashRecoveryCode, normalizeRecoveryCode } from './recovery-codes';
@@ -141,14 +143,12 @@ export class MfaService {
     await this.safeHook(() => this.onFailure?.(userId, 'invalid_code'));
 
     const userFailures = await this.store.recordUserFailure(userId, MFA_LIMITS.userWindowSec);
-    if (userFailures === MFA_LIMITS.perUserMaxFailures) {
-      // 한도에 정확히 닿은 요청만 잠그고 훅을 부른다(잠기는 순간 한 번).
-      await this.store.lock(userId, MFA_LIMITS.lockSec);
-      await this.safeHook(() => this.onLocked?.(userId));
-      throw new MfaLockedError(MFA_LIMITS.lockSec);
-    }
-    if (userFailures > MFA_LIMITS.perUserMaxFailures) {
-      // 이미 다른 요청이 잠갔다(또는 잠그는 중). 다시 잠그거나 훅을 부르지 않는다.
+    if (userFailures >= MFA_LIMITS.perUserMaxFailures) {
+      // 잠금을 새로 만든 요청만 훅을 부른다. 이미 잠겨 있으면 기존 잠금의 남은 초로 거부한다.
+      if (await this.store.lock(userId, MFA_LIMITS.lockSec)) {
+        await this.safeHook(() => this.onLocked?.(userId));
+        throw new MfaLockedError(MFA_LIMITS.lockSec);
+      }
       const remaining = await this.store.lockedFor(userId);
       throw new MfaLockedError(remaining > 0 ? remaining : MFA_LIMITS.lockSec);
     }

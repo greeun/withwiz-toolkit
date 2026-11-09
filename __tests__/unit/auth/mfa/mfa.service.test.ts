@@ -1,12 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MfaService, resetMfa, type MfaProof } from '@withwiz/toolkit/core/auth/mfa/mfa.service';
-import { createInMemoryMfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/attempt-store';
+import { createCacheMfaAttemptStore, createInMemoryMfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/attempt-store';
 import { createSecretBox } from '@withwiz/toolkit/core/auth/mfa/secret-box';
 import { currentStep, totpCode } from '@withwiz/toolkit/core/auth/mfa/totp';
 import { MFA_LIMITS, type MfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/types';
 import { AuthError, MfaLockedError } from '@withwiz/toolkit/core/auth/errors';
-import { InMemoryMfaRepository } from './fakes';
+import { fakeAtomicCache, InMemoryMfaRepository } from './fakes';
 
 const U = 'user-1';
 
@@ -234,6 +234,46 @@ describe('MfaService verifyChallenge', () => {
     expect(locked.length).toBeGreaterThanOrEqual(3);
     expect(onLocked).toHaveBeenCalledTimes(1);
     expect(await store.lockedFor(U)).toBe(MFA_LIMITS.lockSec);
+  });
+
+  it('원자 캐시 저장소: 병렬 실패 30개가 모두 집계되고 잠금은 한 번, onLocked 도 한 번', async () => {
+    const cache = fakeAtomicCache(now);
+    store = createCacheMfaAttemptStore(cache, { now });
+    svc = new MfaService({
+      repository: repo,
+      attemptStore: store,
+      secretBox: createSecretBox([randomBytes(32).toString('base64')]),
+      issuer: 'Binder',
+      now,
+      onFailure,
+      onLocked,
+    });
+    const { secret } = await enrolled();
+    const bad = wrongCode(secret);
+    const results = await Promise.allSettled(
+      Array.from({ length: 30 }, (_, i) => svc.verifyChallenge(U, { code: bad }, `ja${i}`)),
+    );
+    expect(results.every((r) => r.status === 'rejected')).toBe(true);
+    expect(cache.peek('mfa:user:fail:user-1') as number).toBeGreaterThanOrEqual(MFA_LIMITS.perUserMaxFailures);
+    expect(await store.lockedFor(U)).toBe(MFA_LIMITS.lockSec);
+    expect(onLocked).toHaveBeenCalledTimes(1);
+    const locked = results.filter(
+      (r) => r.status === 'rejected' && r.reason instanceof MfaLockedError,
+    );
+    expect(locked.length).toBeGreaterThanOrEqual(30 - MFA_LIMITS.perUserMaxFailures + 1);
+  });
+
+  it('잠금 저장소가 이미 잠겨 있다고 답하면(lock=false) onLocked 를 부르지 않고 남은 초로 거부', async () => {
+    const { secret } = await enrolled();
+    for (let i = 0; i < MFA_LIMITS.perUserMaxFailures - 1; i++) {
+      await svc.verifyChallenge(U, { code: wrongCode(secret) }, `jx${Math.floor(i / 4)}`).catch(() => {});
+    }
+    // 다른 요청이 먼저 잠근 상황: lockedFor 는 아직 0(확인 통과)이지만 lock 은 false
+    vi.spyOn(store, 'lock').mockResolvedValue(false);
+    vi.spyOn(store, 'lockedFor').mockResolvedValueOnce(0).mockResolvedValue(600);
+    const err = await expectAuthError(svc.verifyChallenge(U, { code: wrongCode(secret) }, 'jy'), 'MFA_LOCKED', 429);
+    expect((err as MfaLockedError).retryAfter).toBe(600);
+    expect(onLocked).not.toHaveBeenCalled();
   });
 
   it('검증 도중 잠기면 맞는 코드라도 MfaLockedError(대기 토큰은 소비하지 않음)', async () => {
