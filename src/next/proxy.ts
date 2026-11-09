@@ -27,6 +27,11 @@ export interface AuthProxyOptions {
   isProtected: (pathname: string) => boolean;
 }
 
+/** 토큰 혼동 방지(core J-1 과 같은 규칙): tokenType 부재 = 레거시 access 로 허용. */
+function isAccessTokenType(payload: JWTPayload): boolean {
+  return payload.tokenType === undefined || payload.tokenType === 'access';
+}
+
 function redirectToLogin(req: NextRequest, opts: AuthProxyOptions): NextResponse {
   const url = new URL(opts.loginPath ?? '/login', req.url);
   if (opts.redirectParam) {
@@ -53,7 +58,8 @@ export function createAuthProxy(opts: AuthProxyOptions) {
     const token = req.cookies.get(cookieName)?.value;
     if (!token) return redirectToLogin(req, opts);
     try {
-      await jwtVerify(token, key, { algorithms });
+      const { payload } = await jwtVerify(token, key, { algorithms });
+      if (!isAccessTokenType(payload)) return redirectToLogin(req, opts);
       return NextResponse.next();
     } catch {
       return redirectToLogin(req, opts);
@@ -72,7 +78,7 @@ export async function verifyAccessTokenEdge(
       new TextEncoder().encode(args.secret),
       { algorithms: args.algorithms ?? ['HS256'] },
     );
-    return payload;
+    return isAccessTokenType(payload) ? payload : null;
   } catch {
     return null;
   }
