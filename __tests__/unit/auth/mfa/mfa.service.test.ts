@@ -194,6 +194,62 @@ describe('MfaService verifyChallenge', () => {
     expect(await svc.verifyChallenge(U, { code: codeNow(secret) }, 'jc')).toBe('otp');
   });
 
+  it('같은 유효 코드를 10번 재사용하면 잠긴다(재사용도 실패)', async () => {
+    const { secret } = await enrolled();
+    const code = codeNow(secret);
+    expect(await svc.verifyChallenge(U, { code }, 'j0')).toBe('otp');
+    const results: string[] = [];
+    for (let i = 0; i < MFA_LIMITS.perUserMaxFailures; i++) {
+      const err = await svc.verifyChallenge(U, { code }, `j${(i % 4) + 1}${Math.floor(i / 4)}`).catch((e: AuthError) => e);
+      results.push((err as AuthError).code);
+    }
+    expect(results.slice(0, 9).every((c) => c === 'MFA_INVALID_CODE')).toBe(true);
+    expect(results[9]).toBe('MFA_LOCKED');
+    expect(onLocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('순차 실패 12회 → 10~12번째 모두 MfaLockedError, onLocked 는 한 번', async () => {
+    const { secret } = await enrolled();
+    const codes: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const err = await svc
+        .verifyChallenge(U, { code: wrongCode(secret) }, `js${Math.floor(i / 4)}`)
+        .catch((e: AuthError) => e);
+      codes.push((err as AuthError).code);
+    }
+    expect(codes.slice(9)).toEqual(['MFA_LOCKED', 'MFA_LOCKED', 'MFA_LOCKED']);
+    expect(onLocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('병렬 실패 묶음(12개)이 한도를 넘어도 onLocked 는 한 번', async () => {
+    const { secret } = await enrolled();
+    const bad = wrongCode(secret);
+    const results = await Promise.allSettled(
+      Array.from({ length: 12 }, (_, i) => svc.verifyChallenge(U, { code: bad }, `jc${i}`)),
+    );
+    expect(results.every((r) => r.status === 'rejected')).toBe(true);
+    const locked = results.filter(
+      (r) => r.status === 'rejected' && (r.reason as AuthError).code === 'MFA_LOCKED',
+    );
+    expect(locked.length).toBeGreaterThanOrEqual(3);
+    expect(onLocked).toHaveBeenCalledTimes(1);
+    expect(await store.lockedFor(U)).toBe(MFA_LIMITS.lockSec);
+  });
+
+  it('검증 도중 잠기면 맞는 코드라도 MfaLockedError(대기 토큰은 소비하지 않음)', async () => {
+    const { secret } = await enrolled();
+    const orig = repo.markStepUsed.bind(repo);
+    vi.spyOn(repo, 'markStepUsed').mockImplementation(async (id, step) => {
+      const ok = await orig(id, step);
+      await store.lock(U, MFA_LIMITS.lockSec);
+      return ok;
+    });
+    await expectAuthError(svc.verifyChallenge(U, { code: codeNow(secret) }, 'jl'), 'MFA_LOCKED', 429);
+    expect(onFailure).toHaveBeenCalledWith(U, 'locked');
+    expect(onFailure).not.toHaveBeenCalledWith(U, 'invalid_code');
+    expect(await store.isPendingConsumed('jl')).toBe(false);
+  });
+
   it('훅이 throw 해도 인증 흐름은 깨지지 않는다', async () => {
     onFailure.mockRejectedValue(new Error('hook down'));
     const { secret } = await enrolled();
