@@ -102,17 +102,42 @@ export function createCacheMfaAttemptStore(
   };
 }
 
-/** 인메모리 구현 — Map + 만료 시각, 외부 의존 없음. 단일 프로세스 한정. */
+/** 인메모리 구현 + 현재 보관 중인 항목 수(만료 정리 확인용). */
+export type InMemoryMfaAttemptStore = MfaAttemptStore & { size(): number };
+
+/** 쓰기 N 회마다 만료 항목을 정리한다. */
+const SWEEP_EVERY_WRITES = 100;
+
+/**
+ * 인메모리 구현 — Map + 만료 시각, 외부 의존 없음.
+ *
+ * 단일 프로세스 전용이다: 서버 인스턴스가 여러 개인 운영 배포에서는 인스턴스끼리
+ * 상태가 공유되지 않으므로 공유 캐시 기반 구현(createCacheMfaAttemptStore)을 써야 한다.
+ * 쓰기 100회마다 모든 맵에서 만료 항목을 정리해 장기 실행 프로세스에서도 메모리가 늘지 않는다.
+ */
 export function createInMemoryMfaAttemptStore(
   opts: Pick<MfaAttemptStoreOptions, 'now'> = {},
-): MfaAttemptStore {
+): InMemoryMfaAttemptStore {
   const now = opts.now ?? Date.now;
   const consumed = new Map<string, number>();
   const pendingFails = new Map<string, CountRecord>();
   const userFails = new Map<string, CountRecord>();
   const locks = new Map<string, number>();
 
+  let writes = 0;
+  const sweepIfDue = (): void => {
+    if (++writes % SWEEP_EVERY_WRITES !== 0) return;
+    const t = now();
+    for (const m of [pendingFails, userFails]) {
+      for (const [k, v] of m) if (v.expiresAt <= t) m.delete(k);
+    }
+    for (const m of [consumed, locks]) {
+      for (const [k, exp] of m) if (exp <= t) m.delete(k);
+    }
+  };
+
   const bump = (m: Map<string, CountRecord>, key: string, windowSec: number): number => {
+    sweepIfDue();
     const t = now();
     const cur = m.get(key);
     if (cur && cur.expiresAt > t) {
@@ -134,7 +159,9 @@ export function createInMemoryMfaAttemptStore(
   };
 
   return {
+    size: () => consumed.size + pendingFails.size + userFails.size + locks.size,
     async consumePending(jti, ttlSec) {
+      sweepIfDue();
       if (isConsumed(jti)) return false;
       consumed.set(jti, now() + ttlSec * 1000);
       return true;
@@ -149,6 +176,7 @@ export function createInMemoryMfaAttemptStore(
       return bump(userFails, userId, windowSec);
     },
     async lock(userId, ttlSec) {
+      sweepIfDue();
       locks.set(userId, now() + ttlSec * 1000);
     },
     async lockedFor(userId) {

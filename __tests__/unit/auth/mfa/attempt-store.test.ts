@@ -114,3 +114,21 @@ describe('MFA_LIMITS', () => {
     });
   });
 });
+
+describe('인메모리 저장소 만료 정리', () => {
+  it('쓰기가 쌓이면 만료된 항목을 모든 맵에서 제거한다', async () => {
+    clock = 1_000_000;
+    const s = createInMemoryMfaAttemptStore({ now });
+    for (let i = 0; i < 40; i++) {
+      await s.consumePending(`j${i}`, 300);
+      await s.recordPendingFailure(`f${i}`, 300);
+      await s.recordUserFailure(`u${i}`, 900);
+    }
+    await s.lock('locked', 300);
+    expect(s.size()).toBe(121);
+    clock += 1_000_000; // 모두 만료
+    for (let i = 0; i < 100; i++) await s.consumePending(`new${i}`, 300);
+    // 정리 뒤에는 만료 항목이 사라지고 새 항목만 남는다
+    expect(s.size()).toBeLessThanOrEqual(100);
+  });
+});
