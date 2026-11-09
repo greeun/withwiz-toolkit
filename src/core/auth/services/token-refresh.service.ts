@@ -64,7 +64,7 @@ export class TokenRefreshService {
       }
     }
 
-    const { userId, jti, familyId } = await this.jwtService.verifyRefreshToken(refreshToken);
+    const { userId, jti, familyId, amr } = await this.jwtService.verifyRefreshToken(refreshToken);
 
     // 재사용 탐지: 사용자 조회 전에 먼저 검사해 탈취 토큰의 정보 노출을 줄인다.
     if (this.store) {
@@ -94,6 +94,7 @@ export class TokenRefreshService {
       email: user.email,
       role,
       emailVerified: user.emailVerified,
+      ...(amr ? { amr } : {}),
     });
 
     // store 미주입 → 기존 동작(access 만 재발급).
@@ -120,6 +121,7 @@ export class TokenRefreshService {
     const newRefreshToken = await this.jwtService.createRefreshToken(userId, {
       jti: newJti,
       familyId: family,
+      ...(amr ? { amr } : {}),
     });
     await this.store.register?.({ jti: newJti, familyId: family, userId });
 
