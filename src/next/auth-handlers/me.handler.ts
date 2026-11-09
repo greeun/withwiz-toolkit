@@ -7,6 +7,8 @@ import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handle
 import { createAuthResponder } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { getMfaRuntime } from '@withwiz/toolkit/next/auth-handlers/mfa-runtime';
 import { JWT_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
+// Type-only: brings in the `__accessTokenBlacklistChecker` global without loading the middleware module.
+import type { IAccessTokenBlacklistChecker } from '@withwiz/toolkit/next/middleware/auth';
 
 /**
  * access 토큰으로 찾은 요청 사용자. 토큰이 없으면 `no-token`, 사용자가 없거나 비활성이면 `no-user`
@@ -17,6 +19,8 @@ export type AccessUserResult = { user: BaseUser } | { failure: 'no-token' | 'no-
 /**
  * 요청의 access 토큰(전달 모드별 쿠키·헤더) → 사용자. `/me` 와 `/mfa/*` 관리 처리기가 같은 규칙을 쓴다.
  * 토큰 검증 실패는 예외로 던진다 — 호출부가 401 로 바꾼다.
+ * When a checker is registered with `setAccessTokenBlacklistChecker`, a revoked (logged-out) token also
+ * throws, matching `withAuthApi`, so `/me` does not return the user for a token revoked by logout.
  * @internal
  */
 export function createAccessUserResolver(options: AuthHandlerOptions) {
@@ -35,6 +39,11 @@ export function createAccessUserResolver(options: AuthHandlerOptions) {
       (header) => jwtService.extractTokenFromHeader(header ?? undefined),
     );
     if (!token) return { failure: 'no-token' };
+
+    const checker: IAccessTokenBlacklistChecker | undefined = globalThis.__accessTokenBlacklistChecker;
+    if (checker && (await checker.isAccessTokenRevoked(token))) {
+      throw new Error('Access token has been revoked');
+    }
 
     const payload = await jwtService.verifyAccessToken(token);
     const user = await dependencies.userRepository.findById(payload.userId);
