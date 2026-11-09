@@ -19,8 +19,12 @@ export function generateRecoveryCodes(count: number = RECOVERY_CODE_COUNT): stri
   return [...codes];
 }
 
-/** 소문자화 후 `[a-z2-7]` 이외 문자를 제거하고 SHA-256 hex 로 해시한다. */
+/** 소문자화 후 `[a-z2-7]` 이외 문자를 제거한다. */
+export function normalizeRecoveryCode(input: string): string {
+  return input.toLowerCase().replace(/[^a-z2-7]/g, '');
+}
+
+/** 정규화(normalizeRecoveryCode)한 값을 SHA-256 hex 로 해시한다. */
 export function hashRecoveryCode(input: string): string {
-  const normalized = input.toLowerCase().replace(/[^a-z2-7]/g, '');
-  return createHash('sha256').update(normalized).digest('hex');
+  return createHash('sha256').update(normalizeRecoveryCode(input)).digest('hex');
 }

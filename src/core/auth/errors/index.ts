@@ -69,6 +69,21 @@ export class PasswordError extends AuthError {
 }
 
 // ============================================================================
+// MFA Errors
+// ============================================================================
+
+/** MFA 실패 한도를 넘어 사용자가 잠겼을 때. retryAfter 는 남은 초. */
+export class MfaLockedError extends AuthError {
+  constructor(
+    public retryAfter: number,
+    message: string = 'Too many MFA attempts. Try again later.'
+  ) {
+    super(message, 'MFA_LOCKED', 429);
+    this.name = 'MfaLockedError';
+  }
+}
+
+// ============================================================================
 // Error Codes (상수)
 // ============================================================================
 
