@@ -72,6 +72,15 @@ Cookies are set/cleared with `setTokenCookies` / `clearTokenCookies`
 (`@withwiz/toolkit/core/auth/jwt/cookie`); token extraction uses the hybrid strategy
 by default.
 
+#### Optional: TOTP MFA (0.30)
+
+Pass `mfa: { enabled, issuer, encryptionKeys, repository: new PrismaMfaRepository(prisma), attemptStore }` and
+`urls.mfaChallenge` to `createAuthHandlers` to add a TOTP step (and one-time recovery codes) to login and the OAuth
+callback. Add the six `mfa/*` routes (`mfaVerify`, `mfaStatus`, `mfaSetup`, `mfaEnable`, `mfaDisable`,
+`mfaRecoveryCodes`) to the dispatch route. It is off when `mfa` is unset, and responses then match 0.29. Use a shared
+cache for `attemptStore` when running several instances. Code lives in `core/auth/mfa`; see the 0.30.0 entry in
+`CHANGELOG.md` and `docs/auth/2026-11-08-mfa-totp-design.md`.
+
 ### 3. revoke + rotation — inject the cache-backed stores (batteries included)
 
 ```typescript
@@ -182,6 +191,7 @@ until it expires).
 ✅ **Pure TypeScript**: Contains only pure TypeScript logic
 ✅ **Minimal Dependencies**: Uses only minimal libraries such as `jose`, `bcryptjs`, `zod`
 ✅ **Fully Typed**: Complete TypeScript type support
+✅ **Optional TOTP MFA**: `core/auth/mfa` (TOTP, recovery codes, AES-256-GCM secret storage), off by default
 ✅ **Portable**: Can be copied into other projects and used immediately
 
 ## Directory Structure

@@ -11,7 +11,7 @@ src/
 ├── core/              # zero framework dependency (pure TS)
 │   ├── api-key/       #   ApiKeyService(ports DI), key-generator, validate FSM,
 │   │                  #   ip-whitelist, typed errors (ApiKeyError)
-│   ├── auth/          #   jwt, password, oauth, services, email, types, config
+│   ├── auth/          #   jwt, password, oauth, mfa(TOTP), services, email, types, config
 │   ├── cache/         #   Redis + in-memory caching with factory
 │   ├── config/        #   config registry (common, errors, warn)
 │   ├── constants/     #   error codes, messages, pagination, security

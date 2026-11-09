@@ -28,9 +28,9 @@ core/   ← 의존성 없음, pure TypeScript
 
 | 티어 | 대표 subpath | 비고 |
 |---|---|---|
-| **core** | `core/api-key`, `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/logger/log-sanitizer`, `core/rate-limit`, `core/security`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
+| **core** | `core/api-key`, `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/mfa`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/logger/log-sanitizer`, `core/rate-limit`, `core/security`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
 | **next** | `next/middleware`, `next/auth-handlers`, `next/auth-types`, `next/error`, `next/error/error-handler`, `next/oapi`, `next/utils` | `next/server`, `next/link` 등 Next.js 의존 |
-| **prisma** | `prisma/auth-adapter` | Prisma 클라이언트 덕 타이핑 어댑터 |
+| **prisma** | `prisma/auth-adapter`(MFA 저장소 `mfa-repository` 포함) | Prisma 클라이언트 덕 타이핑 어댑터 |
 
 `error`와 `utils`는 의존성에 따라 티어가 갈립니다:
 

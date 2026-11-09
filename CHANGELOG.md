@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-11-09
+
+### Added
+- TOTP multi-factor authentication with one-time recovery codes (`core/auth/mfa`: `totp`, `secret-box`, `recovery-codes`,
+  `attempt-store`, `mfa.service`, `types`, `amr`). SHA-1, 6 digits, 30 seconds, one step of drift allowed, a code cannot
+  be reused. Secrets are encrypted with AES-256-GCM (`v1.<keyId>.<iv>.<ciphertext>.<tag>`, first key encrypts, the others
+  only decrypt so keys can rotate). Recovery codes are 10 `xxxx-xxxx` codes stored as SHA-256 hashes.
+- Login and the OAuth callback add a pending step. For a user with MFA on, no access or refresh token is issued;
+  a 300 second `mfa_pending` token is returned instead (cookie, `mfaToken` in the body, or both, following
+  `tokenDelivery`), and the OAuth callback redirects to `urls.mfaChallenge` with only the pending cookie set.
+- Six handlers in `next/auth-handlers/mfa.handlers`: `createMfaVerifyHandler`, `createMfaStatusHandler`,
+  `createMfaSetupHandler`, `createMfaEnableHandler`, `createMfaDisableHandler`, `createMfaRecoveryCodesHandler`.
+  `createAuthHandlers` returns them as `mfaVerify`, `mfaStatus`, `mfaSetup`, `mfaEnable`, `mfaDisable`, `mfaRecoveryCodes`.
+- Access tokens carry an `amr` claim (`pwd`, `fed`, `otp`, `rec`, `mfa`) only when MFA is configured. `/me` reports `mfaEnabled`.
+- `PrismaMfaRepository` (`prisma/auth-adapter/mfa-repository`) and the `UserMfa` / `MfaRecoveryCode` schema below.
+- Failure limits: 5 failures per pending token discards it; 10 failures per user within 900 seconds lock the user for
+  900 seconds (verify and the management endpoints count together, 429 `MFA_LOCKED` with `retryAfter`).
+- New error keys are registered in `ERROR_CODES`, `AUTH_ERROR_CODE_MAP` and the ko/en/ja messages.
+
+### Changed
+- Behavior fix: `createAuthProxy` and `verifyAccessTokenEdge` now reject a token whose `tokenType` is not `access`.
+  Before, a refresh token or a pending token placed in the access cookie passed the edge guard. Consumers that verify
+  access JWTs themselves must also reject `tokenType !== 'access'`.
+
+### Compatibility
+- MFA is off by default. When `mfa` is unset or `enabled` is false, every response body, status, cookie and token
+  claim is the same as in 0.29 (no `amr`).
+
+### Setup
+```ts
+import { PrismaMfaRepository } from '@withwiz/toolkit/prisma/auth-adapter';
+
+const handlers = createAuthHandlers({
+  ...options,
+  urls: { ...options.urls, mfaChallenge: '/login/mfa' },
+  mfa: {
+    enabled: true,
+    issuer: 'my-service',
+    encryptionKeys: [process.env.MFA_ENCRYPTION_KEY!], // base64, 32 bytes; first key encrypts
+    repository: new PrismaMfaRepository(prisma),
+    attemptStore, // shared cache store; omit and an in-memory store is used with a warning
+  },
+  // optional hooks (in `hooks`): onMfaEnabled, onMfaDisabled, onMfaFailed, onMfaLocked
+});
+```
+
+Add the dispatch lines to the auth route:
+
+```
+POST mfa/verify          -> handlers.mfaVerify
+GET  mfa                 -> handlers.mfaStatus
+POST mfa/setup           -> handlers.mfaSetup
+POST mfa/enable          -> handlers.mfaEnable
+POST mfa/disable         -> handlers.mfaDisable
+POST mfa/recovery-codes  -> handlers.mfaRecoveryCodes
+```
+
+Prisma schema (add a relation to your user model if you want cascading deletes):
+
+```prisma
+model UserMfa {
+  userId       String    @id
+  secretEnc    String
+  enabledAt    DateTime?
+  lastUsedStep Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model MfaRecoveryCode {
+  id       String    @id @default(cuid())
+  userId   String
+  codeHash String
+  usedAt   DateTime?
+  @@unique([userId, codeHash])
+  @@index([userId])
+}
+```
+
+Notes:
+- `attemptStore` must be a shared cache store when more than one instance runs; the in-memory default only counts per
+  process and warns at startup.
+- Keep request rate limiting on `/mfa/*` in addition to the failure limits.
+- With `cookieHostPrefix` the pending cookie also uses the `__Host-` prefix, which forces its path to `/`
+  (`mfa.cookiePath` is ignored).
+
 ## [0.29.0] - 2026-11-05
 
 ### Added
