@@ -36,3 +36,31 @@ export interface MfaAttemptStore {
   /** 사용자 실패 횟수와 잠금을 지운다. */
   clearUser(userId: string): Promise<void>;
 }
+
+/** 사용자 MFA 설정 레코드. */
+export interface UserMfaRecord {
+  userId: string;
+  /** 암호화된 TOTP 비밀 키 */
+  secretEnc: string;
+  /** 활성화 시각. null 이면 등록 대기(미확정) 상태 */
+  enabledAt: Date | null;
+  /** 마지막으로 사용된 TOTP 스텝(재사용 방지) */
+  lastUsedStep: number | null;
+}
+
+/** MFA 저장소 — 비밀 키·복구 코드 영속화. */
+export interface MfaRepository {
+  findByUserId(userId: string): Promise<UserMfaRecord | null>;
+  /** 대기 비밀 키를 저장(upsert, 미활성·lastUsedStep=null)하고 기존 복구 코드를 삭제한다. */
+  savePendingSecret(userId: string, secretEnc: string): Promise<void>;
+  /** enabledAt=now 로 활성화하고 복구 코드를 교체한다(한 트랜잭션). */
+  enable(userId: string, recoveryCodeHashes: string[]): Promise<void>;
+  /** UserMfa 와 복구 코드를 삭제한다. */
+  disable(userId: string): Promise<void>;
+  /** step 이 마지막 사용 스텝보다 크면 기록하고 true, 아니면 false(재사용). */
+  markStepUsed(userId: string, step: number): Promise<boolean>;
+  /** 미사용 복구 코드를 소비하면 true. */
+  consumeRecoveryCode(userId: string, codeHash: string): Promise<boolean>;
+  replaceRecoveryCodes(userId: string, codeHashes: string[]): Promise<void>;
+  countUnusedRecoveryCodes(userId: string): Promise<number>;
+}
