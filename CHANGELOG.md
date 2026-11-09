@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Setup
 ```ts
 import { PrismaMfaRepository } from '@withwiz/toolkit/prisma/auth-adapter';
+import { createCacheMfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa/attempt-store';
 
 const handlers = createAuthHandlers({
   ...options,
@@ -45,7 +46,7 @@ const handlers = createAuthHandlers({
     issuer: 'my-service',
     encryptionKeys: [process.env.MFA_ENCRYPTION_KEY!], // base64, 32 bytes; first key encrypts
     repository: new PrismaMfaRepository(prisma),
-    attemptStore, // shared cache store; omit and an in-memory store is used with a warning
+    attemptStore: createCacheMfaAttemptStore(cache), // shared cache; omit and an in-memory store is used with a warning
   },
   // optional hooks (in `hooks`): onMfaEnabled, onMfaDisabled, onMfaFailed, onMfaLocked
 });
@@ -62,7 +63,7 @@ POST mfa/disable         -> handlers.mfaDisable
 POST mfa/recovery-codes  -> handlers.mfaRecoveryCodes
 ```
 
-Prisma schema (add a relation to your user model if you want cascading deletes):
+Prisma schema (also add the back-relations `userMfa UserMfa?` and `mfaRecoveryCodes MfaRecoveryCode[]` to your `User` model; same as `docs/MODULE_USAGE.md`):
 
 ```prisma
 model UserMfa {
@@ -72,13 +73,15 @@ model UserMfa {
   lastUsedStep Int?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 model MfaRecoveryCode {
-  id       String    @id @default(cuid())
-  userId   String
-  codeHash String
-  usedAt   DateTime?
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, codeHash])
   @@index([userId])
 }
@@ -87,7 +90,7 @@ model MfaRecoveryCode {
 Notes:
 - `attemptStore` must be a shared cache store when more than one instance runs; the in-memory default only counts per
   process and warns at startup.
-- Keep request rate limiting on `/mfa/*` in addition to the failure limits.
+- The toolkit does not rate-limit `/mfa/*` itself. Your route-level rate limiter must cover these routes, in addition to the failure limits above.
 - With `cookieHostPrefix` the pending cookie also uses the `__Host-` prefix, which forces its path to `/`
   (`mfa.cookiePath` is ignored).
 
