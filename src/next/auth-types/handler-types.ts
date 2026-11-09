@@ -3,6 +3,7 @@ import type { BaseUser, OAuthProviderName, UserRepository, OAuthAccountRepositor
 import type { TokenDelivery } from '@withwiz/toolkit/core/auth/config';
 import type { IRefreshTokenStore } from '@withwiz/toolkit/core/auth/services/refresh-token-store';
 import type { PasswordConfig } from '@withwiz/toolkit/core/auth/types';
+import type { MfaRepository, MfaAttemptStore } from '@withwiz/toolkit/core/auth/mfa';
 import type { TLocale } from '@withwiz/toolkit/core/error/messages/types';
 
 /** 가입 훅이 받는 요청 맥락 (0.21+). `body` 는 검증 전 원본 본문에서 `password` 만 뺀 것이다 — 동의 여부·추가 필드 검사에 쓴다. */
@@ -54,6 +55,14 @@ export interface AuthHandlerHooks {
   ) => Promise<Record<string, unknown>>;
   allowEmail?: (email: string) => boolean | Promise<boolean>;
   isTokenBlacklisted?: (token: string) => Promise<boolean>;
+  /** 2단계 인증을 켰다 (0.30+) */
+  onMfaEnabled?: (user: BaseUser) => Promise<void>;
+  /** 2단계 인증을 껐다 (0.30+). `by` 는 해제에 쓴 증명 수단 */
+  onMfaDisabled?: (user: BaseUser, by: 'code' | 'recoveryCode') => Promise<void>;
+  /** 2단계 인증 코드 검증이 실패했거나 잠금으로 거부됐다 (0.30+) */
+  onMfaFailed?: (userId: string, reason: 'invalid_code' | 'locked') => Promise<void>;
+  /** 실패 누적으로 사용자가 잠겼다 (0.30+) */
+  onMfaLocked?: (user: BaseUser) => Promise<void>;
 }
 
 export interface AuthHandlerUrls {
@@ -64,6 +73,8 @@ export interface AuthHandlerUrls {
   afterLogout?: string;
   verifyEmailPage?: string;
   resetPasswordPage?: string;
+  /** 2단계 인증 코드 입력 화면 (0.30+). `mfa.enabled` 일 때 필수 — OAuth 콜백이 여기로 보낸다 */
+  mfaChallenge?: string;
 }
 
 export interface AuthHandlerOptions {
@@ -108,6 +119,21 @@ export interface AuthHandlerOptions {
    * 미지정이면 요청의 `locale`·`NEXT_LOCALE` 쿠키 → Accept-Language → 'ko' 순(이전과 같다).
    */
   locale?: TLocale | ((request: Request) => TLocale);
+  /**
+   * 2단계 인증(TOTP) (0.30+). 미설정이거나 `enabled:false` 면 모든 응답이 0.29 와 같다.
+   * `attemptStore` 를 생략하면 단일 인스턴스용 메모리 저장소를 쓴다(다중 인스턴스에서는 한도가 인스턴스별로 갈린다).
+   */
+  mfa?: {
+    enabled: boolean;
+    /** 인증 앱에 표시되는 발급자 이름 */
+    issuer: string;
+    /** 비밀 키 암호화 키(base64url 32바이트). 첫 키로 암호화하고 나머지는 복호화 전용 */
+    encryptionKeys: string[];
+    repository: MfaRepository;
+    attemptStore?: MfaAttemptStore;
+    /** 대기 토큰 쿠키 경로. 기본 '/api/auth' */
+    cookiePath?: string;
+  };
   /** signup 핸들러 옵션 (0.21+) */
   signup?: {
     /** 가입 직후 로그인이 가능하면 세션을 발급한다. 기본 true */
