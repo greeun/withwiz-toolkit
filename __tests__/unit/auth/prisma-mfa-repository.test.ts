@@ -48,6 +48,13 @@ describe('PrismaMfaRepository', () => {
     expect(prisma.mfaRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u' } });
   });
 
+  it('savePendingSecret 은 한 $transaction 안에서 upsert→deleteMany', async () => {
+    const { prisma, calls } = createMockPrisma();
+    await new PrismaMfaRepository(prisma).savePendingSecret('u', 'enc');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['upsert', 'deleteMany']);
+  });
+
   it('enable 은 $transaction 안에서 deleteMany→createMany→update 순', async () => {
     const { prisma, calls } = createMockPrisma();
     await new PrismaMfaRepository(prisma).enable('u', ['h1', 'h2']);
@@ -67,6 +74,13 @@ describe('PrismaMfaRepository', () => {
     await new PrismaMfaRepository(prisma).disable('u');
     expect(prisma.mfaRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u' } });
     expect(prisma.userMfa.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u' } });
+  });
+
+  it('disable 의 두 삭제는 한 $transaction 안에서 실행된다', async () => {
+    const { prisma, calls } = createMockPrisma();
+    await new PrismaMfaRepository(prisma).disable('u');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['deleteMany', 'deleteMany']);
   });
 
   it('markStepUsed: count 1 → true, 0 → false, where 에 lt: step', async () => {

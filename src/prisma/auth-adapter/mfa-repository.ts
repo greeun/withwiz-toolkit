@@ -38,12 +38,14 @@ export class PrismaMfaRepository implements MfaRepository {
   }
 
   async savePendingSecret(userId: string, secretEnc: string): Promise<void> {
-    await this.prisma[this.userMfaModel].upsert({
-      where: { userId },
-      create: { userId, secretEnc, enabledAt: null, lastUsedStep: null },
-      update: { secretEnc, enabledAt: null, lastUsedStep: null },
+    await this.prisma.$transaction(async (tx: PrismaClientLike) => {
+      await tx[this.userMfaModel].upsert({
+        where: { userId },
+        create: { userId, secretEnc, enabledAt: null, lastUsedStep: null },
+        update: { secretEnc, enabledAt: null, lastUsedStep: null },
+      });
+      await tx[this.recoveryCodeModel].deleteMany({ where: { userId } });
     });
-    await this.prisma[this.recoveryCodeModel].deleteMany({ where: { userId } });
   }
 
   async enable(userId: string, recoveryCodeHashes: string[]): Promise<void> {
@@ -60,8 +62,10 @@ export class PrismaMfaRepository implements MfaRepository {
   }
 
   async disable(userId: string): Promise<void> {
-    await this.prisma[this.recoveryCodeModel].deleteMany({ where: { userId } });
-    await this.prisma[this.userMfaModel].deleteMany({ where: { userId } });
+    await this.prisma.$transaction(async (tx: PrismaClientLike) => {
+      await tx[this.recoveryCodeModel].deleteMany({ where: { userId } });
+      await tx[this.userMfaModel].deleteMany({ where: { userId } });
+    });
   }
 
   async markStepUsed(userId: string, step: number): Promise<boolean> {

@@ -235,7 +235,13 @@ export function createMfaVerifyHandler(options: AuthHandlerOptions): Handler {
       if (isOAuth && hooks?.onAfterOAuth) await hooks.onAfterOAuth(user, pending.provider ?? '', false);
       return clearMfaPendingCookie(res, cookieOpts);
     } catch (error) {
-      if (error instanceof AuthError && error.code === 'MFA_PENDING_EXPIRED') return expired();
+      // MFA_NOT_ENABLED: 대기 중에 MFA 가 꺼지거나 초기화됐다 — 이 대기 토큰으로는 더 진행할 수 없다
+      if (
+        error instanceof AuthError &&
+        (error.code === 'MFA_PENDING_EXPIRED' || error.code === 'MFA_NOT_ENABLED')
+      ) {
+        return expired();
+      }
       return mfaErrorResponse(respond, request, error);
     }
   };

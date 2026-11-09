@@ -11,6 +11,7 @@ import { createInMemoryMfaAttemptStore, currentStep, totpCode } from '@withwiz/t
 import { createLoginHandler } from '@withwiz/toolkit/next/auth-handlers/login.handler';
 import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/oauth-callback.handler';
 import { createMeHandler } from '@withwiz/toolkit/next/auth-handlers/me.handler';
+import { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
 import { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 import { getMfaRuntime } from '@withwiz/toolkit/next/auth-handlers/mfa-runtime';
 import {
@@ -287,6 +288,21 @@ describe('/mfa/* 처리기', () => {
       expect(bodyText(await res.json())).toContain('MFA_PENDING_EXPIRED');
     });
 
+    it('대기 중 MFA 가 꺼지면(재설정 등) 401 MFA_PENDING_EXPIRED + 대기 쿠키 삭제', async () => {
+      const { options, repo } = makeOptions({ tokenDelivery: 'cookie' });
+      const { secret } = await enableMfa(options);
+      const pc = pendingCookie(await createLoginHandler(options)(loginReq()));
+      await repo.disable('u1');
+      const res = await createMfaVerifyHandler(options)(
+        jsonReq('/mfa/verify', { code: totpCode(secret, currentStep()) }, { cookie: `${pc.name}=${pc.value}` }),
+      );
+      expect(res.status).toBe(401);
+      const text = bodyText(await res.json());
+      expect(text).toContain('MFA_PENDING_EXPIRED');
+      expect(text).not.toContain('MFA_NOT_ENABLED');
+      expect(res.headers.getSetCookie().join('\n')).toMatch(/mfa_pending=;.*Max-Age=0/i);
+    });
+
     it('틀린 코드는 401 MFA_INVALID_CODE 이고 대기 쿠키를 지우지 않는다', async () => {
       const { options } = makeOptions({ tokenDelivery: 'cookie' });
       const { secret } = await enableMfa(options);
@@ -493,10 +509,50 @@ describe('/mfa/* 처리기', () => {
       expect((await (await me(await authed('/me', undefined, 'GET'))).json()).user.mfaEnabled).toBe(true);
     });
 
+    it('isEnabled 조회가 실패해도 200 이고 mfaEnabled 를 빼고 경고를 남긴다', async () => {
+      const { options } = makeOptions();
+      vi.spyOn(getMfaRuntime(options)!.service, 'isEnabled').mockRejectedValue(new Error('db down'));
+      const res = await createMeHandler(options)(await authed('/me', undefined, 'GET'));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.user.id).toBe('u1');
+      expect('mfaEnabled' in body.user).toBe(false);
+      expect(options.dependencies.logger!.warn).toHaveBeenCalled();
+    });
+
     it('extendUserResponse 가 mfaEnabled 를 덮어쓸 수 있다', async () => {
       const { options } = makeOptions({ extendUserResponse: async () => ({ mfaEnabled: 'custom' }) });
       const body = await (await createMeHandler(options)(await authed('/me', undefined, 'GET'))).json();
       expect(body.user.mfaEnabled).toBe('custom');
+    });
+  });
+
+  describe('signup 자동 로그인', () => {
+    const signupReq = () => jsonReq('/signup', { email: 'new@example.com', password: 'password123', name: 'New' });
+    const accessAmr = (res: Response) => {
+      const raw = res.headers.getSetCookie().find((c) => c.slice(0, c.indexOf('=')).endsWith('access_token'))!;
+      return decodeJwt(raw.slice(raw.indexOf('=') + 1, raw.indexOf(';'))).amr;
+    };
+    const withSignupDeps = (options: AuthHandlerOptions) => {
+      const repo = options.dependencies.userRepository as any;
+      repo.findByEmail = vi.fn().mockResolvedValue(null);
+      repo.create = vi.fn().mockResolvedValue({ ...testUser, emailVerified: null });
+      (options as any).features = { emailVerificationRequired: false };
+      return options;
+    };
+
+    it('MFA 런타임이 있으면 access 토큰 amr=[pwd]', async () => {
+      const { options } = makeOptions({ tokenDelivery: 'cookie' });
+      const res = await createSignupHandler(withSignupDeps(options))(signupReq());
+      expect(res.status).toBe(201);
+      expect(accessAmr(res)).toEqual(['pwd']);
+    });
+
+    it('mfa 미설정이면 amr 클레임이 없다', async () => {
+      const { options } = makeOptions({ withMfa: false, tokenDelivery: 'cookie' });
+      const res = await createSignupHandler(withSignupDeps(options))(signupReq());
+      expect(res.status).toBe(201);
+      expect(accessAmr(res)).toBeUndefined();
     });
   });
 
