@@ -173,6 +173,7 @@
     "./next/auth-handlers/login.handler": "./dist/next/auth-handlers/login.handler.js",
     "./next/auth-handlers/logout.handler": "./dist/next/auth-handlers/logout.handler.js",
     "./next/auth-handlers/me.handler": "./dist/next/auth-handlers/me.handler.js",
+    "./next/auth-handlers/mfa.handlers": "./dist/next/auth-handlers/mfa.handlers.js",
     "./next/auth-handlers/oauth-authorize.handler": "./dist/next/auth-handlers/oauth-authorize.handler.js",
     "./next/auth-handlers/oauth-callback.handler": "./dist/next/auth-handlers/oauth-callback.handler.js",
     "./next/auth-handlers/password-policy": "./dist/next/auth-handlers/password-policy.js",

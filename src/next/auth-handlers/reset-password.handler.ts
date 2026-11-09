@@ -9,10 +9,12 @@ import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/tool
 import { requiredFieldMessage } from '@withwiz/toolkit/next/auth-handlers/field-messages';
 import { passwordField, checkPasswordPolicy, passwordPolicyViolation } from '@withwiz/toolkit/next/auth-handlers/password-policy';
 import { resolveTokenEmail, linkTokenError, isLinkTokenError } from '@withwiz/toolkit/next/auth-handlers/token-email';
+import { getMfaRuntime } from '@withwiz/toolkit/next/auth-handlers/mfa-runtime';
 
 export function createResetPasswordHandler(options: AuthHandlerOptions) {
   const { dependencies, passwordPolicy } = options;
   const respond = createAuthResponder(options);
+  const mfaRuntime = getMfaRuntime(options);
   // email 은 0.21 부터 선택 항목 — 없으면 토큰으로 찾는다(저장소가 findEmailByToken 을 구현한 경우)
   const schema = z.object({
     email: z.string().email().optional(),
@@ -21,6 +23,18 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
   });
   const invalidInput = (request: NextRequest, fieldErrors?: Record<string, string[]>) =>
     respond.error(request, { status: 400, key: 'VALIDATION_ERROR', message: 'Invalid input', fieldErrors });
+
+  /** 비밀번호를 되찾은 사용자의 MFA 실패·잠금을 푼다. 실패해도 재설정 결과는 바꾸지 않는다 */
+  const clearMfaFailures = async (email: string): Promise<void> => {
+    try {
+      const user = await dependencies.userRepository.findByEmail(email);
+      if (user) await mfaRuntime!.attemptStore.clearUser(user.id);
+    } catch (error) {
+      dependencies.logger?.warn('Failed to clear MFA failures after password reset', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
 
   return async (request: NextRequest): Promise<Response> => {
     try {
@@ -49,6 +63,7 @@ export function createResetPasswordHandler(options: AuthHandlerOptions) {
       });
 
       await service.resetPassword(account.email, parsed.data.token, parsed.data.password);
+      if (mfaRuntime) await clearMfaFailures(account.email);
       return NextResponse.json({ success: true });
     } catch (error) {
       if (isLinkTokenError(error)) return linkTokenError(respond, request, error.message);
