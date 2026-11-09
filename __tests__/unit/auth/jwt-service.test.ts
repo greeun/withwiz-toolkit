@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, vi, expectTypeOf } from 'vitest';
+import { decodeJwt } from 'jose';
 import { JWTService, JWTManager } from '@withwiz/toolkit/core/auth/jwt';
 import { JWTError } from '@withwiz/toolkit/core/auth/errors';
 import type { JWTConfig, JWTPayload } from '@withwiz/toolkit/core/auth/types';
@@ -469,5 +470,64 @@ describe('JWTPayload role vocabulary', () => {
 
     const payload = await service.verifyAccessToken(token);
     expectTypeOf(payload.role).toEqualTypeOf<string>();
+  });
+});
+
+describe('JWT amr 클레임과 MFA 대기 토큰', () => {
+  const svc = new JWTService(testConfig);
+
+  it('amr 을 주면 access·refresh 에 실린다, 안 주면 클레임 자체가 없다', async () => {
+    const withAmr = await svc.createTokenPair(testUser, { amr: ['pwd', 'otp', 'mfa'] });
+    expect((await svc.verifyAccessToken(withAmr.accessToken)).amr).toEqual(['pwd', 'otp', 'mfa']);
+    expect((await svc.verifyRefreshToken(withAmr.refreshToken)).amr).toEqual(['pwd', 'otp', 'mfa']);
+
+    const plain = await svc.createTokenPair(testUser);
+    expect(decodeJwt(plain.accessToken)).not.toHaveProperty('amr');
+    expect(decodeJwt(plain.refreshToken)).not.toHaveProperty('amr');
+    expect((await svc.verifyAccessToken(plain.accessToken)).amr).toBeUndefined();
+    expect((await svc.verifyRefreshToken(plain.refreshToken)).amr).toBeUndefined();
+  });
+
+  it('createRefreshToken 단독으로도 amr 을 싣고, 없으면 키가 없다', async () => {
+    const t = await svc.createRefreshToken('u1', { amr: ['fed'] });
+    expect((await svc.verifyRefreshToken(t)).amr).toEqual(['fed']);
+    expect(decodeJwt(await svc.createRefreshToken('u1'))).not.toHaveProperty('amr');
+  });
+
+  it('대기 토큰 왕복', async () => {
+    const { token, jti } = await svc.createMfaPendingToken({ userId: 'u1', amr: ['pwd'], origin: 'password' });
+    expect(await svc.verifyMfaPendingToken(token)).toMatchObject({ userId: 'u1', amr: ['pwd'], origin: 'password', jti });
+    const claims = decodeJwt(token);
+    expect(claims.tokenType).toBe('mfa_pending');
+    expect(claims).not.toHaveProperty('provider');
+    expect((claims.exp as number) - (claims.iat as number)).toBe(300);
+  });
+
+  it('provider 와 ttl 을 지정할 수 있고 jti 는 매번 새로 발급된다', async () => {
+    const a = await svc.createMfaPendingToken({ userId: 'u1', amr: ['fed'], origin: 'oauth', provider: 'google' }, 60);
+    const b = await svc.createMfaPendingToken({ userId: 'u1', amr: ['fed'], origin: 'oauth', provider: 'google' }, 60);
+    expect(a.jti).not.toBe(b.jti);
+    expect(await svc.verifyMfaPendingToken(a.token)).toMatchObject({ origin: 'oauth', provider: 'google' });
+    const c = decodeJwt(a.token);
+    expect((c.exp as number) - (c.iat as number)).toBe(60);
+  });
+
+  it('대기 토큰은 access·refresh 로 쓸 수 없다', async () => {
+    const { token } = await svc.createMfaPendingToken({ userId: 'u1', amr: ['pwd'], origin: 'password' });
+    await expect(svc.verifyAccessToken(token)).rejects.toThrow();
+    await expect(svc.verifyRefreshToken(token)).rejects.toThrow();
+  });
+
+  it('access·refresh 토큰은 대기 토큰으로 쓸 수 없다', async () => {
+    const pair = await svc.createTokenPair(testUser);
+    await expect(svc.verifyMfaPendingToken(pair.accessToken)).rejects.toThrow(JWTError);
+    await expect(svc.verifyMfaPendingToken(pair.refreshToken)).rejects.toThrow(JWTError);
+    await expect(svc.verifyMfaPendingToken('garbage')).rejects.toThrow(JWTError);
+  });
+
+  it('만료된 대기 토큰은 거부된다', async () => {
+    const { token } = await svc.createMfaPendingToken({ userId: 'u1', amr: ['pwd'], origin: 'password' }, 1);
+    await new Promise((r) => setTimeout(r, 2100));
+    await expect(svc.verifyMfaPendingToken(token)).rejects.toThrow(JWTError);
   });
 });

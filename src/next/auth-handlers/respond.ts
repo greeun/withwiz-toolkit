@@ -48,17 +48,15 @@ export const DEFAULT_AUTH_ERROR_FORMAT = 'standard' satisfies NonNullable<AuthHa
 export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorFormat' | 'locale'>) {
   const standard = (options.errorFormat ?? DEFAULT_AUTH_ERROR_FORMAT) === 'standard';
 
-  function error(request: Request | undefined, spec: AuthErrorSpec): NextResponse {
+  /** 오류 본문 객체(응답 전). 본문에 필드를 더해야 하는 호출부(MFA 대기 토큰)가 쓴다 */
+  function errorBody(request: Request | undefined, spec: AuthErrorSpec): Record<string, unknown> {
     if (!standard) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: spec.message,
-          ...(spec.legacyCode !== undefined ? { code: spec.legacyCode } : {}),
-          ...(spec.legacyDetails !== undefined ? { details: spec.legacyDetails } : {}),
-        },
-        { status: spec.status },
-      );
+      return {
+        success: false,
+        error: spec.message,
+        ...(spec.legacyCode !== undefined ? { code: spec.legacyCode } : {}),
+        ...(spec.legacyDetails !== undefined ? { details: spec.legacyDetails } : {}),
+      };
     }
     const { body } = buildErrorBody(spec.key, {
       status: spec.status,
@@ -69,7 +67,11 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
       request,
       locale: resolveAuthLocale(options, request),
     });
-    return NextResponse.json(body, { status: spec.status });
+    return body as unknown as Record<string, unknown>;
+  }
+
+  function error(request: Request | undefined, spec: AuthErrorSpec): NextResponse {
+    return NextResponse.json(errorBody(request, spec), { status: spec.status });
   }
 
   /** AuthError(서비스가 던진 인증 오류)를 응답으로 바꾼다. `includeCode` 는 0.20 에서 legacy 에 code 를 싣던 핸들러만 true */
@@ -86,7 +88,7 @@ export function createAuthResponder(options: Pick<AuthHandlerOptions, 'errorForm
   /** 이 핸들러의 로케일(필드 오류 사유·비밀번호 정책 문구용) */
   const locale = (request: Request | undefined): TLocale => resolveAuthLocale(options, request);
 
-  return { error, fromAuthError, locale };
+  return { error, errorBody, fromAuthError, locale };
 }
 
 /**

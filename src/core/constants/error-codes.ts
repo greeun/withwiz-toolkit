@@ -127,6 +127,24 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.UNAUTHORIZED,
     message: "Session has expired.",
   },
+  MFA_REQUIRED: {
+    code: 40120,
+    key: "MFA_REQUIRED",
+    status: HTTP_STATUS.UNAUTHORIZED,
+    message: "Two-factor authentication code required.",
+  },
+  MFA_INVALID_CODE: {
+    code: 40121,
+    key: "MFA_INVALID_CODE",
+    status: HTTP_STATUS.UNAUTHORIZED,
+    message: "Invalid two-factor authentication code.",
+  },
+  MFA_PENDING_EXPIRED: {
+    code: 40122,
+    key: "MFA_PENDING_EXPIRED",
+    status: HTTP_STATUS.UNAUTHORIZED,
+    message: "Two-factor authentication challenge expired.",
+  },
 
   // ============================================
   // Permissions Related (403xx - 01~09)
@@ -175,6 +193,12 @@ export const ERROR_CODES = {
     status: HTTP_STATUS.NOT_FOUND,
     message: "User not found.",
   },
+  MFA_NOT_CONFIGURED: {
+    code: 40420,
+    key: "MFA_NOT_CONFIGURED",
+    status: HTTP_STATUS.NOT_FOUND,
+    message: "Two-factor authentication is not configured.",
+  },
 
   // ============================================
   // Conflict (409xx)
@@ -197,6 +221,18 @@ export const ERROR_CODES = {
     key: "EMAIL_ALREADY_EXISTS",
     status: HTTP_STATUS.CONFLICT,
     message: "Email is already registered.",
+  },
+  MFA_ALREADY_ENABLED: {
+    code: 40920,
+    key: "MFA_ALREADY_ENABLED",
+    status: HTTP_STATUS.CONFLICT,
+    message: "Two-factor authentication is already enabled.",
+  },
+  MFA_NOT_ENABLED: {
+    code: 40921,
+    key: "MFA_NOT_ENABLED",
+    status: HTTP_STATUS.CONFLICT,
+    message: "Two-factor authentication is not enabled.",
   },
 
   // ============================================
@@ -253,6 +289,12 @@ export const ERROR_CODES = {
     key: "API_QUOTA_EXCEEDED",
     status: HTTP_STATUS.TOO_MANY_REQUESTS,
     message: "API quota exceeded.",
+  },
+  MFA_LOCKED: {
+    code: 42920,
+    key: "MFA_LOCKED",
+    status: HTTP_STATUS.TOO_MANY_REQUESTS,
+    message: "Too many two-factor authentication attempts.",
   },
 
   // ============================================

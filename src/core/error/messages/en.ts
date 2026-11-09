@@ -78,6 +78,22 @@ export const enMessages: TErrorMessages = {
     action: 'Please login again.',
   },
 
+  40120: {
+    title: 'Two-factor authentication required',
+    description: 'Enter the 6-digit code from your authenticator app.',
+    action: 'Enter the code to continue.',
+  },
+  40121: {
+    title: 'Invalid code',
+    description: 'The code is incorrect.',
+    action: 'Please check it and try again.',
+  },
+  40122: {
+    title: 'Verification expired',
+    description: 'The verification time has expired. Please sign in again.',
+    action: 'Sign in again from the start.',
+  },
+
   // ============================================
   // Permission Errors (403xx)
   // ============================================
@@ -115,6 +131,12 @@ export const enMessages: TErrorMessages = {
     description: 'The user does not exist.',
   },
 
+  40420: {
+    title: 'Two-factor authentication is off',
+    description: 'Two-factor authentication is not enabled for this service.',
+    action: 'Please contact the administrator.',
+  },
+
   // ============================================
   // Conflict Errors (409xx)
   // ============================================
@@ -132,6 +154,17 @@ export const enMessages: TErrorMessages = {
     title: 'Email already registered',
     description: 'This email is already in use by another account.',
     action: 'Please use a different email.',
+  },
+
+  40920: {
+    title: 'Already in use',
+    description: 'Two-factor authentication is already enabled.',
+    action: 'Please check your settings.',
+  },
+  40921: {
+    title: 'Not in use',
+    description: 'Two-factor authentication is not enabled.',
+    action: 'Set up two-factor authentication first.',
   },
 
   // ============================================
@@ -179,6 +212,12 @@ export const enMessages: TErrorMessages = {
     title: 'API quota exceeded',
     description: 'API limit exceeded.',
     action: 'Please consider upgrading your plan.',
+  },
+
+  42920: {
+    title: 'Too many attempts',
+    description: 'Too many attempts. Please try again shortly.',
+    action: 'Please try again later.',
   },
 
   // ============================================

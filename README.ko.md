@@ -151,6 +151,15 @@ createAuthHandlers({
   Prisma·SQL 어댑터는 구현한다) reset-password·verify-email 이 `email` 없이 토큰만 받아도 처리한다.
 - **가입 훅**은 두 번째 인자 `ctx`(`{ body, request }`)로 원본 요청 본문을 받는다.
 
+### TOTP 2단계 인증 (0.30, 선택)
+
+`createAuthHandlers` 에 `mfa: { enabled, issuer, encryptionKeys, repository: new PrismaMfaRepository(prisma), attemptStore }`
+와 `urls.mfaChallenge` 를 주면 비밀번호 로그인과 OAuth 콜백에 TOTP(+ 1회용 복구 코드) 단계가 붙는다. MFA 를 켠 사용자는
+코드 확인 전까지 access·refresh 토큰 대신 5분짜리 `mfa_pending` 토큰만 받는다. 디스패치 라우트에 `mfa/*` 6개
+(`mfaVerify`·`mfaStatus`·`mfaSetup`·`mfaEnable`·`mfaDisable`·`mfaRecoveryCodes`)를 추가한다. `mfa` 가 없으면 꺼지고
+응답은 0.29 와 같다. 인스턴스가 여럿이면 `attemptStore` 는 공유 캐시여야 한다. 설정 예시와 스키마는
+[`CHANGELOG.md`](CHANGELOG.md) 0.30.0 항목, 설계는 [`docs/auth/2026-11-08-mfa-totp-design.md`](docs/auth/2026-11-08-mfa-totp-design.md) 를 본다.
+
 ## Module reference
 
 0.7부터 모든 subpath는 프레임워크 의존성에 따라 티어로 분리됩니다

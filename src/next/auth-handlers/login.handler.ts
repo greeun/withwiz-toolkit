@@ -6,6 +6,9 @@ import { AuthError } from '@withwiz/toolkit/core/auth/errors';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 import { createAuthResponder, readJsonBody, zodFieldErrors } from '@withwiz/toolkit/next/auth-handlers/respond';
 import { createSessionIssuer } from '@withwiz/toolkit/next/auth-handlers/session';
+import { getMfaRuntime } from '@withwiz/toolkit/next/auth-handlers/mfa-runtime';
+import { mfaRequiredResponse } from '@withwiz/toolkit/next/auth-handlers/mfa-pending';
+import { AMR } from '@withwiz/toolkit/core/auth/mfa/amr';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -23,6 +26,7 @@ export function createLoginHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);
   const { dependencies, hooks, features } = options;
   const issueSession = createSessionIssuer(options);
+  const mfaRuntime = getMfaRuntime(options);
 
   return async (request: NextRequest): Promise<Response> => {
     try {
@@ -72,8 +76,17 @@ export function createLoginHandler(options: AuthHandlerOptions) {
         return respond.error(request, { status: 403, key: 'EMAIL_NOT_VERIFIED', message: 'Email not verified', legacyCode: 'EMAIL_NOT_VERIFIED' });
       }
 
+      if (mfaRuntime && (await mfaRuntime.service.isEnabled(user.id))) {
+        const { token } = await mfaRuntime.jwtService.createMfaPendingToken({
+          userId: user.id,
+          amr: [AMR.PASSWORD],
+          origin: 'password',
+        });
+        return mfaRequiredResponse(request, respond, token, options, mfaRuntime);
+      }
+
       // await: 세션 발급 중 예외도 아래 catch 가 처리해야 한다
-      return await issueSession(user, request);
+      return await issueSession(user, request, {}, 200, { amr: mfaRuntime ? [AMR.PASSWORD] : undefined });
     } catch (error) {
       if (error instanceof AuthError) return respond.fromAuthError(request, error, true);
       return respond.error(request, { status: 500, key: 'INTERNAL_SERVER_ERROR', message: 'Internal server error' });

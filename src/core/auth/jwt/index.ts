@@ -18,6 +18,14 @@ import {
 import type { JWTConfig, JWTPayload, TokenPair, Logger } from "@withwiz/toolkit/core/auth/types";
 import { JWTError } from "@withwiz/toolkit/core/auth/errors";
 
+/** MFA 대기 토큰이 싣는 클레임. */
+export interface MfaPendingClaims {
+  userId: string;
+  amr: string[];
+  origin: "password" | "oauth";
+  provider?: string;
+}
+
 type SigningKey = Uint8Array | CryptoKey;
 
 // ============================================================================
@@ -128,7 +136,7 @@ export class JWTManager {
    */
   async createRefreshToken(
     userId: string,
-    options?: { jti?: string; familyId?: string },
+    options?: { jti?: string; familyId?: string; amr?: string[] },
   ): Promise<string> {
     try {
       const payload: Record<string, unknown> = {
@@ -137,6 +145,7 @@ export class JWTManager {
       };
       if (options?.jti) payload.jti = options.jti;
       if (options?.familyId) payload.familyId = options.familyId;
+      if (options?.amr) payload.amr = options.amr;
 
       const jwt = await new SignJWT(payload)
         .setProtectedHeader({ alg: this.config.algorithm })
@@ -169,7 +178,7 @@ export class JWTManager {
       role: string;
       emailVerified?: Date | null;
     },
-    options?: { jti?: string; familyId?: string },
+    options?: { jti?: string; familyId?: string; amr?: string[] },
   ): Promise<TokenPair> {
     try {
       // 신규 refresh 는 기본으로 jti+familyId 를 부여한다 → 첫 회전부터
@@ -184,8 +193,9 @@ export class JWTManager {
           email: user.email,
           role: user.role as any,
           emailVerified: user.emailVerified,
+          ...(options?.amr ? { amr: options.amr } : {}),
         }),
-        this.createRefreshToken(user.id, { jti, familyId }),
+        this.createRefreshToken(user.id, { jti, familyId, ...(options?.amr ? { amr: options.amr } : {}) }),
       ]);
 
       this.logger.debug("Token pair created successfully", { userId: user.id, familyId });
@@ -237,6 +247,7 @@ export class JWTManager {
         role: payload.role as TRole,
         emailVerified: payload.emailVerified as Date | null | undefined,
         tokenType: payload.tokenType as "access" | "refresh" | undefined,
+        ...(Array.isArray(payload.amr) ? { amr: payload.amr as string[] } : {}),
         iat: payload.iat,
         exp: payload.exp,
       };
@@ -262,7 +273,7 @@ export class JWTManager {
    */
   async verifyRefreshToken(
     token: string,
-  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string }> {
+  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string; amr?: string[] }> {
     try {
       const { payload } = await jwtVerify(token, await this.getVerifyKey(), {
         algorithms: [this.config.algorithm] as const,
@@ -286,6 +297,7 @@ export class JWTManager {
         tokenType: payload.tokenType as string,
         jti: typeof payload.jti === "string" ? payload.jti : undefined,
         familyId: typeof payload.familyId === "string" ? payload.familyId : undefined,
+        ...(Array.isArray(payload.amr) ? { amr: payload.amr as string[] } : {}),
       };
     } catch (error: any) {
       this.logger.error("Failed to verify refresh token", {
@@ -304,6 +316,79 @@ export class JWTManager {
         "Refresh token verification failed",
         "TOKEN_VERIFICATION_FAILED",
       );
+    }
+  }
+
+  /**
+   * MFA 대기 토큰 생성. 1차 인증은 끝났지만 2차 인증이 남은 상태를 나타내며
+   * access·refresh 토큰으로는 쓸 수 없다(tokenType: "mfa_pending").
+   */
+  async createMfaPendingToken(
+    claims: MfaPendingClaims,
+    ttlSec: number = 300,
+  ): Promise<{ token: string; jti: string }> {
+    try {
+      const jti = randomUUID();
+      const payload: Record<string, unknown> = {
+        userId: claims.userId,
+        amr: claims.amr,
+        origin: claims.origin,
+        tokenType: "mfa_pending",
+        jti,
+      };
+      if (claims.provider) payload.provider = claims.provider;
+
+      const token = await new SignJWT(payload)
+        .setProtectedHeader({ alg: this.config.algorithm })
+        .setIssuedAt()
+        .setExpirationTime(`${ttlSec}s`)
+        .sign(await this.getSigningKey());
+
+      this.logger.debug("MFA pending token created successfully", { userId: claims.userId });
+      return { token, jti };
+    } catch (error) {
+      this.logger.error("Failed to create MFA pending token", { error, userId: claims.userId });
+      throw new JWTError("MFA pending token creation failed", "TOKEN_CREATION_FAILED");
+    }
+  }
+
+  /** MFA 대기 토큰 검증. tokenType 이 다르거나 무효·만료면 JWTError. */
+  async verifyMfaPendingToken(token: string): Promise<MfaPendingClaims & { jti: string }> {
+    try {
+      const { payload } = await jwtVerify(token, await this.getVerifyKey(), {
+        algorithms: [this.config.algorithm] as const,
+      });
+
+      const origin = payload.origin;
+      if (
+        payload.tokenType !== "mfa_pending" ||
+        typeof payload.userId !== "string" ||
+        !payload.userId ||
+        typeof payload.jti !== "string" ||
+        !Array.isArray(payload.amr) ||
+        (origin !== "password" && origin !== "oauth")
+      ) {
+        throw new JWTError("Invalid MFA pending token payload structure", "INVALID_PAYLOAD");
+      }
+
+      return {
+        userId: payload.userId,
+        amr: payload.amr as string[],
+        origin,
+        jti: payload.jti,
+        ...(typeof payload.provider === "string" ? { provider: payload.provider } : {}),
+      };
+    } catch (error: any) {
+      this.logger.error("Failed to verify MFA pending token", {
+        error: error.message,
+        token: token.substring(0, 20) + "...",
+      });
+
+      if (error instanceof JWTError) throw error;
+      if (error.code === "ERR_JWT_EXPIRED") {
+        throw new JWTError("MFA pending token has expired", "TOKEN_EXPIRED");
+      }
+      throw new JWTError("MFA pending token verification failed", "TOKEN_VERIFICATION_FAILED");
     }
   }
 
@@ -404,7 +489,7 @@ export class JWTService {
    */
   async createRefreshToken(
     userId: string,
-    options?: { jti?: string; familyId?: string },
+    options?: { jti?: string; familyId?: string; amr?: string[] },
   ): Promise<string> {
     return this.manager.createRefreshToken(userId, options);
   }
@@ -414,7 +499,7 @@ export class JWTService {
    */
   async verifyRefreshToken(
     token: string,
-  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string }> {
+  ): Promise<{ userId: string; tokenType: string; jti?: string; familyId?: string; amr?: string[] }> {
     return this.manager.verifyRefreshToken(token);
   }
 
@@ -428,7 +513,7 @@ export class JWTService {
       role: string;
       emailVerified?: Date | null;
     },
-    options?: { jti?: string; familyId?: string },
+    options?: { jti?: string; familyId?: string; amr?: string[] },
   ): Promise<TokenPair> {
     return this.manager.createTokenPair(user, options);
   }
@@ -449,6 +534,19 @@ export class JWTService {
     token: string,
   ): Promise<JWTPayload<TRole>> {
     return this.manager.verifyAccessToken<TRole>(token);
+  }
+
+  /** MFA 대기 토큰 생성 */
+  async createMfaPendingToken(
+    claims: MfaPendingClaims,
+    ttlSec?: number,
+  ): Promise<{ token: string; jti: string }> {
+    return this.manager.createMfaPendingToken(claims, ttlSec);
+  }
+
+  /** MFA 대기 토큰 검증 */
+  async verifyMfaPendingToken(token: string): Promise<MfaPendingClaims & { jti: string }> {
+    return this.manager.verifyMfaPendingToken(token);
   }
 
   /**

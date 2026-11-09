@@ -582,6 +582,32 @@ const auth = createAuthHandlers({
 });
 ```
 
+#### MFA(TOTP) 스키마
+
+`PrismaMfaRepository`(`@withwiz/toolkit/prisma/auth-adapter`)는 아래 두 모델을 사용합니다(모델명은 `userMfaModel`·`recoveryCodeModel` 로 변경 가능). `User` 모델에 역관계 `userMfa UserMfa?` 와 `mfaRecoveryCodes MfaRecoveryCode[]` 를 추가해야 합니다.
+
+```prisma
+model UserMfa {
+  userId       String    @id
+  secretEnc    String
+  enabledAt    DateTime?
+  lastUsedStep Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model MfaRecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, codeHash])
+  @@index([userId])
+}
+```
+
 ---
 
 ## 4. Cache (캐시)

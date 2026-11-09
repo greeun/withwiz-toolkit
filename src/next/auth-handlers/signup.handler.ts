@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 import { createRegisterFlow } from '@withwiz/toolkit/next/auth-handlers/register-flow';
 import { createSessionIssuer } from '@withwiz/toolkit/next/auth-handlers/session';
+import { getMfaRuntime } from '@withwiz/toolkit/next/auth-handlers/mfa-runtime';
+import { AMR } from '@withwiz/toolkit/core/auth/mfa/amr';
 
 /**
  * 가입 + 자동 로그인 (0.21+) — `POST /signup`.
@@ -20,6 +22,8 @@ export function createSignupHandler(options: AuthHandlerOptions) {
   const autoLogin = options.signup?.autoLogin ?? true;
   // 인증 메일을 요구하지 않으면 미인증 계정도 바로 로그인할 수 있다(login 핸들러와 같은 판단, 0.25)
   const verificationRequired = options.features?.emailVerificationRequired ?? true;
+  // login 과 같은 규칙: MFA 를 쓰면 비밀번호 세션에 amr=[pwd] 를 싣는다(미설정이면 클레임 없음)
+  const mfaRuntime = getMfaRuntime(options);
 
   return async (request: NextRequest): Promise<Response> => {
     const outcome = await register(request);
@@ -28,7 +32,9 @@ export function createSignupHandler(options: AuthHandlerOptions) {
     const { user, verificationSent } = outcome;
     if (autoLogin && (user.emailVerified || !verificationRequired)) {
       try {
-        return await issueSession(user, request, { verificationSent: false }, 201);
+        return await issueSession(user, request, { verificationSent: false }, 201, {
+          amr: mfaRuntime ? [AMR.PASSWORD] : undefined,
+        });
       } catch (error) {
         options.dependencies.logger?.error('Signup auto-login failed; responding without a session', {
           userId: user.id,

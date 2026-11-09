@@ -38,6 +38,7 @@ export interface JWTPayload<TRole extends string = string> {
   role: TRole;
   emailVerified?: Date | null; // 이메일 인증 여부 (기존 코드와의 호환성)
   tokenType?: 'access' | 'refresh'; // 토큰 타입
+  amr?: string[]; // 인증 방법 참조(MFA 사용 시에만 존재)
   iat?: number;
   exp?: number;
 }
