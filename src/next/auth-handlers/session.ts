@@ -6,6 +6,14 @@ import type { BaseUser } from '@withwiz/toolkit/core/auth/types';
 import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handler-types';
 import { JWT_DEFAULTS, ROLE_DEFAULTS } from '@withwiz/toolkit/core/constants/security';
 
+/** 세션 발급 부가 정보 — MFA 완료 경로(/mfa/verify)와 로그인이 쓴다 */
+export interface IssueSessionContext {
+  /** access 토큰 `amr` 클레임. 생략하면 클레임을 넣지 않는다 */
+  amr?: string[];
+  /** false 면 onAfterLogin 을 부르지 않는다(기본 true) */
+  callAfterLogin?: boolean;
+}
+
 /**
  * 인증을 마친 사용자에게 세션(access·refresh 토큰)을 발급하는 응답을 만든다.
  * login 과 signup(자동 로그인)이 같은 경로를 쓴다 — 토큰 형태·쿠키·훅 호출이 갈라지지 않게.
@@ -24,16 +32,17 @@ export function createSessionIssuer(options: AuthHandlerOptions) {
     request: NextRequest,
     extraBody: Record<string, unknown> = {},
     status = 200,
+    ctx?: IssueSessionContext,
   ): Promise<NextResponse> => {
     const tokens = await jwtService.createTokenPair({
       id: user.id,
       email: user.email,
       role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
       emailVerified: user.emailVerified,
-    });
+    }, ctx?.amr ? { amr: ctx.amr } : undefined);
 
     await dependencies.userRepository.updateLastLoginAt(user.id);
-    if (hooks?.onAfterLogin) await hooks.onAfterLogin(user, request);
+    if (hooks?.onAfterLogin && ctx?.callAfterLogin !== false) await hooks.onAfterLogin(user, request);
 
     let userResponse: Record<string, unknown> = {
       id: user.id,

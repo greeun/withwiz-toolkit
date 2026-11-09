@@ -1,4 +1,5 @@
 import { TokenRefreshService } from '@withwiz/toolkit/core/auth/services/token-refresh.service';
+import { decodeJwt } from 'jose';
 import { JWTService } from '@withwiz/toolkit/core/auth/jwt';
 import type { UserRepository } from '@withwiz/toolkit/core/auth/types';
 import type { IRefreshTokenStore } from '@withwiz/toolkit/core/auth/services/refresh-token-store';
@@ -218,6 +219,35 @@ describe('TokenRefreshService', () => {
   describe('without store, revoke methods throw', () => {
     it('revokeFamily throws STORE_NOT_CONFIGURED', async () => {
       await expect(service.revokeFamily('F1')).rejects.toThrow('store is not configured');
+    });
+  });
+
+  describe('amr 이월', () => {
+    it('회전 시 옛 refresh 의 amr 을 새 access·refresh 에 옮긴다', async () => {
+      const { store } = makeInMemoryStore();
+      const svc = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const pair = await jwtService.createTokenPair(
+        { id: 'user-1', email: 'test@test.com', role: 'USER' },
+        { amr: ['pwd', 'otp', 'mfa'] },
+      );
+      const result = await svc.refresh(pair.refreshToken);
+      expect((await jwtService.verifyAccessToken(result.accessToken)).amr).toEqual(['pwd', 'otp', 'mfa']);
+      expect((await jwtService.verifyRefreshToken(result.refreshToken!)).amr).toEqual(['pwd', 'otp', 'mfa']);
+    });
+
+    it('store 없이 access 만 재발급해도 amr 을 옮긴다', async () => {
+      const refreshToken = await jwtService.createRefreshToken('user-1', { amr: ['fed'] });
+      const result = await service.refresh(refreshToken);
+      expect((await jwtService.verifyAccessToken(result.accessToken)).amr).toEqual(['fed']);
+    });
+
+    it('옛 refresh 에 amr 이 없으면 새 토큰에도 amr 클레임이 없다', async () => {
+      const { store } = makeInMemoryStore();
+      const svc = new TokenRefreshService({ userRepository: mockUserRepo, jwtSecret, refreshTokenStore: store });
+      const pair = await jwtService.createTokenPair({ id: 'user-1', email: 'test@test.com', role: 'USER' });
+      const result = await svc.refresh(pair.refreshToken);
+      expect(decodeJwt(result.accessToken)).not.toHaveProperty('amr');
+      expect(decodeJwt(result.refreshToken!)).not.toHaveProperty('amr');
     });
   });
 });

@@ -142,3 +142,21 @@ export function clearTokenCookies<T extends CookieSettableResponse>(
 
   return response;
 }
+
+/**
+ * 토큰 쿠키 외의 인증 보조 쿠키(MFA 대기 토큰 등)를 같은 규칙(secure 기본값·`__Host-` 접두 처리)으로 쓴다.
+ * `name` 은 호출자가 `authCookieName()` 을 적용해 넘긴다. `maxAge` 0 이면 삭제다.
+ */
+export function setScopedCookie<T extends CookieSettableResponse>(
+  response: T,
+  name: string,
+  value: string,
+  path: string,
+  maxAge: number,
+  options: CookieOptions = {},
+): T {
+  const defined = Object.fromEntries(Object.entries(options).filter(([, v]) => v !== undefined));
+  const opts = { ...getDefaultOptions(), ...defined };
+  response.cookies.set(name, value, cookieAttributes(opts, path, maxAge));
+  return response;
+}

@@ -154,3 +154,104 @@ describe('OAuthCallbackService', () => {
     })).rejects.toThrow('Account is disabled');
   });
 });
+
+describe('OAuthCallbackService resolveUser / issueTokens (MFA 분리)', () => {
+  let service: OAuthCallbackService;
+  const input = {
+    provider: 'google',
+    providerAccountId: 'g-123',
+    email: 'oauth@test.com',
+    name: 'OAuth User',
+    image: null,
+    accessToken: 'at-123',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new OAuthCallbackService({
+      userRepository: mockUserRepo,
+      oauthAccountRepository: mockOAuthRepo,
+      jwtSecret: 'a'.repeat(32),
+    });
+  });
+
+  it('resolveUser: 기존 연결 사용자를 돌려주고 토큰·로그인 기록은 하지 않는다', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue({ id: 'acc-1', userId: 'existing-user' });
+    (mockUserRepo.findById as any).mockResolvedValue({ id: 'existing-user', email: 'oauth@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+
+    const result = await service.resolveUser(input);
+
+    expect(result).toEqual({ user: expect.objectContaining({ id: 'existing-user' }), isNewUser: false });
+    expect((result as any).tokens).toBeUndefined();
+    expect(mockOAuthRepo.update).toHaveBeenCalled();
+    expect(mockUserRepo.updateLastLoginAt).not.toHaveBeenCalled();
+  });
+
+  it('resolveUser: 이메일로 연결해도 로그인 기록은 하지 않는다', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'email-user', email: 'oauth@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+
+    const result = await service.resolveUser({ ...input, emailVerified: true });
+
+    expect(result.isNewUser).toBe(false);
+    expect(result.user.id).toBe('email-user');
+    expect(mockOAuthRepo.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'email-user' }));
+    expect(mockUserRepo.updateLastLoginAt).not.toHaveBeenCalled();
+  });
+
+  it('resolveUser: 신규 사용자는 isNewUser=true', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue(null);
+
+    const result = await service.resolveUser(input);
+
+    expect(result.isNewUser).toBe(true);
+    expect(mockUserRepo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolveUser: 미검증 이메일 연결 거부·미인증 계정 연결 거부·비활성 계정 거부를 그대로 한다', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'victim', email: 'oauth@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+    await expect(service.resolveUser({ ...input, emailVerified: false })).rejects.toMatchObject({ code: 'OAUTH_EMAIL_NOT_VERIFIED', statusCode: 403 });
+
+    (mockUserRepo.findByEmail as any).mockResolvedValue({ id: 'squatter', email: 'oauth@test.com', role: 'USER', emailVerified: null, isActive: true });
+    await expect(service.resolveUser({ ...input, emailVerified: true })).rejects.toMatchObject({ code: 'OAUTH_ACCOUNT_NOT_VERIFIED', statusCode: 403 });
+    expect(mockOAuthRepo.create).not.toHaveBeenCalled();
+
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue({ id: 'acc-1', userId: 'disabled' });
+    (mockUserRepo.findById as any).mockResolvedValue({ id: 'disabled', email: 'oauth@test.com', isActive: false });
+    await expect(service.resolveUser(input)).rejects.toMatchObject({ code: 'ACCOUNT_DISABLED', statusCode: 403 });
+  });
+
+  it('issueTokens: amr 를 주면 access 클레임에 싣고, 안 주면 넣지 않는다', async () => {
+    const { decodeJwt } = await import('jose');
+    const user = { id: 'u1', email: 'u1@test.com', role: 'USER', emailVerified: new Date() } as any;
+
+    const withAmr = await service.issueTokens(user, { amr: ['fed'] });
+    expect(decodeJwt(withAmr.accessToken).amr).toEqual(['fed']);
+
+    const plain = await service.issueTokens(user);
+    expect(decodeJwt(plain.accessToken).amr).toBeUndefined();
+    expect(decodeJwt(plain.accessToken)).toMatchObject({ userId: 'u1', email: 'u1@test.com', role: 'USER' });
+  });
+
+  it('handleCallback: 기존 사용자는 updateLastLoginAt 을 부르고 amr 없는 토큰을 준다', async () => {
+    const { decodeJwt } = await import('jose');
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue({ id: 'acc-1', userId: 'existing-user' });
+    (mockUserRepo.findById as any).mockResolvedValue({ id: 'existing-user', email: 'oauth@test.com', role: 'USER', emailVerified: new Date(), isActive: true });
+
+    const result = await service.handleCallback(input);
+
+    expect(mockUserRepo.updateLastLoginAt).toHaveBeenCalledWith('existing-user');
+    expect(decodeJwt(result.tokens.accessToken).amr).toBeUndefined();
+  });
+
+  it('handleCallback: 신규 사용자는 updateLastLoginAt 을 부르지 않는다', async () => {
+    (mockOAuthRepo.findByProvider as any).mockResolvedValue(null);
+    (mockUserRepo.findByEmail as any).mockResolvedValue(null);
+
+    await service.handleCallback(input);
+
+    expect(mockUserRepo.updateLastLoginAt).not.toHaveBeenCalled();
+  });
+});

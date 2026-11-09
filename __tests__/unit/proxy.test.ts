@@ -189,3 +189,36 @@ describe('verifyAccessTokenEdge', () => {
     expect(payload).toBeNull();
   });
 });
+
+describe('tokenType 검사 (토큰 혼동 방지)', () => {
+  async function typedToken(tokenType: string): Promise<string> {
+    return new SignJWT({ userId: 'u1', role: 'user', tokenType })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('15m')
+      .sign(key);
+  }
+  const guard = createAuthProxy({ secret: SECRET, isProtected });
+
+  it.each(['mfa_pending', 'refresh'])('%s 토큰은 access 쿠키 자리에서 거부된다', async (type) => {
+    const token = await typedToken(type);
+    const res = await guard(mockRequest({ pathname: '/dashboard', token }));
+    expect(isRedirect(res!)).toBe(true);
+    expect(res!.headers.get('location')).toContain('/login');
+    expect(await verifyAccessTokenEdge(token, { secret: SECRET })).toBeNull();
+  });
+
+  it('tokenType access 토큰은 통과한다', async () => {
+    const token = await typedToken('access');
+    const res = await guard(mockRequest({ pathname: '/dashboard', token }));
+    expect(res!.headers.get('x-middleware-next')).toBe('1');
+    expect((await verifyAccessTokenEdge(token, { secret: SECRET }))!.tokenType).toBe('access');
+  });
+
+  it('tokenType 이 없는 레거시 토큰은 통과한다', async () => {
+    const token = await validToken();
+    const res = await guard(mockRequest({ pathname: '/dashboard', token }));
+    expect(res!.headers.get('x-middleware-next')).toBe('1');
+    expect(await verifyAccessTokenEdge(token, { secret: SECRET })).not.toBeNull();
+  });
+});

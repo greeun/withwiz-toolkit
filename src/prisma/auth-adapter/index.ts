@@ -24,6 +24,9 @@ import type {
   TokenType,
 } from '@withwiz/toolkit/core/auth/types';
 
+export { PrismaMfaRepository } from './mfa-repository';
+export type { PrismaMfaRepositoryConfig } from './mfa-repository';
+
 export interface PrismaAdapterConfig {
   tokenTables?: {
     emailVerification?: string;

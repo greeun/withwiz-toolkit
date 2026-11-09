@@ -52,7 +52,24 @@ export class OAuthCallbackService {
     this.logger = config.logger ?? { debug() {}, info() {}, warn() {}, error() {} };
   }
 
+  /**
+   * 콜백 처리 전체: 사용자 확정·연결 → (기존 사용자면) 로그인 기록 → 토큰 발급.
+   * MFA 를 거쳐야 하는 호출자는 `resolveUser`·`issueTokens` 를 나눠 부른다.
+   */
   async handleCallback(input: OAuthCallbackInput): Promise<OAuthCallbackResult> {
+    const { user, isNewUser } = await this.resolveUser(input);
+    // 신규 사용자는 로그인 기록을 남기지 않는다(0.29 동작 유지).
+    if (!isNewUser) await this.userRepo.updateLastLoginAt(user.id);
+    const tokens = await this.issueTokens(user);
+    return { user, tokens, isNewUser };
+  }
+
+  /**
+   * OAuth 계정으로 사용자를 확정한다(기존 연결 갱신·기존 이메일 계정 연결·신규 생성).
+   * 모든 보안 검사(비활성 계정, 미검증 이메일 연결 거부 등)를 여기서 한다.
+   * 로그인 기록(`updateLastLoginAt`)과 토큰 발급은 하지 않는다.
+   */
+  async resolveUser(input: OAuthCallbackInput): Promise<{ user: BaseUser; isNewUser: boolean }> {
     // 1. Check if OAuth account already exists
     const existingAccount = await this.oauthRepo.findByProvider(input.provider, input.providerAccountId);
 
@@ -71,9 +88,7 @@ export class OAuthCallbackService {
         refreshToken: input.refreshToken ?? null,
       });
 
-      await this.userRepo.updateLastLoginAt(user.id);
-      const tokens = await this.createTokens(user);
-      return { user, tokens, isNewUser: false };
+      return { user, isNewUser: false };
     }
 
     // 2. Check if user with same email exists
@@ -118,9 +133,7 @@ export class OAuthCallbackService {
         refreshToken: input.refreshToken ?? null,
       });
 
-      await this.userRepo.updateLastLoginAt(existingUser.id);
-      const tokens = await this.createTokens(existingUser);
-      return { user: existingUser, tokens, isNewUser: false };
+      return { user: existingUser, isNewUser: false };
     }
 
     // 3. Create new user + OAuth account
@@ -141,17 +154,21 @@ export class OAuthCallbackService {
       refreshToken: input.refreshToken ?? null,
     });
 
-    const tokens = await this.createTokens(newUser);
     this.logger.info('New OAuth user created', { userId: newUser.id, provider: input.provider });
-    return { user: newUser, tokens, isNewUser: true };
+    return { user: newUser, isNewUser: true };
   }
 
-  private async createTokens(user: BaseUser): Promise<TokenPair> {
-    return this.jwtService.createTokenPair({
+  /** 세션 토큰 발급. `amr` 를 주면 access 클레임에 싣고, 없으면 넣지 않는다. */
+  async issueTokens(user: BaseUser, opts?: { amr?: string[] }): Promise<TokenPair> {
+    const payload = {
       id: user.id,
       email: user.email,
       role: user.role ?? ROLE_DEFAULTS.DEFAULT_ROLE,
       emailVerified: user.emailVerified,
-    });
+    };
+    // amr 가 없으면 0.29 와 같은 인자 하나짜리 호출을 유지한다.
+    return opts?.amr
+      ? this.jwtService.createTokenPair(payload, { amr: opts.amr })
+      : this.jwtService.createTokenPair(payload);
   }
 }
