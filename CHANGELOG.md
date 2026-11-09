@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PrismaMfaRepository` (`prisma/auth-adapter/mfa-repository`) and the `UserMfa` / `MfaRecoveryCode` schema below.
 - Failure limits: 5 failures per pending token discards it; 10 failures per user within 900 seconds lock the user for
   900 seconds (verify and the management endpoints count together, 429 `MFA_LOCKED` with `retryAfter`).
+- `MfaLockedError` (`core/auth/errors`, code `MFA_LOCKED`, status 429, `retryAfter` in seconds) for a locked user.
+- `resetMfa({ repository, attemptStore }, userId)` (`core/auth/mfa`) for operators: removes the user's MFA settings
+  and clears their failure count and lock.
+- A successful password reset clears the user's MFA failure count and lock (only when `mfa` is configured; a failure
+  to clear is logged and does not change the reset result).
+- Attempt stores: `createCacheMfaAttemptStore(cache)` for a shared cache and `createInMemoryMfaAttemptStore()` for a
+  single process. For more than one server instance, inject a cache with atomic `increment`, `expire` and
+  `setIfNotExists` (the toolkit Redis and Hybrid cache managers have them). Without `increment`/`expire` the store
+  falls back to a non-atomic get→set, so concurrent failures can be undercounted and the limits weakened. If
+  `increment` returns less than 1 (the toolkit managers' error value) the store throws rather than skip counting.
+  `MfaAttemptStore.lock` returns `true` only when the call created the lock; `onMfaLocked` runs once per lock.
 - New error keys are registered in `ERROR_CODES`, `AUTH_ERROR_CODE_MAP` and the ko/en/ja messages.
 
 ### Changed
@@ -44,7 +55,7 @@ const handlers = createAuthHandlers({
   mfa: {
     enabled: true,
     issuer: 'my-service',
-    encryptionKeys: [process.env.MFA_ENCRYPTION_KEY!], // base64, 32 bytes; first key encrypts
+    encryptionKeys: [process.env.MFA_ENCRYPTION_KEY!], // base64 (32 bytes); first key encrypts
     repository: new PrismaMfaRepository(prisma),
     attemptStore: createCacheMfaAttemptStore(cache), // shared cache; omit and an in-memory store is used with a warning
   },

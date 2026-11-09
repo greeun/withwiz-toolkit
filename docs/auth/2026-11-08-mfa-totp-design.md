@@ -66,7 +66,7 @@ binder 는 여러 서비스의 로그인을 맡는 IdP 다. 계정 하나가 털
 mfa?: {
   enabled: boolean;
   issuer: string;                 // 인증 앱에 표시될 서비스 이름 (예: "binder")
-  encryptionKeys: string[];       // base64 32바이트. 첫 키로 암호화, 나머지는 복호화만(키 교체용)
+  encryptionKeys: string[];       // base64 (32 bytes). 첫 키로 암호화, 나머지는 복호화만(키 교체용)
   repository: MfaRepository;      // dependencies 로 옮겨도 무방 — 빌더 판단
   attemptStore?: MfaAttemptStore; // 없으면 메모리 저장소 + 기동 경고(단일 인스턴스 전용)
 }

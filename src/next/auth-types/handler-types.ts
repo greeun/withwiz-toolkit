@@ -127,7 +127,7 @@ export interface AuthHandlerOptions {
     enabled: boolean;
     /** 인증 앱에 표시되는 발급자 이름 */
     issuer: string;
-    /** 비밀 키 암호화 키(base64url 32바이트). 첫 키로 암호화하고 나머지는 복호화 전용 */
+    /** 비밀 키 암호화 키, 각각 base64 (32 bytes). 첫 키로 암호화하고 나머지는 복호화 전용 */
     encryptionKeys: string[];
     repository: MfaRepository;
     attemptStore?: MfaAttemptStore;

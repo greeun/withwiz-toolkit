@@ -559,6 +559,29 @@ model AccountToken {
 3. `AccountToken.expiresAt` 타입은 `Int` (epoch seconds). `DateTime` 컬럼을 쓰는 스키마는 비호환.
 4. 복합 unique 인덱스 명은 Prisma 기본 명명 규칙 `provider_providerAccountId` (`@@unique` 외에 `name` 옵션을 주면 깨짐)
 
+**위 가정에 맞지 않는 스키마를 쓰는 프로젝트**는 `OAuthAccountRepository` 인터페이스를 자체 구현하고 `dependencies.oauthAccountRepository` 자리에 주입하세요:
+
+```typescript
+import type { OAuthAccountRepository } from '@withwiz/toolkit/core/auth/types';
+
+class MyOAuthAccountRepository implements OAuthAccountRepository {
+  async findByProvider(provider, providerAccountId) { /* 자체 구현 */ }
+  async findByUserId(userId) { /* ... */ }
+  async create(data) { /* ... */ }
+  async update(id, data) { /* ... */ }
+  async delete(id) { /* ... */ }
+}
+
+const auth = createAuthHandlers({
+  dependencies: {
+    userRepository: new PrismaUserRepository(prisma),
+    oauthAccountRepository: new MyOAuthAccountRepository(),  // ← 교체
+    emailTokenRepository: new PrismaEmailTokenRepository(prisma),
+  },
+  // ...
+});
+```
+
 #### MFA(TOTP) 스키마
 
 `PrismaMfaRepository`(`@withwiz/toolkit/prisma/auth-adapter`)는 아래 두 모델을 사용합니다(모델명은 `userMfaModel`·`recoveryCodeModel` 로 변경 가능). `User` 모델에 역관계 `userMfa UserMfa?` 와 `mfaRecoveryCodes MfaRecoveryCode[]` 를 추가해야 합니다.
@@ -583,29 +606,6 @@ model MfaRecoveryCode {
   @@unique([userId, codeHash])
   @@index([userId])
 }
-```
-
-**위 가정에 맞지 않는 스키마를 쓰는 프로젝트**는 `OAuthAccountRepository` 인터페이스를 자체 구현하고 `dependencies.oauthAccountRepository` 자리에 주입하세요:
-
-```typescript
-import type { OAuthAccountRepository } from '@withwiz/toolkit/core/auth/types';
-
-class MyOAuthAccountRepository implements OAuthAccountRepository {
-  async findByProvider(provider, providerAccountId) { /* 자체 구현 */ }
-  async findByUserId(userId) { /* ... */ }
-  async create(data) { /* ... */ }
-  async update(id, data) { /* ... */ }
-  async delete(id) { /* ... */ }
-}
-
-const auth = createAuthHandlers({
-  dependencies: {
-    userRepository: new PrismaUserRepository(prisma),
-    oauthAccountRepository: new MyOAuthAccountRepository(),  // ← 교체
-    emailTokenRepository: new PrismaEmailTokenRepository(prisma),
-  },
-  // ...
-});
 ```
 
 ---
