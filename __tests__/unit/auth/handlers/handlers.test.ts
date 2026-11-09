@@ -838,6 +838,41 @@ describe('Auth Handlers', () => {
       expect(body.user.avatar).toBe('url');
     });
 
+    describe('access token blacklist', () => {
+      afterEach(() => {
+        globalThis.__accessTokenBlacklistChecker = undefined;
+      });
+
+      it('should return 401 without looking up the user when the token is revoked', async () => {
+        const options = createMockOptions();
+        const isAccessTokenRevoked = vi.fn().mockResolvedValue(true);
+        globalThis.__accessTokenBlacklistChecker = { isAccessTokenRevoked };
+        mockExtractTokenFromHeader.mockReturnValue(null);
+        mockVerifyAccessToken.mockResolvedValue({ userId: 'user-1', email: 'me@example.com', role: 'USER' });
+        (options.dependencies.userRepository.findById as any).mockResolvedValue(mockUser);
+        const handler = createMeHandler(options);
+        const req = makeRequestWithCookies('http://localhost/api/auth/me', { access_token: 'revoked-token' }, { method: 'GET' });
+
+        const res = await handler(req);
+        expect(res.status).toBe(401);
+        expect(isAccessTokenRevoked).toHaveBeenCalledWith('revoked-token');
+        expect(options.dependencies.userRepository.findById).not.toHaveBeenCalled();
+      });
+
+      it('should return 200 when the checker reports the token as not revoked', async () => {
+        const options = createMockOptions();
+        globalThis.__accessTokenBlacklistChecker = { isAccessTokenRevoked: vi.fn().mockResolvedValue(false) };
+        mockExtractTokenFromHeader.mockReturnValue(null);
+        mockVerifyAccessToken.mockResolvedValue({ userId: 'user-1', email: 'me@example.com', role: 'USER' });
+        (options.dependencies.userRepository.findById as any).mockResolvedValue(mockUser);
+        const handler = createMeHandler(options);
+        const req = makeRequestWithCookies('http://localhost/api/auth/me', { access_token: 'valid-token' }, { method: 'GET' });
+
+        const res = await handler(req);
+        expect(res.status).toBe(200);
+      });
+    });
+
     it('should return 401 when token verification throws', async () => {
       const options = createMockOptions();
       mockExtractTokenFromHeader.mockReturnValue('invalid-token');

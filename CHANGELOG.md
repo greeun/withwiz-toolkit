@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.1] - 2026-11-09
+
+### Fixed
+- `/me` and the `/mfa/*` management handlers now reject an access token revoked by logout. The shared resolver
+  (`createAccessUserResolver`) checks the checker registered with `setAccessTokenBlacklistChecker`, the same rule
+  `withAuthApi` applies, and answers 401 for a revoked token. Before this, `/me` kept returning the user for a
+  logged-out token until it expired. Apps that checked the blacklist in their own `/me` route before delegating can
+  drop that check.
+
 ## [0.30.0] - 2026-11-09
 
 ### Added
