@@ -10,6 +10,7 @@ import { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/
 import { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
 import { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 import { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
+import { createResendVerificationHandler } from '@withwiz/toolkit/next/auth-handlers/resend-verification.handler';
 import { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
 import {
   createMfaVerifyHandler,
@@ -33,6 +34,8 @@ export interface AuthRouteHandlers {
   forgotPassword: (req: NextRequest) => Promise<Response>;
   resetPassword: (req: NextRequest) => Promise<Response>;
   verifyEmail: (req: NextRequest) => Promise<Response>;
+  /** 인증 메일 재발송 (0.31+). 계정 상태와 무관하게 200 */
+  resendVerification: (req: NextRequest) => Promise<Response>;
   /** 로그인 2단계 검증 (0.30+). `mfa` 미설정이면 404 */
   mfaVerify: (req: NextRequest) => Promise<Response>;
   /** MFA 상태 (0.30+) */
@@ -60,6 +63,7 @@ export function createAuthHandlers(options: AuthHandlerOptions): AuthRouteHandle
     forgotPassword: createForgotPasswordHandler(options),
     resetPassword: createResetPasswordHandler(options),
     verifyEmail: createVerifyEmailHandler(options),
+    resendVerification: createResendVerificationHandler(options),
     mfaVerify: createMfaVerifyHandler(options),
     mfaStatus: createMfaStatusHandler(options),
     mfaSetup: createMfaSetupHandler(options),
@@ -79,6 +83,7 @@ export { createOAuthCallbackHandler } from '@withwiz/toolkit/next/auth-handlers/
 export { createForgotPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/forgot-password.handler';
 export { createResetPasswordHandler } from '@withwiz/toolkit/next/auth-handlers/reset-password.handler';
 export { createVerifyEmailHandler } from '@withwiz/toolkit/next/auth-handlers/verify-email.handler';
+export { createResendVerificationHandler } from '@withwiz/toolkit/next/auth-handlers/resend-verification.handler';
 export { createSignupHandler } from '@withwiz/toolkit/next/auth-handlers/signup.handler';
 export {
   createMfaVerifyHandler,
