@@ -54,6 +54,12 @@ export interface AuthHandlerHooks {
     ctx: RegisterHookContext,
   ) => Promise<Record<string, unknown>>;
   allowEmail?: (email: string) => boolean | Promise<boolean>;
+  /**
+   * 인증 메일 재발송의 세션 이메일 (0.32+). 로그인한 미인증 사용자가 이메일을 입력하지 않고 재발송할 수 있게,
+   * 앱의 세션 판정으로 이메일을 돌려준다. 값이 있으면 본문 `email` 대신 이 이메일로 보내고, 없으면(null·undefined)
+   * 본문 `email` 이 필수다. 던지면 세션이 없는 것으로 보고 logger.warn 으로 남긴다.
+   */
+  resolveSessionEmail?: (req: NextRequest) => Promise<string | null | undefined>;
   isTokenBlacklisted?: (token: string) => Promise<boolean>;
   /** 2단계 인증을 켰다 (0.30+) */
   onMfaEnabled?: (user: BaseUser) => Promise<void>;
