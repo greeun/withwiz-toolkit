@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-11-11
+
+### Added
+- `hooks.resolveSessionEmail(req)` for `resendVerification`. When it returns an email (the signed-in user's, from the
+  app's own session check), the verification email goes to that address and the body `email` is ignored, so a signed-in
+  unverified user can resend without typing an address. When it returns `null`/`undefined`, the body `email` is required
+  as before. If it throws, the request is treated as having no session and `logger.warn`
+  (`Session email lookup failed for verification resend`) records it.
+
 ## [0.31.0] - 2026-11-11
 
 ### Added
