@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-11-11
+
+### Added
+- `createResendVerificationHandler` (`next/auth-handlers/resend-verification.handler`), returned by `createAuthHandlers`
+  as `resendVerification`. `POST { email }` issues a new verification token and sends the email through
+  `EmailVerificationService.resend`. The response is `{ success: true }` with 200 whether the account exists, is
+  already verified, or was sent the email, so it does not reveal which addresses are registered. Unexpected failures
+  (token store, mail sender) keep the same response but are logged with `logger.error`
+  (`Verification email resend failed`) so an outage does not stay hidden. An invalid email answers 400, a missing
+  `emailSender` answers 500. Apps route it (for example `POST /api/auth/resend-verification`) and keep it behind
+  their auth rate limit.
+
 ## [0.30.1] - 2026-11-09
 
 ### Fixed
