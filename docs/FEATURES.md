@@ -362,6 +362,7 @@ Factories that turn `AuthHandlerOptions` into Next.js route handlers `(req: Next
 | `createOAuthAuthorizeHandler` · `createOAuthCallbackHandler` | factories | OAuth redirect + callback exchange |
 | `createForgotPasswordHandler` · `createResetPasswordHandler` | factories | Password-reset flow |
 | `createVerifyEmailHandler` | factory | Email verification |
+| `createResendVerificationHandler` | factory | Resend the verification email (`POST { email }`, always 200) |
 | `createAuthHandlers` | factory | Bundle all 10 handlers → `AuthRouteHandlers` |
 | `AuthRouteHandlers` | interface | Handler bundle type |
 
