@@ -13,6 +13,7 @@ const SILENT_CODES = new Set(['USER_NOT_FOUND', 'EMAIL_ALREADY_VERIFIED']);
 
 /**
  * 인증 메일 재발송 (0.31+). `POST { email }`.
+ * `hooks.resolveSessionEmail`(0.32+)이 이메일을 돌려주면 본문 대신 그 이메일(로그인한 사용자의 세션)로 보낸다.
  *
  * 가입 여부가 드러나지 않도록 계정이 없거나 이미 인증된 경우에도 `{ success: true }` 200 을 준다.
  * 저장소·메일 발송 실패 같은 예상 밖 오류도 응답은 같지만, 장애가 숨지 않도록 logger.error 로 남긴다.
@@ -20,11 +21,24 @@ const SILENT_CODES = new Set(['USER_NOT_FOUND', 'EMAIL_ALREADY_VERIFIED']);
  */
 export function createResendVerificationHandler(options: AuthHandlerOptions) {
   const respond = createAuthResponder(options);
-  const { dependencies } = options;
+  const { dependencies, hooks } = options;
+
+  /** 세션 이메일. 훅이 없거나, 세션이 없거나, 훅이 실패하면 undefined. */
+  const sessionEmail = async (request: NextRequest): Promise<string | undefined> => {
+    if (!hooks?.resolveSessionEmail) return undefined;
+    try {
+      return (await hooks.resolveSessionEmail(request))?.trim() || undefined;
+    } catch (error) {
+      dependencies.logger?.warn('Session email lookup failed for verification resend', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return undefined;
+    }
+  };
 
   return async (request: NextRequest): Promise<Response> => {
-    const body = await readJsonBody(request);
-    const parsed = schema.safeParse(body);
+    const fromSession = await sessionEmail(request);
+    const parsed = schema.safeParse(fromSession !== undefined ? { email: fromSession } : await readJsonBody(request));
     if (!parsed.success) {
       return respond.error(request, {
         status: 400, key: 'VALIDATION_ERROR', message: 'Invalid email',

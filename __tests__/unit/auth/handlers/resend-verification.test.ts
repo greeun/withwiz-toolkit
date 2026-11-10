@@ -8,7 +8,7 @@ import type { AuthHandlerOptions } from '@withwiz/toolkit/next/auth-types/handle
 
 type User = { id: string; email: string; emailVerified: Date | null };
 
-function setup(users: User[], opts: { tokenCreate?: () => Promise<never>; noSender?: boolean } = {}) {
+function setup(users: User[], opts: { tokenCreate?: () => Promise<never>; noSender?: boolean; resolveSessionEmail?: NonNullable<AuthHandlerOptions['hooks']>['resolveSessionEmail'] } = {}) {
   const tokens: { email: string; token: string; type: string }[] = [];
   const sent: string[] = [];
   const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
@@ -42,6 +42,7 @@ function setup(users: User[], opts: { tokenCreate?: () => Promise<never>; noSend
     },
     jwt: { secret: 'a'.repeat(32) },
     urls: { baseUrl: 'http://localhost:3000' },
+    ...(opts.resolveSessionEmail ? { hooks: { resolveSessionEmail: opts.resolveSessionEmail } } : {}),
   };
   return { handler: createResendVerificationHandler(options), tokens, sent, logger };
 }
@@ -101,6 +102,34 @@ describe('createResendVerificationHandler', () => {
     const { handler } = setup([unverified], { noSender: true });
     const res = await handler(post({ email: 'new@example.com' }));
     expect(res.status).toBe(500);
+  });
+
+  describe('hooks.resolveSessionEmail (0.32)', () => {
+    it('세션 이메일이 있으면 본문 없이도 그 이메일로 보내고, 본문 email 은 무시한다', async () => {
+      const { handler, sent } = setup([unverified], { resolveSessionEmail: async () => 'new@example.com' });
+      const res = await handler(post({ email: 'someone-else@example.com' }));
+      expect(res.status).toBe(200);
+      expect(sent).toEqual(['new@example.com']);
+      const res2 = await handler(post({}));
+      expect(res2.status).toBe(200);
+      expect(sent).toEqual(['new@example.com', 'new@example.com']);
+    });
+
+    it('세션이 없으면(null) 본문 email 을 쓰고, 본문도 없으면 400', async () => {
+      const { handler, sent } = setup([unverified], { resolveSessionEmail: async () => null });
+      expect((await handler(post({ email: 'new@example.com' }))).status).toBe(200);
+      expect(sent).toEqual(['new@example.com']);
+      expect((await handler(post({}))).status).toBe(400);
+    });
+
+    it('훅이 던지면 세션 없음으로 보고 warn 을 남긴다', async () => {
+      const { handler, sent, logger } = setup([unverified], {
+        resolveSessionEmail: async () => { throw new Error('bad token'); },
+      });
+      expect((await handler(post({ email: 'new@example.com' }))).status).toBe(200);
+      expect(sent).toEqual(['new@example.com']);
+      expect(logger.warn).toHaveBeenCalledWith('Session email lookup failed for verification resend', { error: 'bad token' });
+    });
   });
 
   it('createAuthHandlers 가 resendVerification 을 돌려준다', () => {
