@@ -119,11 +119,29 @@ describe("banner lines", () => {
     expect(strip(serverLine(failed))).toBe("-");
   });
 
-  it("migrationsLine", () => {
-    expect(strip(migrationsLine(failed))).toBe("(DB 응답 없음)");
-    expect(strip(migrationsLine(ok(null)))).toBe("⚠ 확인 불가 — prisma/migrations 없음 (3 applied)");
+  it("migrationsLine defaults to en", () => {
+    expect(strip(migrationsLine(failed))).toBe("(no DB response)");
+    expect(strip(migrationsLine(ok(null)))).toBe("⚠ unknown — prisma/migrations not found (3 applied)");
     expect(strip(migrationsLine(ok([])))).toBe("✓ up to date (3 applied)");
     expect(strip(migrationsLine(ok(["a", "b"])))).toBe("✗ 2 PENDING: a, b");
+    expect(migrationsLine(failed, { locale: "en" })).toBe(migrationsLine(failed));
+    expect(migrationsLine(ok(null), { locale: "en" })).toBe(migrationsLine(ok(null)));
+  });
+
+  it("migrationsLine with locale ko matches the original galpi output byte for byte", () => {
+    expect(migrationsLine(failed, { locale: "ko" })).toBe("\x1B[2m(DB 응답 없음)\x1B[0m");
+    expect(migrationsLine(ok(null), { locale: "ko" })).toBe(
+      "\x1B[33m⚠ 확인 불가 — prisma/migrations 없음 (3 applied)\x1B[0m",
+    );
+    expect(migrationsLine(ok([]), { locale: "ko" })).toBe("\x1B[32m✓ up to date (3 applied)\x1B[0m");
+    expect(migrationsLine(ok(["a", "b"]), { locale: "ko" })).toBe("\x1B[31m✗ 2 PENDING: a, b\x1B[0m");
+  });
+
+  it("migrationsLine with locale en keeps the same colors", () => {
+    expect(migrationsLine(failed, { locale: "en" })).toBe("\x1B[2m(no DB response)\x1B[0m");
+    expect(migrationsLine(ok(null), { locale: "en" })).toBe(
+      "\x1B[33m⚠ unknown — prisma/migrations not found (3 applied)\x1B[0m",
+    );
   });
 });
 

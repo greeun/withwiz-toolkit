@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { c } from "@withwiz/toolkit/core/utils/startup-banner";
+import type { TLocale } from "@withwiz/toolkit/core/error/messages";
 
 /**
  * One-shot database check for a startup banner: round trip, server version and pending
@@ -14,7 +15,7 @@ import { c } from "@withwiz/toolkit/core/utils/startup-banner";
  * The `*Line` helpers return values for `printStartupBanner` (`core/utils/startup-banner`):
  *   const probe = await probeDatabase(prisma, await listMigrationDirs());
  *   printStartupBanner({ title, sections: [{ emoji: '🗄️', title: 'Database', lines: [
- *     ['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe)],
+ *     ['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe, { locale: 'en' })],
  *   ]}] });
  *
  * Does not import `@prisma/client`: the client is typed structurally (`$queryRawUnsafe` only).
@@ -128,10 +129,24 @@ export function serverLine(probe: DbProbe): string {
   return probe.ok ? probe.serverVersion : c("dim", "-");
 }
 
+/** Locales for the banner wording. */
+export type ProbeLocale = Extract<TLocale, "ko" | "en">;
+
+export interface ProbeLineOptions {
+  /** Wording language. Defaults to `en`. */
+  locale?: ProbeLocale;
+}
+
+const MIGRATION_TEXT: Record<ProbeLocale, { noResponse: string; unknown: string }> = {
+  en: { noResponse: "(no DB response)", unknown: "⚠ unknown — prisma/migrations not found" },
+  ko: { noResponse: "(DB 응답 없음)", unknown: "⚠ 확인 불가 — prisma/migrations 없음" },
+};
+
 /** Banner value for the migration state. */
-export function migrationsLine(probe: DbProbe): string {
-  if (!probe.ok) return c("dim", "(DB 응답 없음)");
-  if (probe.pending === null) return c("yellow", `⚠ 확인 불가 — prisma/migrations 없음 (${probe.applied} applied)`);
+export function migrationsLine(probe: DbProbe, options: ProbeLineOptions = {}): string {
+  const text = MIGRATION_TEXT[options.locale ?? "en"] ?? MIGRATION_TEXT.en;
+  if (!probe.ok) return c("dim", text.noResponse);
+  if (probe.pending === null) return c("yellow", `${text.unknown} (${probe.applied} applied)`);
   if (probe.pending.length === 0) return c("green", `✓ up to date (${probe.applied} applied)`);
   return c("red", `✗ ${probe.pending.length} PENDING: ${probe.pending.join(", ")}`);
 }

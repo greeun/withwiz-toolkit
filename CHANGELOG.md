@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   It never throws; failure and timeout come back as `{ ok: false, reason }`. `pingLine`, `serverLine` and
   `migrationsLine` return values for `printStartupBanner` (`core/utils/startup-banner`), e.g.
   `lines: [['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe)]]`.
+  `migrationsLine(probe, { locale })` takes `'en'` (default) or `'ko'` for its wording
+  (`(no DB response)` / `(DB 응답 없음)`, `⚠ unknown — prisma/migrations not found` / `⚠ 확인 불가 — prisma/migrations 없음`).
   The client needs only `$queryRawUnsafe`.
 
 ## [0.32.0] - 2026-11-11

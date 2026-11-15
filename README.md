@@ -232,7 +232,7 @@ Migrate imports: `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 |---|---|
 | `/prisma/auth-adapter` | Prisma implementations of `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` |
 | `/prisma/log` | `resolvePrismaLogConfig` / `prismaLogDefinitions` / `attachPrismaLogging` — Prisma log events to the toolkit logger (or any logger), slow-query warnings, optional file output, configured by `PRISMA_LOG_*` env (Node.js only) |
-| `/prisma/probe` | `probeDatabase` / `listMigrationDirs` — one-shot DB check (round trip, server version, pending migrations) and `pingLine` / `serverLine` / `migrationsLine` values for the startup banner (Node.js only) |
+| `/prisma/probe` | `probeDatabase` / `listMigrationDirs` — one-shot DB check (round trip, server version, pending migrations) and `pingLine` / `serverLine` / `migrationsLine(probe, { locale })` values for the startup banner (`en` default, `ko`) (Node.js only) |
 
 Startup banner pairing (`/prisma/probe` + `/core/utils/startup-banner`):
 
@@ -243,7 +243,7 @@ import { listMigrationDirs, probeDatabase, pingLine, serverLine, migrationsLine 
 const probe = await probeDatabase(prisma, await listMigrationDirs()); // never throws
 printStartupBanner({ title: '🚀 My Service', sections: [
   { emoji: '🗄️', title: 'Database', lines: [
-    ['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe)],
+    ['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe, { locale: 'en' })], // locale: 'en' (default) | 'ko'
   ]},
 ]});
 ```
