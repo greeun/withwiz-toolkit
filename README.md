@@ -195,7 +195,9 @@ Every subpath outside `next/*` can be imported from plain Node.js ESM without Ne
 | `/core/logger/logger` | Winston-based structured logger |
 | `/core/logger/log-sanitizer` | Mask emails, IPs, tokens and secrets before logging (`sanitizeLogData`, `maskEmail`, ...) |
 | `/core/rate-limit/in-memory-rate-limit-store` | In-memory fixed-window rate limit store (single instance / fallback) |
+| `/core/rate-limit/redis-rate-limiter` | `createRedisRateLimiter` — Redis fixed-window limiter (Lua `INCR` + `PEXPIRE`) that keeps limiting in memory while Redis is absent or failing, then retries Redis |
 | `/core/security` | Non-public IP classification, string-based SSRF check (`isSSRFSafe`, `isInternalIP`), dangerous URL scheme check, block reason codes with ko/en/ja messages |
+| `/core/security/json-ld` | `serializeJsonLd` — JSON for `<script type="application/ld+json">` with `<`, `>`, `&`, U+2028, U+2029 escaped (also exported from `/core/security`) |
 | `/core/security/safe-fetch` | Server-side `fetch` that re-checks resolved IPs and every redirect hop (Node.js only, `node:dns`) |
 | `/core/storage` | Cloudflare R2 / S3-compatible storage |
 | `/core/system` | Health check, system monitoring |
@@ -211,6 +213,7 @@ Every subpath outside `next/*` can be imported from plain Node.js ESM without Ne
 |---|---|
 | `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
 | `/next/middleware/in-memory-rate-limiter` | `createInMemoryRateLimiter` — an `IRateLimiter` for `setRateLimitAdapter` |
+| `/next/middleware/redis-rate-limiter` | `createMiddlewareRateLimiter` — wraps a `createRedisRateLimiter` limiter as an `IRateLimiter` for `setRateLimitAdapter` |
 | `/next/auth-handlers` | Route handlers (login / signup / register / refresh / oauth callback / me / reset / verify) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
 | `/next/error` | `error-handler` (NextResponse), `buildErrorResponse`, `withStandardErrors`, `LocaleDetector`, `ErrorBoundary` |

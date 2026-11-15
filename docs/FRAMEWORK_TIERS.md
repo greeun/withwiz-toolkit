@@ -37,7 +37,7 @@ core/   ← 의존성 없음, pure TypeScript
 - `core/error` — `AppError`, 에러 코드, 다국어 메시지, `extractErrorInfo` (pure)
 - `next/error` — `error-handler`(NextResponse), `LocaleDetector`(NextRequest), `ErrorBoundary`(React 컴포넌트)
 - `core/utils` — `sanitizer`, `type-guards`, `format-number`, `ip-utils` 등 pure 유틸
-- `core/security` — 비공인 IP 판정, URL 문자열 기반 SSRF 검사, 위험 스킴 판정 (pure). 단 `core/security/safe-fetch` 는 `node:dns` 를 쓰므로 Node.js 런타임 전용이고 인덱스에서 내보내지 않음
+- `core/security` — 비공인 IP 판정, URL 문자열 기반 SSRF 검사, 위험 스킴 판정, JSON-LD 직렬화(`serializeJsonLd`) (pure). 단 `core/security/safe-fetch` 는 `node:dns` 를 쓰므로 Node.js 런타임 전용이고 인덱스에서 내보내지 않음
 - `next/utils` — `api-helpers`, `cors`, `csv-export`, `error-processor` (NextResponse)
 
 `api-key`도 같은 원리로 갈립니다:
