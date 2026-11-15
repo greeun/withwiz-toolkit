@@ -22,6 +22,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `<`, `>`, `&`, U+2028 and U+2029 written as `\uXXXX`, so a `</script>` inside user content cannot close a
   JSON-LD `<script>` element. `JSON.parse` of the result equals the input. A value `JSON.stringify` cannot serialize
   (`undefined`, a function) throws `TypeError`.
+- `prisma/log`: `resolvePrismaLogConfig(env = process.env)`, `prismaLogDefinitions(config)` and
+  `attachPrismaLogging(client, { config?, env?, logger? })`. Prisma log events go to the toolkit logger by default (or
+  any logger with `debug`/`info`/`warn`/`error`). `PRISMA_LOG_LEVEL` (default `warn,error`), `PRISMA_LOG_QUERY_EVENT`
+  (slow-query reports without logging every query, default on in development), `PRISMA_SLOW_QUERY_MS` (default 100),
+  `PRISMA_LOG_TO_FILE` and `PRISMA_LOG_FILE` (default `./logs/prisma.log`). The client is typed structurally (`$on`),
+  so `@prisma/client` is not a dependency.
+- `prisma/probe`: `probeDatabase(client, migrationDirs, timeoutMs = 3000)` reads the round trip, server version and
+  migrations that are on disk (`listMigrationDirs(root?, migrationsDir?)`) but not finished in `_prisma_migrations`.
+  It never throws; failure and timeout come back as `{ ok: false, reason }`. `pingLine`, `serverLine` and
+  `migrationsLine` return values for `printStartupBanner` (`core/utils/startup-banner`), e.g.
+  `lines: [['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe)]]`.
+  The client needs only `$queryRawUnsafe`.
 
 ## [0.32.0] - 2026-11-11
 

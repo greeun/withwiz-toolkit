@@ -237,7 +237,9 @@
     "./next/utils/csv-export-format": "./dist/next/utils/csv-export-format.js",
     "./next/utils/error-processor": "./dist/next/utils/error-processor.js",
     "./prisma/auth-adapter": "./dist/prisma/auth-adapter/index.js",
-    "./prisma/auth-adapter/mfa-repository": "./dist/prisma/auth-adapter/mfa-repository.js"
+    "./prisma/auth-adapter/mfa-repository": "./dist/prisma/auth-adapter/mfa-repository.js",
+    "./prisma/log": "./dist/prisma/log/index.js",
+    "./prisma/probe": "./dist/prisma/probe/index.js"
   },
   "scripts": {
     "build": "tsup && tsc --emitDeclarationOnly --skipLibCheck",

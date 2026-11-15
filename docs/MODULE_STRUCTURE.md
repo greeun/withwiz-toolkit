@@ -38,7 +38,9 @@ src/
 │   └── utils/         #   api-helpers, cors, csv-export, error-processor
 │
 └── prisma/            # Prisma dependent
-    └── auth-adapter/  #   Prisma auth repository adapter
+    ├── auth-adapter/  #   Prisma auth repository adapter
+    ├── log/           #   Prisma log events → logger, slow queries, file output
+    └── probe/         #   startup DB probe + banner lines
 ```
 
 > The `react` tier (UI components, hooks, `error-display`, browser-context utils)
@@ -60,7 +62,7 @@ tier breakdown.
 - `./next/*` — Next.js dependent
   - `@withwiz/toolkit/next/oapi` — barrel. 개별 subpath: `api-key-auth` /
     `openapi-spec` / `helpers`
-- `./prisma/*` — Prisma adapter
+- `./prisma/*` — Prisma adapter, Prisma log wiring (`prisma/log`), startup DB probe (`prisma/probe`)
 
 ## 에러 설계 규칙 (api-key 기준 레퍼런스)
 
