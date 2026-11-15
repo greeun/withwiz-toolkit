@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `createRedisRateLimiter` (`core/rate-limit/redis-rate-limiter`). A fixed-window limiter that counts in Redis with a Lua
+  script (`INCR`, then `PEXPIRE` on the first increment) and returns `{ allowed, remaining, retryAfter, resetIn }`
+  (seconds). It takes any client with `eval(script, numKeys, ...args)`, so it does not depend on `ioredis`. When
+  `getClient()` returns `null` it counts with `InMemoryRateLimitStore`. When Redis throws it keeps limiting in memory
+  for `retryIntervalMs` (default 30s) and retries Redis on the first request after that, so a Redis outage neither
+  allows nor blocks every request. Keys are `{keyPrefix}:{bucket}:{subject}` with `keyPrefix` defaulting to `rl`.
+  The failure state is per limiter instance.
+- `createMiddlewareRateLimiter` (`next/middleware/redis-rate-limiter`) wraps that limiter as an `IRateLimiter`, so an
+  app can pass it to `setRateLimitAdapter` and the rate limit in `withAuthApi` and `createRateLimitMiddleware` takes
+  effect with a shared Redis count.
+- `serializeJsonLd` (`core/security/json-ld`, also exported from `core/security`). It returns `JSON.stringify` output
+  with `<`, `>`, `&`, U+2028 and U+2029 written as `\uXXXX`, so a `</script>` inside user content cannot close a
+  JSON-LD `<script>` element. `JSON.parse` of the result equals the input. A value `JSON.stringify` cannot serialize
+  (`undefined`, a function) throws `TypeError`.
+- `prisma/log`: `resolvePrismaLogConfig(env = process.env)`, `prismaLogDefinitions(config)` and
+  `attachPrismaLogging(client, { config?, env?, logger? })`. Prisma log events go to the toolkit logger by default (or
+  any logger with `debug`/`info`/`warn`/`error`). `PRISMA_LOG_LEVEL` (default `warn,error`), `PRISMA_LOG_QUERY_EVENT`
+  (slow-query reports without logging every query, default on in development), `PRISMA_SLOW_QUERY_MS` (default 100),
+  `PRISMA_LOG_TO_FILE` and `PRISMA_LOG_FILE` (default `./logs/prisma.log`). The client is typed structurally (`$on`),
+  so `@prisma/client` is not a dependency.
+- `prisma/probe`: `probeDatabase(client, migrationDirs, timeoutMs = 3000)` reads the round trip, server version and
+  migrations that are on disk (`listMigrationDirs(root?, migrationsDir?)`) but not finished in `_prisma_migrations`.
+  It never throws; failure and timeout come back as `{ ok: false, reason }`. `pingLine`, `serverLine` and
+  `migrationsLine` return values for `printStartupBanner` (`core/utils/startup-banner`), e.g.
+  `lines: [['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe)]]`.
+  `migrationsLine(probe, { locale })` takes `'en'` (default) or `'ko'` for its wording
+  (`(no DB response)` / `(DB 응답 없음)`, `⚠ unknown — prisma/migrations not found` / `⚠ 확인 불가 — prisma/migrations 없음`).
+  The client needs only `$queryRawUnsafe`.
+
 ## [0.32.0] - 2026-11-11
 
 ### Added
