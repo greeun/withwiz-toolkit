@@ -19,9 +19,9 @@ src/
 │   ├── error/         #   AppError, error codes, i18n messages, extractErrorInfo
 │   ├── geolocation/   #   GeoIP lookup, batch processor, provider factory
 │   ├── logger/        #   Winston-based structured logging, log-sanitizer (masking)
-│   ├── rate-limit/    #   in-memory fixed-window rate limit store
+│   ├── rate-limit/    #   in-memory fixed-window store, Redis fixed-window limiter
 │   ├── security/      #   non-public IP classification, SSRF checks, dangerous scheme,
-│   │                  #   block reason messages, safe-fetch (Node.js only)
+│   │                  #   block reason messages, JSON-LD serialization, safe-fetch (Node.js only)
 │   ├── storage/       #   Cloudflare R2 / S3 storage
 │   ├── system/        #   health checks, system monitoring
 │   ├── types/         #   shared TypeScript types
@@ -29,7 +29,7 @@ src/
 │   └── validators/    #   password strength validation
 │
 ├── next/              # Next.js dependent
-│   ├── middleware/    #   auth, rate-limit, cors, security, wrappers, in-memory-rate-limiter
+│   ├── middleware/    #   auth, rate-limit, cors, security, wrappers, in-memory/redis-rate-limiter
 │   ├── auth-handlers/ #   Next.js route handlers (← old auth/handlers)
 │   ├── auth-types/    #   handler types (NextRequest signatures)
 │   ├── error/         #   error-handler (NextResponse), LocaleDetector, ErrorBoundary
@@ -38,7 +38,9 @@ src/
 │   └── utils/         #   api-helpers, cors, csv-export, error-processor
 │
 └── prisma/            # Prisma dependent
-    └── auth-adapter/  #   Prisma auth repository adapter
+    ├── auth-adapter/  #   Prisma auth repository adapter
+    ├── log/           #   Prisma log events → logger, slow queries, file output
+    └── probe/         #   startup DB probe + banner lines
 ```
 
 > The `react` tier (UI components, hooks, `error-display`, browser-context utils)
@@ -60,7 +62,7 @@ tier breakdown.
 - `./next/*` — Next.js dependent
   - `@withwiz/toolkit/next/oapi` — barrel. 개별 subpath: `api-key-auth` /
     `openapi-spec` / `helpers`
-- `./prisma/*` — Prisma adapter
+- `./prisma/*` — Prisma adapter, Prisma log wiring (`prisma/log`), startup DB probe (`prisma/probe`)
 
 ## 에러 설계 규칙 (api-key 기준 레퍼런스)
 

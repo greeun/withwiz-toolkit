@@ -198,7 +198,9 @@ createAuthHandlers({
 | `/core/logger/logger` | Winston-based structured logger |
 | `/core/logger/log-sanitizer` | Mask emails, IPs, tokens and secrets before logging (`sanitizeLogData`, `maskEmail`, ...) |
 | `/core/rate-limit/in-memory-rate-limit-store` | In-memory fixed-window rate limit store (single instance / fallback) |
+| `/core/rate-limit/redis-rate-limiter` | `createRedisRateLimiter` — Redis fixed-window limiter (Lua `INCR` + `PEXPIRE`) that keeps limiting in memory while Redis is absent or failing, then retries Redis |
 | `/core/security` | Non-public IP classification, string-based SSRF check (`isSSRFSafe`, `isInternalIP`), dangerous URL scheme check, block reason codes with ko/en/ja messages |
+| `/core/security/json-ld` | `serializeJsonLd` — JSON for `<script type="application/ld+json">` with `<`, `>`, `&`, U+2028, U+2029 escaped (also exported from `/core/security`) |
 | `/core/security/safe-fetch` | Server-side `fetch` that re-checks resolved IPs and every redirect hop (Node.js only, `node:dns`) |
 | `/core/storage` | Cloudflare R2 / S3-compatible storage |
 | `/core/system` | Health check, system monitoring |
@@ -214,6 +216,7 @@ createAuthHandlers({
 |---|---|
 | `/next/middleware` | Auth · rate-limit · CORS · security · wrappers |
 | `/next/middleware/in-memory-rate-limiter` | `createInMemoryRateLimiter` — an `IRateLimiter` for `setRateLimitAdapter` |
+| `/next/middleware/redis-rate-limiter` | `createMiddlewareRateLimiter` — wraps a `createRedisRateLimiter` limiter as an `IRateLimiter` for `setRateLimitAdapter` |
 | `/next/auth-handlers` | Route handlers (login / signup / register / refresh / oauth callback / me / reset / verify) |
 | `/next/auth-types` | Handler types (`NextRequest` signatures) |
 | `/next/error` | `error-handler` (NextResponse), `LocaleDetector`, `ErrorBoundary` |
@@ -230,6 +233,22 @@ import 경로 치환: `@withwiz/toolkit/react/*` → `@withwiz/ui/react/*`.
 | Subpath | Description |
 |---|---|
 | `/prisma/auth-adapter` | `UserRepository` / `OAuthAccountRepository` / `EmailTokenRepository` Prisma 구현체 |
+| `/prisma/log` | `resolvePrismaLogConfig` / `prismaLogDefinitions` / `attachPrismaLogging` — Prisma 로그 이벤트를 toolkit logger(또는 주입한 logger)로 보내고, 느린 쿼리 경고와 파일 기록을 `PRISMA_LOG_*` env로 설정 (Node.js 전용) |
+| `/prisma/probe` | `probeDatabase` / `listMigrationDirs` — 부팅 시 DB 1회 점검(왕복 시간·서버 버전·미적용 마이그레이션)과 시작 배너용 `pingLine` / `serverLine` / `migrationsLine(probe, { locale })`(기본 `en`, `ko`) (Node.js 전용) |
+
+시작 배너와 함께 쓰기 (`/prisma/probe` + `/core/utils/startup-banner`):
+
+```ts
+import { printStartupBanner } from '@withwiz/toolkit/core/utils/startup-banner';
+import { listMigrationDirs, probeDatabase, pingLine, serverLine, migrationsLine } from '@withwiz/toolkit/prisma/probe';
+
+const probe = await probeDatabase(prisma, await listMigrationDirs()); // 실패해도 던지지 않는다
+printStartupBanner({ title: '🚀 My Service', sections: [
+  { emoji: '🗄️', title: 'Database', lines: [
+    ['Ping', pingLine(probe)], ['Server', serverLine(probe)], ['Migrations', migrationsLine(probe, { locale: 'en' })], // locale: 'en' (default) | 'ko'
+  ]},
+]});
+```
 
 ## Requirements
 

@@ -30,14 +30,14 @@ core/   ← 의존성 없음, pure TypeScript
 |---|---|---|
 | **core** | `core/api-key`, `core/auth`, `core/auth/jwt`, `core/auth/password`, `core/auth/oauth`, `core/auth/mfa`, `core/auth/services`, `core/auth/email`, `core/auth/types`, `core/cache`, `core/config`, `core/constants`, `core/cors`, `core/error`, `core/geolocation`, `core/logger/logger`, `core/logger/log-sanitizer`, `core/rate-limit`, `core/security`, `core/storage`, `core/system`, `core/types/*`, `core/utils`, `core/validators` | pure TS. 프레임워크 미설치 환경에서도 동작 |
 | **next** | `next/middleware`, `next/auth-handlers`, `next/auth-types`, `next/error`, `next/error/error-handler`, `next/oapi`, `next/utils` | `next/server`, `next/link` 등 Next.js 의존 |
-| **prisma** | `prisma/auth-adapter`(MFA 저장소 `mfa-repository` 포함) | Prisma 클라이언트 덕 타이핑 어댑터 |
+| **prisma** | `prisma/auth-adapter`(MFA 저장소 `mfa-repository` 포함), `prisma/log`, `prisma/probe` | Prisma 클라이언트 덕 타이핑 어댑터 |
 
 `error`와 `utils`는 의존성에 따라 티어가 갈립니다:
 
 - `core/error` — `AppError`, 에러 코드, 다국어 메시지, `extractErrorInfo` (pure)
 - `next/error` — `error-handler`(NextResponse), `LocaleDetector`(NextRequest), `ErrorBoundary`(React 컴포넌트)
 - `core/utils` — `sanitizer`, `type-guards`, `format-number`, `ip-utils` 등 pure 유틸
-- `core/security` — 비공인 IP 판정, URL 문자열 기반 SSRF 검사, 위험 스킴 판정 (pure). 단 `core/security/safe-fetch` 는 `node:dns` 를 쓰므로 Node.js 런타임 전용이고 인덱스에서 내보내지 않음
+- `core/security` — 비공인 IP 판정, URL 문자열 기반 SSRF 검사, 위험 스킴 판정, JSON-LD 직렬화(`serializeJsonLd`) (pure). 단 `core/security/safe-fetch` 는 `node:dns` 를 쓰므로 Node.js 런타임 전용이고 인덱스에서 내보내지 않음
 - `next/utils` — `api-helpers`, `cors`, `csv-export`, `error-processor` (NextResponse)
 
 `api-key`도 같은 원리로 갈립니다:
